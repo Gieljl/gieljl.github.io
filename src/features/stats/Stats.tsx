@@ -2,26 +2,22 @@ import * as React from 'react';
 import { DataGrid } from '@mui/x-data-grid';
 
 const columns = [
-  { field: 'id', headerName: 'ID', width: 90 },
   
   {
     field: 'Type',
     headerName: 'Type',
-    width: 150,
     editable: true,
   },
   {
     field: 'Speler1',
     headerName: 'Speler1',
     type: 'number',
-    width: 150,
     editable: true,
   },
   {
     field: 'Speler2',
     headerName: 'Speler2',
     type: 'number',
-    width: 110,
     editable: true,
   },
   
