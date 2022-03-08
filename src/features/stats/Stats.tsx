@@ -1,51 +1,78 @@
 import * as React from 'react';
-import { DataGrid } from '@mui/x-data-grid';
+import Table from '@mui/material/Table';
+import TableBody from '@mui/material/TableBody';
+import TableCell from '@mui/material/TableCell';
+import TableContainer from '@mui/material/TableContainer';
+import TableHead from '@mui/material/TableHead';
+import TableRow from '@mui/material/TableRow';
+import Paper from '@mui/material/Paper';
 
-const columns = [
-  
-  {
-    field: 'Type',
-    headerName: 'Type',
-    editable: true,
-  },
-  {
-    field: 'Speler1',
-    headerName: 'Speler1',
-    type: 'number',
-    editable: true,
-  },
-  {
-    field: 'Speler2',
-    headerName: 'Speler2',
-    type: 'number',
-    editable: true,
-  },
-  
-];
+function createData(
+  Name: string,
+  Speler1: number,
+  Speler2: number,
+  Speler3: number,
+  Speler4: number,
+  Speler5: number,
+
+) {
+  return { Name, Speler1, Speler2, Speler3, Speler4, Speler5};
+}
+
 
 const rows = [
-  { id: 1, Type: 'Yasat', Speler1: 0, Speler2: 35 },
-  { id: 2, Type: 'YasatStreak', Speler1: 0, Speler2: 42 },
-  { id: 3, Type: 'Death', Speler1: 0, Speler2: 45 },
-  { id: 4, Type: 'Kill', Speler1: 0, Speler2: 16 },
-  { id: 5, Type: 'Ge0wned', Speler1: 0, Speler2: 0 },
-  { id: 6, Type: 'Own', Speler1: 0, Speler2: 150 },
-  { id: 7, Type: 'Nullify 50', Speler1: 0, Speler2: 44 },
-  { id: 8, Type: 'Nullify 100', Speler1: 0, Speler2: 36 },
-  { id: 9, Type: 'Enable 50', Speler1: 0, Speler2: 65 },
+  createData('Yasat', 0, 0, 0, 0, 0),
+  createData('YasatStreak', 0, 0, 0, 0, 0),
+  createData('Kill', 0, 0, 0, 0, 0),
+  createData('Ge0wned', 0, 0, 0, 0, 0),
+  createData('Nullify50', 0, 0, 0, 0, 0),
+  createData('Nullify100', 0, 0, 0, 0, 0),
+  createData('Enable50', 0, 0, 0, 0, 0),
+  createData('Enable100', 0, 0, 0, 0, 0),
+  createData('Contra Own 50', 0, 0, 0, 0, 0),
+  createData('Contra Own 100', 0, 0, 0, 0, 0),
+  createData('FTH', 0, 0, 0, 0, 0),
+  createData('FTPH', 0, 0, 0, 0, 0),
+  createData('Double kill', 0, 0, 0, 0, 0),
+  createData('Multi kill', 0, 0, 0, 0, 0),
+  createData('Mega kill', 0, 0, 0, 0, 0),
+  createData('Monster kill', 0, 0, 0, 0, 0),
 ];
 
-export function DataGridDemo() {
+
+export function StatsTable() {
   return (
-    <div style={{ height: 400, width: '100%' }}>
-      <DataGrid
-        rows={rows}
-        columns={columns}
-        pageSize={5}
-        rowsPerPageOptions={[5]}
-        checkboxSelection
-        disableSelectionOnClick
-      />
-    </div>
+    <TableContainer component={Paper}>
+      <Table size="small" aria-label="a dense table">
+        <TableHead>
+          <TableRow>
+            <TableCell>Stat</TableCell>
+            <TableCell align="right">Speler&nbsp;1</TableCell>
+            <TableCell align="right">Speler&nbsp;2</TableCell>
+            <TableCell align="right">Speler&nbsp;3</TableCell>
+            <TableCell align="right">Speler&nbsp;4</TableCell>
+            <TableCell align="right">Speler&nbsp;5</TableCell>
+          </TableRow>
+        </TableHead>
+        <TableBody>
+          {rows.map((row) => (
+            <TableRow
+              key={row.Name}
+              sx={{ '&:last-child td, &:last-child th': { border: 0 } }}
+            >
+              <TableCell component="th" scope="row">
+                {row.Name}
+              </TableCell>
+              <TableCell align="right">{row.Speler1}</TableCell>
+              <TableCell align="right">{row.Speler2}</TableCell>
+              <TableCell align="right">{row.Speler3}</TableCell>
+              <TableCell align="right">{row.Speler4}</TableCell>
+              <TableCell align="right">{row.Speler5}</TableCell>
+
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+      </TableContainer>
   );
 }
