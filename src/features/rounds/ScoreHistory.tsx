@@ -31,14 +31,7 @@ const rows = [
   createData(8, 0, 0, 0, 0, 0),
   createData(9, 0, 0, 0, 0, 0),
   createData(10, 0, 0, 0, 0, 0),
-  createData(11, 0, 0, 0, 0, 0),
-  createData(12, 0, 0, 0, 0, 0),
-  createData(13, 0, 0, 0, 0, 0),
-  createData(14, 0, 0, 0, 0, 0),
-  createData(15, 0, 0, 0, 0, 0),
-  createData(16, 0, 0, 0, 0, 0),
-  createData(17, 0, 0, 0, 0, 0),
-  createData(18, 0, 0, 0, 0, 0),
+ 
 ];
 
 
@@ -52,11 +45,11 @@ export function ScoreHistory() {
               key={row.Round}
               sx={{ '&:last-child td, &:last-child th': { border: 0 } }}
             >
-              <TableCell align="right">{row.Speler1}</TableCell>
-              <TableCell align="right">{row.Speler2}</TableCell>
-              <TableCell align="right">{row.Speler3}</TableCell>
-              <TableCell align="right">{row.Speler4}</TableCell>
-              <TableCell align="right">{row.Speler5}</TableCell>
+              <TableCell align="center">{row.Speler1}</TableCell>
+              <TableCell align="center">{row.Speler2}</TableCell>
+              <TableCell align="center">{row.Speler3}</TableCell>
+              <TableCell align="center">{row.Speler4}</TableCell>
+              <TableCell align="center">{row.Speler5}</TableCell>
 
             </TableRow>
           ))}
