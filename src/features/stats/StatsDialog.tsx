@@ -37,9 +37,11 @@ export function StatsFullScreenDialog() {
 
   return (
     <div>
-      <IconButton sx={{ ml: 1 }} onClick={handleClickOpen} color="inherit">
-           <TableViewIcon />
-      </IconButton>
+      <Button variant="outlined"  onClick={handleClickOpen} color="inherit" startIcon={<TableViewIcon />}>
+        Stats
+      </Button>
+
+  
       <Dialog
         fullScreen
         open={open}

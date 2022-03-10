@@ -4,7 +4,7 @@ import { useTheme, ThemeProvider, createTheme } from '@mui/material/styles';
 import { StatsFullScreenDialog } from './features/stats/StatsDialog'
 
 import { ScoreHistory } from './features/rounds/ScoreHistory';
-import { ScoreEntryButton } from './features/rounds/ScoreEntry';
+import { ScoreEntryDialog } from './features/rounds/scoreEntryDialog';
 import Brightness4Icon from '@mui/icons-material/Brightness4';
 import Brightness7Icon from '@mui/icons-material/Brightness7';
 import Box from '@mui/material/Box';
@@ -62,7 +62,7 @@ function App() {
         <AppBar  position="fixed" color="default" sx={{background:"#424242", color:"#7df3e1", top: "auto", bottom: 0 }}>
           <Toolbar>
             <Menu/>
-            <ScoreEntryButton/>
+            <ScoreEntryDialog/>
             <Box sx={{ flexGrow: 1 }} />
             <StatsFullScreenDialog/>
             <IconButton sx={{ ml: 1 }} onClick={colorMode.toggleColorMode} color="inherit">

@@ -1,19 +1,54 @@
 import * as React from 'react';
 import Button from '@mui/material/Button';
-import TextField from '@mui/material/TextField';
 import Dialog from '@mui/material/Dialog';
+import ListItemText from '@mui/material/ListItemText';
+import ListItem from '@mui/material/ListItem';
+import List from '@mui/material/List';
+import Divider from '@mui/material/Divider';
+import AppBar from '@mui/material/AppBar';
+import Toolbar from '@mui/material/Toolbar';
+import IconButton from '@mui/material/IconButton';
+import Typography from '@mui/material/Typography';
+import CloseIcon from '@mui/icons-material/Close';
+import Slide from '@mui/material/Slide';
+import { TransitionProps } from '@mui/material/transitions';
+import TextField from '@mui/material/TextField';
 import DialogActions from '@mui/material/DialogActions';
 import DialogContent from '@mui/material/DialogContent';
 import DialogContentText from '@mui/material/DialogContentText';
 import DialogTitle from '@mui/material/DialogTitle';
-import styled from '@emotion/styled';
+import { styled } from '@mui/material/styles';
+import Fab from '@mui/material/Fab';
+
+
 import AddIcon from "@mui/icons-material/Add";
 import CheckBoxOutlineBlankIcon from '@mui/icons-material/CheckBoxOutlineBlank';
 import CheckBoxIcon from '@mui/icons-material/CheckBox';
-import { Autocomplete, Avatar, Checkbox, Fab, FormControl, FormControlLabel, FormHelperText, FormLabel, Grid, InputAdornment, InputLabel, MenuItem, Radio, RadioGroup, Select, SelectChangeEvent, Stack } from '@mui/material';
+import { Autocomplete, Avatar, Checkbox, FormControl, FormControlLabel, FormHelperText, FormLabel, Grid, InputAdornment, InputLabel, MenuItem, Radio, RadioGroup, Select, SelectChangeEvent, Stack } from '@mui/material';
 import { deepOrange, deepPurple, indigo, teal, yellow } from '@mui/material/colors';
 
-export function ScoreEntryButton() {
+
+
+const Transition = React.forwardRef(function Transition(
+  props: TransitionProps & {
+    children: React.ReactElement;
+  },
+  ref: React.Ref<unknown>,
+) {
+  return <Slide direction="up" ref={ref} {...props} />;
+});
+
+const StyledFab = styled(Fab)({
+    background: '#7df3e1',
+    position: 'absolute',
+    zIndex: 1,
+    top: -30,
+    left: 0,
+    right: 0,
+    margin: '0 auto',
+  });
+
+export function ScoreEntryDialog() {
   const [open, setOpen] = React.useState(false);
 
   const handleClickOpen = () => {
@@ -24,16 +59,7 @@ export function ScoreEntryButton() {
     setOpen(false);
   };
 
-  const StyledFab = styled(Fab)({
-    background: '#7df3e1',
-    position: "absolute",
-    zIndex: 1,
-    top: -30,
-    left: 0,
-    right: 0,
-    margin: "0 auto"
-  });
-
+  
   const [yasat, setYasat] = React.useState('');
 
   const handleChange = (event: SelectChangeEvent) => {
@@ -52,16 +78,35 @@ export function ScoreEntryButton() {
 
   return (
     <div>
-      <StyledFab color="default" aria-label="add">
-              <AddIcon onClick={handleClickOpen}/>
-      </StyledFab>
-      <Dialog open={open} onClose={handleClose}>
-        <DialogTitle>Ronde Scores</DialogTitle>
-        <DialogContent>
-          <DialogContentText>
-           Voer hier voor alle spelers de ronde scores in. 
-          </DialogContentText>
-          <Grid container direction="row" spacing={4} alignItems="center" justifyContent="center" >
+        <StyledFab color="default" aria-label="add">
+            <AddIcon onClick={handleClickOpen}/>
+        </StyledFab>
+              
+      <Dialog
+        fullScreen
+        open={open}
+        onClose={handleClose}
+        TransitionComponent={Transition}
+      >
+        <AppBar color="default" sx={{background:"#424242", color:"#7df3e1", position: 'relative' }}>
+          <Toolbar>
+            <IconButton
+              edge="start"
+              color="inherit"
+              onClick={handleClose}
+              aria-label="close"
+            >
+              <CloseIcon />
+            </IconButton>
+            <Typography sx={{ ml: 2, flex: 1 }} variant="h6" component="div">
+                Ronde Scores
+            </Typography>
+            <Button autoFocus color="inherit" onClick={handleClose}>
+              Opslaan
+            </Button>
+          </Toolbar>
+        </AppBar>
+        <Grid container direction="row" spacing={4} alignItems="center" justifyContent="center" >
             <Grid item> 
               <Stack direction="column" spacing={2} mt={3} mb={2}>
                 <Stack direction="row" spacing={2} alignItems="center">
@@ -70,10 +115,9 @@ export function ScoreEntryButton() {
                     required
                     id="name"
                     label="Score"
-                    type="number"
                     variant="outlined"
                     sx={{ width: '100px'}}
-                    InputProps={{inputMode: 'numeric'}}
+                    inputProps={{inputMode: 'numeric'}}
                   />
                   <Autocomplete
                     multiple
@@ -210,6 +254,7 @@ export function ScoreEntryButton() {
                     type="number"
                     variant="outlined"
                     sx={{ width: '100px'}}
+                    inputProps={{ inputMode: 'numeric' }}
                     />
                   <Autocomplete
                       multiple
@@ -256,12 +301,8 @@ export function ScoreEntryButton() {
             </Grid>
             
           </Grid>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={handleClose}>Annuleren</Button>
-          <Button onClick={handleClose}>Opslaan</Button>
-        </DialogActions>
       </Dialog>
     </div>
   );
 }
+
