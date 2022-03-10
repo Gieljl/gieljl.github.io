@@ -8,9 +8,12 @@ import DialogContentText from '@mui/material/DialogContentText';
 import DialogTitle from '@mui/material/DialogTitle';
 import styled from '@emotion/styled';
 import AddIcon from "@mui/icons-material/Add";
-import { Fab, FormControl, FormControlLabel, FormHelperText, FormLabel, Grid, InputLabel, MenuItem, Radio, RadioGroup, Select, SelectChangeEvent, Stack } from '@mui/material';
+import CheckBoxOutlineBlankIcon from '@mui/icons-material/CheckBoxOutlineBlank';
+import CheckBoxIcon from '@mui/icons-material/CheckBox';
+import { Autocomplete, Avatar, Checkbox, Fab, FormControl, FormControlLabel, FormHelperText, FormLabel, Grid, InputAdornment, InputLabel, MenuItem, Radio, RadioGroup, Select, SelectChangeEvent, Stack } from '@mui/material';
+import { deepOrange, deepPurple, indigo, teal, yellow } from '@mui/material/colors';
 
-export function ScoreEntryDialog() {
+export function ScoreEntryButton() {
   const [open, setOpen] = React.useState(false);
 
   const handleClickOpen = () => {
@@ -37,6 +40,16 @@ export function ScoreEntryDialog() {
     setYasat(event.target.value);
   };
 
+  const icon = <CheckBoxOutlineBlankIcon fontSize="small" />;
+  const checkedIcon = <CheckBoxIcon fontSize="small" />;
+  const specials = [
+    { title: 'FTH'},
+    { title: 'FTPH'},
+    { title: 'Special'},
+    { title: 'Special 2'},
+    { title: 'Turbospecial'}
+  ];
+
   return (
     <div>
       <StyledFab color="default" aria-label="add">
@@ -51,57 +64,182 @@ export function ScoreEntryDialog() {
           <Grid container direction="row" spacing={4} alignItems="center" justifyContent="center" >
             <Grid item> 
               <Stack direction="column" spacing={2} mt={3} mb={2}>
-              <InputLabel>Scores</InputLabel>
-              <TextField
-                required
-                id="name"
-                label="P1"
-                type="number"
-                variant="outlined"
-                sx={{ width: '100px'}}
-                inputProps={{ inputMode: 'numeric' }}
-
-              />
-              <TextField
-                required
-                id="name"
-                label="P2"
-                type="number"
-                variant="outlined"
-                sx={{ width: '100px'}}
-                inputProps={{ inputMode: 'numeric' }}
-              />
-              <TextField
-                required
-                id="name"
-                label="P3"
-                type="number"
-                variant="outlined"
-                sx={{ width: '100px'}}
-                inputProps={{ inputMode: 'numeric' }}
-              />
-              <TextField
-                required
-                id="name"
-                label="P4"
-                type="number"
-                variant="outlined"
-                sx={{ width: '100px'}}
-                inputProps={{ inputMode: 'numeric' }}
-              />
-              <TextField
-                required
-                id="name"
-                label="P5"
-                type="number"
-                variant="outlined"
-                sx={{ width: '100px'}}
-              />
+                <Stack direction="row" spacing={2} alignItems="center">
+                  <Avatar sx={{ bgcolor: teal[500] }}>P1</Avatar>
+                  <TextField
+                    required
+                    id="name"
+                    label="Score"
+                    type="number"
+                    variant="outlined"
+                    sx={{ width: '100px'}}
+                    InputProps={{inputMode: 'numeric'}}
+                  />
+                  <Autocomplete
+                    multiple
+                    id="checkboxes-tags-demo"
+                    options={specials}
+                    disableCloseOnSelect
+                    getOptionLabel={(option) => option.title}
+                    renderOption={(props, option, { selected }) => (
+                      <li {...props}>
+                        <Checkbox
+                          icon={icon}
+                          checkedIcon={checkedIcon}
+                          style={{ marginRight: 8 }}
+                          checked={selected}
+                        />
+                        {option.title}
+                      </li>
+                    )}
+                    style={{ width: 180 }}
+                    renderInput={(params) => (
+                      <TextField {...params} placeholder="Specials" />
+                    )}
+                  />
+                </Stack>
+              
+                <Stack direction="row" spacing={2} alignItems="center">
+                  <Avatar sx={{ bgcolor: deepOrange[500] }}>P2</Avatar>
+                  <TextField
+                  required
+                  id="name"
+                  label="Score"
+                  type="number"
+                  variant="outlined"
+                  sx={{ width: '100px'}}
+                  inputProps={{ inputMode: 'numeric' }}
+                  />
+                  <Autocomplete
+                    multiple
+                    id="checkboxes-tags-demo"
+                    options={specials}
+                    disableCloseOnSelect
+                    getOptionLabel={(option) => option.title}
+                    renderOption={(props, option, { selected }) => (
+                      <li {...props}>
+                        <Checkbox
+                          icon={icon}
+                          checkedIcon={checkedIcon}
+                          style={{ marginRight: 8 }}
+                          checked={selected}
+                        />
+                        {option.title}
+                      </li>
+                    )}
+                    style={{ width: 180 }}
+                    renderInput={(params) => (
+                      <TextField {...params} placeholder="Specials" />
+                    )}
+                  />
+                </Stack>
+                <Stack direction="row" spacing={2} alignItems="center">
+                  <Avatar sx={{ bgcolor: yellow[500] }}>P3</Avatar>
+                  <TextField
+                    required
+                    id="name"
+                    label="Score"
+                    type="number"
+                    variant="outlined"
+                    sx={{ width: '100px'}}
+                    inputProps={{ inputMode: 'numeric' }}
+                    />
+                    <Autocomplete
+                      multiple
+                      id="checkboxes-tags-demo"
+                      options={specials}
+                      disableCloseOnSelect
+                      getOptionLabel={(option) => option.title}
+                      renderOption={(props, option, { selected }) => (
+                        <li {...props}>
+                          <Checkbox
+                            icon={icon}
+                            checkedIcon={checkedIcon}
+                            style={{ marginRight: 8 }}
+                            checked={selected}
+                          />
+                          {option.title}
+                        </li>
+                      )}
+                      style={{ width: 180 }}
+                      renderInput={(params) => (
+                        <TextField {...params} placeholder="Specials" />
+                      )}
+                    />
+                </Stack>
+                <Stack direction="row" spacing={2} alignItems="center">
+                  <Avatar sx={{ bgcolor: deepPurple[500] }}>P4</Avatar>
+                  <TextField
+                    required
+                    id="name"
+                    label="Score"
+                    type="number"
+                    variant="outlined"
+                    sx={{ width: '100px'}}
+                    inputProps={{ inputMode: 'numeric' }}
+                    />
+                    <Autocomplete
+                      multiple
+                      id="checkboxes-tags-demo"
+                      options={specials}
+                      disableCloseOnSelect
+                      getOptionLabel={(option) => option.title}
+                      renderOption={(props, option, { selected }) => (
+                        <li {...props}>
+                          <Checkbox
+                            icon={icon}
+                            checkedIcon={checkedIcon}
+                            style={{ marginRight: 8 }}
+                            checked={selected}
+                          />
+                          {option.title}
+                        </li>
+                      )}
+                      style={{ width: 180 }}
+                      renderInput={(params) => (
+                        <TextField {...params} placeholder="Specials" />
+                      )}
+                    />
+                </Stack>
+                <Stack direction="row" spacing={2} alignItems="center">
+                  < Avatar sx={{ bgcolor: indigo[500] }}>P5</Avatar>
+                  <TextField
+                    required
+                    id="name"
+                    label="Score"
+                    type="number"
+                    variant="outlined"
+                    sx={{ width: '100px'}}
+                    />
+                  <Autocomplete
+                      multiple
+                      id="checkboxes-tags-demo"
+                      options={specials}
+                      disableCloseOnSelect
+                      getOptionLabel={(option) => option.title}
+                      renderOption={(props, option, { selected }) => (
+                        <li {...props}>
+                          <Checkbox
+                            icon={icon}
+                            checkedIcon={checkedIcon}
+                            style={{ marginRight: 8 }}
+                            checked={selected}
+                          />
+                          {option.title}
+                        </li>
+                      )}
+                      style={{ width: 180 }}
+                      renderInput={(params) => (
+                        <TextField {...params} placeholder="Specials" />
+                      )}
+                    />
+              </Stack>
+              
               <FormControl sx={{ m: 1, minWidth: 120 }}>
               <InputLabel>Yasat</InputLabel>
                 <Select
-                  labelId="demo-simple-select-helper-label"
-                  id="demo-simple-select-helper"
+                  labelId="yasatSelectLabel"
+                  id="yasatSelect"
                   value={yasat}
                   label="Yasat"
                   onChange={handleChange}

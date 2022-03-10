@@ -4,7 +4,7 @@ import { useTheme, ThemeProvider, createTheme } from '@mui/material/styles';
 import { StatsFullScreenDialog } from './features/stats/StatsDialog'
 
 import { ScoreHistory } from './features/rounds/ScoreHistory';
-import { ScoreEntryDialog } from './features/rounds/ScoreEntry';
+import { ScoreEntryButton } from './features/rounds/ScoreEntry';
 import Brightness4Icon from '@mui/icons-material/Brightness4';
 import Brightness7Icon from '@mui/icons-material/Brightness7';
 import Box from '@mui/material/Box';
@@ -14,8 +14,7 @@ import { deepOrange, deepPurple, indigo, yellow, teal } from '@mui/material/colo
 import AppBar from "@mui/material/AppBar";
 import Toolbar from "@mui/material/Toolbar";
 import IconButton from "@mui/material/IconButton";
-import Fab from "@mui/material/Fab";
-import MenuIcon from "@mui/icons-material/Menu";
+import Menu from './features/menu/menu';
 
 
 
@@ -25,15 +24,6 @@ function App() {
 
   const theme = useTheme();
   const colorMode = React.useContext(ColorModeContext);
-  const StyledFab = styled(Fab)({
-    background: '#7df3e1',
-    position: "absolute",
-    zIndex: 1,
-    top: -30,
-    left: 0,
-    right: 0,
-    margin: "0 auto"
-  });
   
   return (
     <Stack
@@ -71,10 +61,8 @@ function App() {
       <Grid item>
         <AppBar  position="fixed" color="default" sx={{background:"#424242", color:"#7df3e1", top: "auto", bottom: 0 }}>
           <Toolbar>
-            <IconButton color="inherit" aria-label="open drawer">
-              <MenuIcon />
-            </IconButton>
-            <ScoreEntryDialog/>
+            <Menu/>
+            <ScoreEntryButton/>
             <Box sx={{ flexGrow: 1 }} />
             <StatsFullScreenDialog/>
             <IconButton sx={{ ml: 1 }} onClick={colorMode.toggleColorMode} color="inherit">
