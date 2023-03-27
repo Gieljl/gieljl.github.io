@@ -1,9 +1,5 @@
 .App {
-  height: 100vh;
-  display: flex;
-  
-  font-size: calc(10px + 2vmin);
-
+  text-align: center;
 }
 
 .App-logo {
@@ -13,17 +9,15 @@
 
 @media (prefers-reduced-motion: no-preference) {
   .App-logo {
-    animation: App-logo-float infinite 1s ease-in-out;
+    animation: App-logo-float infinite 3s ease-in-out;
   }
 }
 
 .App-header {
-  
   font-size: calc(10px + 2vmin);
+
 }
-.App-body{
-  width: 100%;
-}
+
 
 .App-link {
   color: rgb(17, 197, 221);

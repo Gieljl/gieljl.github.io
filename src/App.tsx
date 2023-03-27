@@ -1,5 +1,6 @@
 import React from 'react';
 import logo from './yasa7.png';
+import { Counter } from './features/counter/Counter';
 import { useTheme, ThemeProvider, createTheme } from '@mui/material/styles';
 import { StatsFullScreenDialog } from './features/stats/StatsDialog'
 
@@ -15,9 +16,6 @@ import AppBar from "@mui/material/AppBar";
 import Toolbar from "@mui/material/Toolbar";
 import IconButton from "@mui/material/IconButton";
 import Menu from './features/menu/menu';
-
-
-
 const ColorModeContext = React.createContext({ toggleColorMode: () => {} });
 
 function App() {
@@ -57,6 +55,7 @@ function App() {
       </Stack>
 
       <ScoreHistory/>
+      <Counter/>
 
       <Grid item>
         <AppBar  position="fixed" color="default" sx={{background:"#424242", color:"#7df3e1", top: "auto", bottom: 0 }}>
