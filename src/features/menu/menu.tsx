@@ -2,11 +2,9 @@ import * as React from 'react';
 import Box from '@mui/material/Box';
 import Drawer from '@mui/material/Drawer';
 import List from '@mui/material/List';
-import Divider from '@mui/material/Divider';
 import ListItem from '@mui/material/ListItem';
 import ListItemIcon from '@mui/material/ListItemIcon';
 import ListItemText from '@mui/material/ListItemText';
-import InboxIcon from '@mui/icons-material/MoveToInbox';
 import SettingsIcon from '@mui/icons-material/Settings';
 import { IconButton } from '@mui/material';
 import MenuIcon from "@mui/icons-material/Menu";
@@ -51,19 +49,19 @@ export default function Menu() {
             <ListItemIcon>
               <AddCircleIcon />
             </ListItemIcon>
-            <ListItemText primary="Start Nieuw Spel" />
+            <ListItemText primary="New Game" />
           </ListItem>
           <ListItem button key="settings">
             <ListItemIcon>
               <SettingsIcon />
             </ListItemIcon>
-            <ListItemText primary="Instellingen" />
+            <ListItemText primary="Settings" />
           </ListItem>
           <ListItem button key="about">
             <ListItemIcon>
               <InfoIcon />
             </ListItemIcon>
-            <ListItemText primary="Over Yasat" />
+            <ListItemText primary="About Yasat" />
           </ListItem>
       </List>
     </Box>

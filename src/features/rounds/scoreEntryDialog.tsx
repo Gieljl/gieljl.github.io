@@ -1,10 +1,6 @@
 import * as React from 'react';
 import Button from '@mui/material/Button';
 import Dialog from '@mui/material/Dialog';
-import ListItemText from '@mui/material/ListItemText';
-import ListItem from '@mui/material/ListItem';
-import List from '@mui/material/List';
-import Divider from '@mui/material/Divider';
 import AppBar from '@mui/material/AppBar';
 import Toolbar from '@mui/material/Toolbar';
 import IconButton from '@mui/material/IconButton';
@@ -13,10 +9,6 @@ import CloseIcon from '@mui/icons-material/Close';
 import Slide from '@mui/material/Slide';
 import { TransitionProps } from '@mui/material/transitions';
 import TextField from '@mui/material/TextField';
-import DialogActions from '@mui/material/DialogActions';
-import DialogContent from '@mui/material/DialogContent';
-import DialogContentText from '@mui/material/DialogContentText';
-import DialogTitle from '@mui/material/DialogTitle';
 import { styled } from '@mui/material/styles';
 import Fab from '@mui/material/Fab';
 
@@ -24,7 +16,7 @@ import Fab from '@mui/material/Fab';
 import AddIcon from "@mui/icons-material/Add";
 import CheckBoxOutlineBlankIcon from '@mui/icons-material/CheckBoxOutlineBlank';
 import CheckBoxIcon from '@mui/icons-material/CheckBox';
-import { Autocomplete, Avatar, Checkbox, FormControl, FormControlLabel, FormHelperText, FormLabel, Grid, InputAdornment, InputLabel, MenuItem, Radio, RadioGroup, Select, SelectChangeEvent, Stack } from '@mui/material';
+import { Autocomplete, Avatar, Checkbox, FormControl, FormHelperText, Grid, InputLabel, MenuItem, Select, SelectChangeEvent, Stack } from '@mui/material';
 import { deepOrange, deepPurple, indigo, teal, yellow } from '@mui/material/colors';
 
 
@@ -295,7 +287,7 @@ export function ScoreEntryDialog() {
                   <MenuItem value={3}>P4</MenuItem>
                   <MenuItem value={3}>P5</MenuItem>
                 </Select>
-                <FormHelperText>Selecteer de speler die Yasat riep 🎉</FormHelperText>
+                <FormHelperText>Select the player who called Yasat 🎉</FormHelperText>
                 </FormControl>
               </Stack>
             </Grid>
