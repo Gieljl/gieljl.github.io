@@ -37,8 +37,8 @@ function App() {
 
 
       <PlayerList/>
-      {/* <ScoreHistory/>
-      <Counter/> */}
+      <ScoreHistory/>
+      {/* <Counter/> */}
 
       <Grid item>
         <AppBar  position="fixed" color="default" sx={{background:"#424242", color:"#7df3e1", top: "auto", bottom: 0 }}>
