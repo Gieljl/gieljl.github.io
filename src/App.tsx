@@ -15,6 +15,8 @@ import AppBar from "@mui/material/AppBar";
 import Toolbar from "@mui/material/Toolbar";
 import IconButton from "@mui/material/IconButton";
 import Menu from './features/menu/menu';
+import { VerticalLinearStepper } from './features/game/newgame';
+
 const ColorModeContext = React.createContext({ toggleColorMode: () => {} });
 
 function App() {
@@ -36,8 +38,9 @@ function App() {
       <img src={logo} className="App-logo" alt="logo" />
 
 
-      <PlayerList/>
-      <ScoreHistory/>
+      {/* <PlayerList/> */}
+      <VerticalLinearStepper/>
+      {/* <ScoreHistory/> */}
       {/* <Counter/> */}
 
       <Grid item>
@@ -53,7 +56,6 @@ function App() {
           </Toolbar>
         </AppBar>
       </Grid>
-      
     </Stack>
     
   );

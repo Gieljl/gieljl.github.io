@@ -6,7 +6,7 @@ import ListItem from '@mui/material/ListItem';
 import ListItemIcon from '@mui/material/ListItemIcon';
 import ListItemText from '@mui/material/ListItemText';
 import SettingsIcon from '@mui/icons-material/Settings';
-import { IconButton } from '@mui/material';
+import { Button, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, IconButton, ListItemButton } from '@mui/material';
 import MenuIcon from "@mui/icons-material/Menu";
 import AddCircleIcon from '@mui/icons-material/AddCircle';
 import InfoIcon from '@mui/icons-material/Info';
@@ -45,27 +45,37 @@ export default function Menu() {
       onKeyDown={toggleDrawer(anchor, false)}
     >
       <List>
-          <ListItem button key="NewGame">
+          <ListItemButton key="NewGame">
             <ListItemIcon>
               <AddCircleIcon />
             </ListItemIcon>
             <ListItemText primary="New Game" />
-          </ListItem>
-          <ListItem button key="settings">
+          </ListItemButton>
+          <ListItemButton disabled key="settings">
             <ListItemIcon>
               <SettingsIcon />
             </ListItemIcon>
             <ListItemText primary="Settings" />
-          </ListItem>
-          <ListItem button key="about">
+          </ListItemButton>
+          <ListItemButton key="about">
             <ListItemIcon>
               <InfoIcon />
             </ListItemIcon>
-            <ListItemText primary="About Yasat" />
-          </ListItem>
+            <ListItemText primary="About Yasat" onClick={handleClickOpen} />
+          </ListItemButton>
       </List>
     </Box>
   );
+  
+  const [open, setOpen] = React.useState(false);
+
+  const handleClickOpen = () => {
+    setOpen(true);
+  };
+
+  const handleClose = () => {
+    setOpen(false);
+  };
 
   return (
     <div>
@@ -73,12 +83,36 @@ export default function Menu() {
         <React.Fragment key={anchor}>
           <IconButton color="inherit" onClick={toggleDrawer(anchor, true)}>
               <MenuIcon />
-            </IconButton>
+          </IconButton>
+          <Dialog
+              open={open}
+              onClose={handleClose}
+              aria-labelledby="alert-dialog-title"
+              aria-describedby="alert-dialog-description"
+            >
+              <DialogTitle id="alert-dialog-title">
+                {"About"}
+              </DialogTitle>
+              <DialogContent>
+                <DialogContentText id="alert-dialog-description">
+                  One of the most significant outfits in the card gaming scene!
+                </DialogContentText>
+              </DialogContent>
+              <DialogActions>
+                <Button onClick={handleClose} autoFocus>
+                  Agree
+                </Button>
+              </DialogActions>
+          </Dialog>
           <Drawer
+          ModalProps={{
+            keepMounted: false,
+          }}
             anchor={anchor}
             open={state[anchor]}
             onClose={toggleDrawer(anchor, false)}
           >
+
             {list(anchor)}
           </Drawer>
         </React.Fragment>
