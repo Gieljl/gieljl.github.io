@@ -9,12 +9,12 @@ export interface player {
 }
 
 
-// const initialState = [{
-//   id: '10000',
-//   name: 'Giel',
-//   score: 0,
-// }] as player[] 
-const initialState = [] as player[] 
+const initialState = [{
+  id: '10000',
+  name: 'Giel',
+  score: 99,
+}] as player[] 
+// const initialState = [] as player[] 
 
 export const playerSlice = createSlice({
   name: 'players',

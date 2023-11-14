@@ -89,10 +89,10 @@ export function ScoreEntryDialog() {
               <CloseIcon />
             </IconButton>
             <Typography sx={{ ml: 2, flex: 1 }} variant="h6" component="div">
-                Ronde Scores
+                Round Score
             </Typography>
             <Button autoFocus color="inherit" onClick={handleClose}>
-              Opslaan
+              Save
             </Button>
           </Toolbar>
         </AppBar>

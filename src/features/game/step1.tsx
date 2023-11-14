@@ -1,12 +1,10 @@
 import { TextField } from '@mui/material';
-import React, { useState } from 'react';
 
 import { useAppSelector, useAppDispatch } from '../../app/hooks';
 import {
   decrement,
   increment,
   incrementByAmount,
-  incrementIfOdd,
   selectPlayerCount,
 } from './gameSlice';
 import styles from './newgame.module.css';

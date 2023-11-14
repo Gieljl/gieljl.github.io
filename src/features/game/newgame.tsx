@@ -11,9 +11,8 @@ import Typography from '@mui/material/Typography';
 import Step1 from './step1';
 import Step2 from './step2';
 import Step3 from './step3';
-import styles from './newgame.module.css';
-import { useAppSelector } from '../../app/hooks';
-import { selectPlayerCount } from './gameSlice';
+import { useAppSelector, useAppDispatch } from '../../app/hooks';
+import { selectPlayerCount, startGame } from './gameSlice';
 
 
 
@@ -52,7 +51,7 @@ function getStepContent(step: number) {
 
 
 
-export function VerticalLinearStepper() {
+export function NewGameStepper() {
   
   const [activeStep, setActiveStep] = useState(0);
   const handleNext = () => {
@@ -68,6 +67,7 @@ export function VerticalLinearStepper() {
   };
   
   const playerCount = useAppSelector(selectPlayerCount);
+  const dispatch = useAppDispatch();
 
   return (
 
@@ -128,7 +128,7 @@ export function VerticalLinearStepper() {
           <Button onClick={handleReset} color="warning" sx={{ mt: 1, mr: 1 }}>
             reset
           </Button>
-          <Button variant="contained" color="success" sx={{ mt: 1 }}>
+          <Button variant="contained" color="success" sx={{ mt: 1 }} onClick={() => dispatch(startGame())} >
             Start Game
           </Button>
         </Paper>

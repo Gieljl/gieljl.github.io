@@ -12,9 +12,9 @@ import {
 
 
 export function PlayerList() {
-  // const player = useAppSelector(selectPlayers)[0]; 
-  // const score = player.score;
-  // const playerName = player.name;
+  const player = useAppSelector(selectPlayers)[0]; 
+  const score = player.score;
+  const playerName = player.name;
   
   function stringToColor(string: string) {
     let hash = 0;
@@ -47,14 +47,9 @@ export function PlayerList() {
 
   return (
     <Stack direction="row" spacing={4} mt={2} mb={3}>
-      {/* <Badge showZero badgeContent={score} color="primary">
+      {<Badge showZero badgeContent={score} color="primary">
         <Avatar {...stringAvatar(playerName)} />
-      </Badge> */}
-
-      <Button variant="contained" color="error">
-        New Game
-      </Button>
-      
+      </Badge> }      
     
     {/* <Badge badgeContent={22} color="primary">
       <Avatar sx={{ bgcolor: deepOrange[500] }}>P2</Avatar>

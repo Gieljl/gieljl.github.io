@@ -2,7 +2,6 @@ import * as React from 'react';
 import Box from '@mui/material/Box';
 import Drawer from '@mui/material/Drawer';
 import List from '@mui/material/List';
-import ListItem from '@mui/material/ListItem';
 import ListItemIcon from '@mui/material/ListItemIcon';
 import ListItemText from '@mui/material/ListItemText';
 import SettingsIcon from '@mui/icons-material/Settings';
@@ -10,6 +9,9 @@ import { Button, Dialog, DialogActions, DialogContent, DialogContentText, Dialog
 import MenuIcon from "@mui/icons-material/Menu";
 import AddCircleIcon from '@mui/icons-material/AddCircle';
 import InfoIcon from '@mui/icons-material/Info';
+import { useAppDispatch } from '../../app/hooks';
+import { startNewGame } from '../game/gameSlice';
+
 
 
 
@@ -49,7 +51,7 @@ export default function Menu() {
             <ListItemIcon>
               <AddCircleIcon />
             </ListItemIcon>
-            <ListItemText primary="New Game" />
+            <ListItemText primary="New Game" onClick={() => dispatch(startNewGame())}/>
           </ListItemButton>
           <ListItemButton disabled key="settings">
             <ListItemIcon>
@@ -76,6 +78,8 @@ export default function Menu() {
   const handleClose = () => {
     setOpen(false);
   };
+
+  const dispatch = useAppDispatch();
 
   return (
     <div>

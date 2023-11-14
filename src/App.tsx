@@ -15,7 +15,9 @@ import AppBar from "@mui/material/AppBar";
 import Toolbar from "@mui/material/Toolbar";
 import IconButton from "@mui/material/IconButton";
 import Menu from './features/menu/menu';
-import { VerticalLinearStepper } from './features/game/newgame';
+import { NewGameStepper } from './features/game/newgame';
+import { useSelector } from 'react-redux';
+import { RootState } from './app/store';
 
 const ColorModeContext = React.createContext({ toggleColorMode: () => {} });
 
@@ -23,6 +25,7 @@ function App() {
 
   const theme = useTheme();
   const colorMode = React.useContext(ColorModeContext);
+  const gameStatus = useSelector((state: RootState) => state.game.status)
   
   return (
     <Stack
@@ -37,9 +40,8 @@ function App() {
     >
       <img src={logo} className="App-logo" alt="logo" />
 
-
-      {/* <PlayerList/> */}
-      <VerticalLinearStepper/>
+      {gameStatus === 'started' ? <PlayerList/> : <NewGameStepper/>}
+           
       {/* <ScoreHistory/> */}
       {/* <Counter/> */}
 
