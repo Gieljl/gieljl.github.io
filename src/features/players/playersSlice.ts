@@ -5,16 +5,16 @@ import { v4 as uuidv4 } from "uuid";
 export interface player {
   id: string;
   name: string;
-  score: number;
+  score: number | null;
 }
 
 
-const initialState = [{
-  id: '10000',
-  name: 'Giel',
-  score: 99,
-}] as player[] 
-// const initialState = [] as player[] 
+// const initialState = [{
+//   id: '10000',
+//   name: 'Giel',
+//   score: 99,
+// }] as player[] 
+const initialState = [] as player[] 
 
 export const playerSlice = createSlice({
   name: 'players',
@@ -37,11 +37,14 @@ export const playerSlice = createSlice({
       const index = state.findIndex((player) => player.id === action.payload);
       state.splice(index, 1);
     },
+    resetPlayers() {
+      return initialState;
+    }
   },
 
 });
 
-export const { addPlayer, removePlayer } = playerSlice.actions;
+export const { addPlayer, removePlayer, resetPlayers } = playerSlice.actions;
 
 // The function below is called a selector and allows us to select a value from
 // the state. Selectors can also be defined inline where they're used instead of

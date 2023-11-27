@@ -16,8 +16,8 @@ import CheckBoxOutlineBlankIcon from '@mui/icons-material/CheckBoxOutlineBlank';
 import CheckBoxIcon from '@mui/icons-material/CheckBox';
 import { Autocomplete, Avatar, Checkbox, FormControl, FormHelperText, Grid, InputLabel, MenuItem, Select, SelectChangeEvent, Stack } from '@mui/material';
 import { deepOrange, deepPurple, indigo, teal, yellow } from '@mui/material/colors';
-
-
+import { useSelector } from 'react-redux';
+import { RootState } from '../../app/store';
 
 const Transition = React.forwardRef(function Transition(
   props: TransitionProps & {
@@ -66,12 +66,16 @@ export function ScoreEntryDialog() {
     { title: 'Turbospecial'}
   ];
 
+  const gameStatus = useSelector((state: RootState) => state.game.status)
+  
   return (
     <div>
+         
+        {gameStatus === 'started' && 
         <StyledFab color="default" aria-label="add">
             <AddIcon onClick={handleClickOpen}/>
         </StyledFab>
-              
+        }      
       <Dialog
         fullScreen
         open={open}

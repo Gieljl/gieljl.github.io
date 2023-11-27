@@ -1,20 +1,21 @@
 import React, { useState } from 'react';
-import { Avatar, Badge, Stack, IconButton, Button} from '@mui/material';
+import { Avatar, Badge, Stack, IconButton, Button, styled, TextField} from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import { deepOrange, deepPurple, indigo, yellow, teal } from '@mui/material/colors';
-
-import { useAppSelector, useAppDispatch } from '../../app/hooks';
 import {
   selectPlayers,
   addPlayer,
   removePlayer,
 } from './playersSlice';
+import { useAppSelector, useAppDispatch } from '../../app/hooks';
+import { selectPlayerCount, startGame } from '../game/gameSlice';
+import { useSelector } from 'react-redux';
+import { RootState } from '../../app/store';
+import { stringify } from 'querystring';
 
 
 export function PlayerList() {
-  const player = useAppSelector(selectPlayers)[0]; 
-  const score = player.score;
-  const playerName = player.name;
+  const Players = useAppSelector(selectPlayers); 
   
   function stringToColor(string: string) {
     let hash = 0;
@@ -45,24 +46,49 @@ export function PlayerList() {
     };
   }
 
+  const gameStatus = useSelector((state: RootState) => state.game.status)
+  const dispatch = useAppDispatch();
+  const [playerName, setPlayerName] = useState('');
+
+
   return (
-    <Stack direction="row" spacing={4} mt={2} mb={3}>
-      {<Badge showZero badgeContent={score} color="primary">
-        <Avatar {...stringAvatar(playerName)} />
-      </Badge> }      
-    
-    {/* <Badge badgeContent={22} color="primary">
-      <Avatar sx={{ bgcolor: deepOrange[500] }}>P2</Avatar>
-    </Badge>
-    <Badge badgeContent={22} color="primary">
-      <Avatar sx={{ bgcolor: yellow[500] }}>P3</Avatar>
-    </Badge>
-    <Badge badgeContent={65} color="success">
-      <Avatar sx={{ bgcolor: deepPurple[500] }}>P4</Avatar>
-    </Badge>
-    <Badge badgeContent={99} color="error">
-    < Avatar sx={{ bgcolor: indigo[500] }}>P5</Avatar>
-    </Badge> */}
-  </Stack>
+    <><Stack direction="row" spacing={1} mt={2} mb={3}>
+      {Players.map((player) => (
+        <Badge key={player.id} showZero badgeContent={player.score} color="primary">
+          <Avatar {...stringAvatar(player.name)} />
+        </Badge>
+      ))}
+    </Stack>
+    {gameStatus === 'new' && 
+      <TextField
+        value={playerName}
+        onChange={(e) => setPlayerName(e.target.value)}
+        required
+        label='Name'
+        type="text"
+        variant="outlined"
+        sx={{ mr: 1, mb: 1, height:'50px',  width: '250px'}}
+        inputProps={{ inputMode: 'text' }}
+      />}
+      {gameStatus === 'new' &&
+      <Stack direction="row" spacing={1} mt={2} mb={3} >
+        <Button
+        disabled={playerName.length === 0}
+        onClick={() => dispatch(addPlayer(playerName)) && setPlayerName('') }
+        variant="outlined"
+        sx={{ height:'50px', mr: 1, mb: 1, color: '#7df3e1', outlineColor: '#7df3e1' }}
+      >
+        Add player
+      </Button>
+        <Button
+          disabled={Players.length < 2}
+          variant="outlined"
+          onClick={() => dispatch(startGame())}
+          sx={{ height:'50px', mt: 1, mr: 1, mb: 1, color: '#7df3e1', outlineColor: '#7df3e1' }}
+        >
+          Start game
+        </Button>
+
+      </Stack>}</>
   );
 }

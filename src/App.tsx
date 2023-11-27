@@ -40,7 +40,7 @@ function App() {
     >
       <img src={logo} className="App-logo" alt="logo" />
 
-      {gameStatus === 'started' ? <PlayerList/> : <NewGameStepper/>}
+      <PlayerList/>
            
       {/* <ScoreHistory/> */}
       {/* <Counter/> */}

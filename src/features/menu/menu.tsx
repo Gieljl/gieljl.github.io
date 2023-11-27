@@ -11,6 +11,7 @@ import AddCircleIcon from '@mui/icons-material/AddCircle';
 import InfoIcon from '@mui/icons-material/Info';
 import { useAppDispatch } from '../../app/hooks';
 import { startNewGame } from '../game/gameSlice';
+import { resetPlayers } from '../players/playersSlice';
 
 
 
@@ -51,7 +52,7 @@ export default function Menu() {
             <ListItemIcon>
               <AddCircleIcon />
             </ListItemIcon>
-            <ListItemText primary="New Game" onClick={() => dispatch(startNewGame())}/>
+            <ListItemText primary="New Game" onClick={() => dispatch(startNewGame()) && dispatch(resetPlayers()) }/>
           </ListItemButton>
           <ListItemButton disabled key="settings">
             <ListItemIcon>
