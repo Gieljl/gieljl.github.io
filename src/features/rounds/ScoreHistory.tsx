@@ -5,6 +5,7 @@ import TableCell from '@mui/material/TableCell';
 import TableContainer from '@mui/material/TableContainer';
 import TableRow from '@mui/material/TableRow';
 import Paper from '@mui/material/Paper';
+import { Stack } from '@mui/material';
 
 function createData(
   Round: number,
@@ -30,14 +31,42 @@ const rows = [
   createData(8, 0, 0, 0, 0, 0),
   createData(9, 0, 0, 0, 0, 0),
   createData(10, 0, 0, 0, 0, 0),
+  createData(11, 0, 0, 0, 0, 0),
+  createData(12, 0, 0, 0, 0, 0),
+  createData(13, 0, 0, 0, 0, 0),
+  createData(14, 0, 0, 0, 0, 0),
+  createData(15, 0, 0, 0, 0, 0),
+  createData(16, 0, 0, 0, 0, 0),
+  createData(17, 0, 0, 0, 0, 0),
+  createData(18, 0, 0, 0, 0, 0),
+  createData(19, 0, 0, 0, 0, 0),
+  createData(20, 0, 0, 0, 0, 0),
+  createData(21, 0, 0, 0, 0, 0),
+  createData(22, 0, 0, 0, 0, 0),
+  createData(23, 0, 0, 0, 0, 0),
+  createData(24, 0, 0, 0, 0, 0),
+  createData(25, 0, 0, 0, 0, 0),
  
 ];
 
 
 export function ScoreHistory() {
   return (
-    <TableContainer component={Paper}>
-      <Table size="small" aria-label="a dense table">
+    <Stack
+    direction="column"
+    alignItems="center"
+    sx={{
+      display: 'flex',
+      bgcolor: 'background.default',
+      color: 'text.primary',
+    }}
+  >
+      <Table size="small" aria-label="a dense table" sx={{
+        alignContent: 'center',
+        display: 'flex',
+        bgcolor: 'background.default',
+        color: 'text.primary',
+      }}>
         <TableBody>
           {rows.map((row) => (
               <TableRow
@@ -54,6 +83,6 @@ export function ScoreHistory() {
           ))}
         </TableBody>
       </Table>
-      </TableContainer>
+    </Stack>
   );
 }

@@ -3,7 +3,7 @@ import logo from './yasa7.png';
 import { Counter } from './features/counter/Counter';
 import { useTheme, ThemeProvider, createTheme } from '@mui/material/styles';
 import { StatsFullScreenDialog } from './features/stats/StatsDialog'
-import { ScoreHistory } from './features/rounds/ScoreHistory';
+// import { ScoreHistory, } from './features/rounds/ScoreHistory';
 import { PlayerList } from './features/players/Players';
 import { ScoreEntryDialog } from './features/rounds/scoreEntryDialog';
 import Brightness4Icon from '@mui/icons-material/Brightness4';
@@ -18,7 +18,8 @@ import Menu from './features/menu/menu';
 import { NewGameStepper } from './features/game/newgame';
 import { useSelector } from 'react-redux';
 import { RootState } from './app/store';
-
+import { ScoreHistory } from './features/rounds/ScoreHistory';
+import ScoresHistoryNew from './features/rounds/ScoresHistoryNew';
 const ColorModeContext = React.createContext({ toggleColorMode: () => {} });
 
 function App() {
@@ -40,9 +41,13 @@ function App() {
     >
       <img src={logo} className="App-logo" alt="logo" />
 
+      {gameStatus === 'new' && 
       <PlayerList/>
+      }
            
-      {/* <ScoreHistory/> */}
+      {gameStatus === 'started' && 
+      <ScoresHistoryNew/>
+      }
       {/* <Counter/> */}
 
       <Grid item>
