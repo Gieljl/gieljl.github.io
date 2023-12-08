@@ -20,6 +20,7 @@ import { useSelector } from 'react-redux';
 import { RootState } from './app/store';
 import { ScoreHistory } from './features/rounds/ScoreHistory';
 import ScoresHistoryNew from './features/rounds/ScoresHistoryNew';
+import { SnackbarProvider } from 'notistack';
 const ColorModeContext = React.createContext({ toggleColorMode: () => {} });
 
 function App() {
@@ -56,7 +57,9 @@ function App() {
             <Menu/>
             <ScoreEntryDialog/>
             <Box sx={{ flexGrow: 1 }} />
+            {gameStatus === "started" &&
             <StatsFullScreenDialog/>
+            }
             <IconButton sx={{ ml: 1 }} onClick={colorMode.toggleColorMode} color="inherit">
             {theme.palette.mode === 'dark' ? <Brightness7Icon /> : <Brightness4Icon />}
             </IconButton>
@@ -90,10 +93,16 @@ export default function ToggleColorMode() {
   );
 
   return (
+
     <ColorModeContext.Provider value={colorMode}>
       <ThemeProvider theme={theme}>
-        <App />
+        <SnackbarProvider maxSnack={3}>
+          <App />
+        </SnackbarProvider>
       </ThemeProvider>
+        
     </ColorModeContext.Provider>
+
+
   );
 }

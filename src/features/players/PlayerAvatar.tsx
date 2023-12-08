@@ -51,7 +51,7 @@ export const PlayerAvatar = ({id, name, score }: PlayerAvatarProps) => {
 
   return (
     <Badge key={id} showZero badgeContent={score} color={badgecolor}>
-        <Avatar {...stringAvatar(name)} />
+        <Avatar {...stringAvatar(name) } variant="circular" />
     </Badge>
   );
 }

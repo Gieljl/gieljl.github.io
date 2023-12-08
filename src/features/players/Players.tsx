@@ -19,7 +19,7 @@ export function PlayerList() {
 
   return (
     <>
-      <Stack direction="row" spacing={1} mt={2} mb={3}>
+      <Stack direction="row" spacing={2} mt={6} mb={3}>
         {Players.map((player) => (
           <PlayerAvatar
             name={player.name}

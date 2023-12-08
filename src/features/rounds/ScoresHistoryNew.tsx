@@ -5,20 +5,21 @@ import TableContainer from '@mui/material/TableContainer';
 import TableHead from '@mui/material/TableHead';
 import TableRow from '@mui/material/TableRow';
 import { useAppSelector } from '../../app/hooks';
-import { selectPlayers } from '../players/playersSlice';
+import { selectPlayers} from '../players/playersSlice';
 import { PlayerAvatar } from '../players/PlayerAvatar';
+import { useSelector } from 'react-redux';
+import { RootState } from '../../app/store';
 
 
 export default function BasicTable() {
-    const Players = useAppSelector(selectPlayers); 
-    
+    const players = useAppSelector(selectPlayers);
 
-  return (
-    <TableContainer >
+    return (
+    <TableContainer  sx={{ mt:1 }}>
       <Table stickyHeader sx={{ minWidth: '100%' }}>
         <TableHead>
           <TableRow>
-            {Players.map((player) => (
+            {players.map((player) => (
               <TableCell align="center" key={player.id}>
                   <PlayerAvatar
                     name={player.name}
@@ -30,16 +31,17 @@ export default function BasicTable() {
           </TableRow>
         </TableHead>
         <TableBody>
-            <TableRow
-              sx={{ '&:last-child td, &:last-child th': { border: 0 } }}
-            >  
-              {Players.map((player) => (
-                <TableCell key={player.id} align="center" component="th" scope="row">
-                  {player.score}  
+          {Array.from({ length: Math.max(...players.map((player) => player.roundScores.length)) }).map((_, roundIndex) => (
+            <TableRow key={roundIndex}>
+              {players.map((player) => (
+                <TableCell align="center" key={player.id}>
+                  {player.roundScores
+                    .slice(0, roundIndex + 1)
+                    .reduce((acc, score) => acc + score.score, 0) || 0}
                 </TableCell>
-            ))}
-              
+              ))}
             </TableRow>
+          ))}
         </TableBody>
       </Table>
     </TableContainer>

@@ -58,7 +58,7 @@ export function ScoreHistory() {
     sx={{
       display: 'flex',
       bgcolor: 'background.default',
-      color: 'text.primary',
+      color: 'text.primary'
     }}
   >
       <Table size="small" aria-label="a dense table" sx={{
