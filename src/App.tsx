@@ -1,6 +1,5 @@
 import React from 'react';
 import logo from './yasa7.png';
-import { Counter } from './features/counter/Counter';
 import { useTheme, ThemeProvider, createTheme } from '@mui/material/styles';
 import { StatsFullScreenDialog } from './features/stats/StatsDialog'
 // import { ScoreHistory, } from './features/rounds/ScoreHistory';
@@ -15,10 +14,8 @@ import AppBar from "@mui/material/AppBar";
 import Toolbar from "@mui/material/Toolbar";
 import IconButton from "@mui/material/IconButton";
 import Menu from './features/menu/menu';
-import { NewGameStepper } from './features/game/newgame';
 import { useSelector } from 'react-redux';
 import { RootState } from './app/store';
-import { ScoreHistory } from './features/rounds/ScoreHistory';
 import ScoresHistoryNew from './features/rounds/ScoresHistoryNew';
 import { SnackbarProvider } from 'notistack';
 const ColorModeContext = React.createContext({ toggleColorMode: () => {} });
