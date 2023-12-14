@@ -9,9 +9,11 @@ import Paper from "@mui/material/Paper";
 import { useAppSelector } from "../../app/hooks";
 import { selectPlayers } from "../players/playersSlice";
 import { PlayerAvatar } from "../players/PlayerAvatar";
+import { selectScores } from "../game/scoreSlice";
 
 export function StatsTable() {
   const Players = useAppSelector(selectPlayers);
+  const currentScores = useAppSelector(selectScores);
 
   return (
     <TableContainer component={Paper}>
@@ -23,7 +25,7 @@ export function StatsTable() {
               <TableCell align="center" key={player.id}>
                 <PlayerAvatar
                   name={player.name}
-                  score={player.score}
+                  score={currentScores.find((score) => score.id === player.id)?.score || 0}
                   id={player.id}
                 />
               </TableCell>
@@ -40,14 +42,14 @@ export function StatsTable() {
             ))}
           </TableRow>
 
-          <TableRow sx={{ margin: 2 }}>
+          {/* <TableRow sx={{ margin: 2 }}>
           <TableCell>Yasatstreak</TableCell>
-            {Players.map((player) => (
+            {Players.present.map((player) => (
               <TableCell key={player.id} align="center">
                 {player.yasatStreak}
               </TableCell>
             ))}
-          </TableRow>
+          </TableRow> */}
         </TableBody>
       </Table>
     </TableContainer>

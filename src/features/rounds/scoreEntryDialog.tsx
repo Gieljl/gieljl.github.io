@@ -21,19 +21,15 @@ import {
   List,
   ListItem,
   ListItemAvatar,
-
 } from "@mui/material";
 
 import { useSelector } from "react-redux";
 import { RootState } from "../../app/store";
-import {
-  addRoundScore,
-  addYasat,
-  selectPlayers,
-} from "../players/playersSlice";
+import { addYasat, selectPlayers } from "../players/playersSlice";
 import { useAppSelector, useAppDispatch } from "../../app/hooks";
 import { PlayerAvatar } from "../players/PlayerAvatar";
 import { useSnackbar } from "notistack";
+import { addScores, playerScore, selectScores } from "../game/scoreSlice";
 
 const Transition = React.forwardRef(function Transition(
   props: TransitionProps & {
@@ -56,7 +52,6 @@ const StyledFab = styled(Fab)({
 
 export function ScoreEntryDialog() {
   const { enqueueSnackbar } = useSnackbar();
-
   const [open, setOpen] = React.useState(false);
 
   const handleClickOpen = () => {
@@ -68,7 +63,8 @@ export function ScoreEntryDialog() {
     // Reset the yasatPlayer state
     setYasatPlayer("");
     // Reset the fieldValues object
-    setFieldValues({});
+    setRoundScores([]);
+    setErrorStates({});
   };
 
   // const icon = <CheckBoxOutlineBlankIcon fontSize="small" />;
@@ -77,38 +73,49 @@ export function ScoreEntryDialog() {
 
   const gameStatus = useSelector((state: RootState) => state.game.status);
   const players = useAppSelector(selectPlayers);
+  const currentScores = useAppSelector(selectScores);
+
   const dispatch = useAppDispatch();
 
-  const [fieldValues, setFieldValues] = useState<{ [key: string]: number }>({});
-  const handleTextFieldChange = (id: string, score: number) => {
-    
-    // if the score is greater than 44 or less than 0 give an error
-    if (score > 44 || score < 1) {
-      enqueueSnackbar("Score can only be between 1 and 44", { variant: "error" });
+  const [yasatPlayer, setYasatPlayer] = useState<string>("");
+  const handleYasat = (id: string) => {
+    // if the player is already selected remove the selection
+    if (yasatPlayer === id) {
+      setYasatPlayer("");
+      return;
     }
 
-    setFieldValues((prevValues) => ({
-      ...prevValues,
-      [id]: score,
-    }));
+    //check if score entered for the player is above 7
+    if (EnteredScores.some((player) => player.id === id && player.score > 7)) {
+      enqueueSnackbar("Yasat score should be 7 or less", {
+        variant: "error",
+      });
+      return;
+    }
+
+    // set the yasatPlayer state to the id of the player who called Yasat
+    setYasatPlayer(id);
   };
 
   const handleScores = () => {
-    // if count of fieldValues object is smaller that the number of players give an error
-    if (Object.keys(fieldValues).length < players.length) {
+    // if count of roundScores array is smaller that the number of players give an error
+    if (EnteredScores.length < players.length) {
       enqueueSnackbar("Enter all scores", { variant: "error" });
       return;
     }
 
-    // if the fieldValues contain a score that is Not a number give an error
-    if (Object.values(fieldValues).some((score) => isNaN(score))) {
+    // if the roundscores contain a score that is Not a number give an error
+    if (EnteredScores.some((player) => isNaN(player.score))) {
       enqueueSnackbar("Scores must be a number", { variant: "error" });
       return;
     }
 
-    // if the fieldValues contains a score greater than 44 or less than 0 give an error
-    if (Object.values(fieldValues).some((score) => score > 44 || score < 1)) {
-      enqueueSnackbar("Scores can only be between 1 and 44", { variant: "error" });
+    // if the fieldValues contains a score greater than 44 or less than 1 give an error
+    if (EnteredScores.some((player) => player.score > 44 || player.score < 1)) {
+      enqueueSnackbar(
+        "Scores must be at least 1 and cannot be higher that 44",
+        { variant: "error" }
+      );
       return;
     }
 
@@ -120,40 +127,75 @@ export function ScoreEntryDialog() {
       return;
     }
 
-    // if the yasatPlayer fieldvalues is > 7 give an error
-    if (fieldValues[yasatPlayer] > 7) {
-      enqueueSnackbar("Yasat score cannot be more that 7", {
+    // Check if the yasatPlayer score is less than 7
+    if (
+      EnteredScores.some(
+        (player) => player.id === yasatPlayer && player.score > 7
+      )
+    ) {
+      enqueueSnackbar("Yasat player score should be 7 or less", {
         variant: "error",
       });
       return;
     }
 
+    // set the yassat player score to 0
+    
+      EnteredScores.find(
+        (player) => player.id === yasatPlayer
+      )!.score = 0;
+    
+
+    // calulate the new current state of the scores
+    const newScores = currentScores.map((score) => {
+      const roundScore = EnteredScores.find(
+        (player) => player.id === score.id
+      )?.score;
+      return {
+        id: score.id,
+        score: score.score + (roundScore || 0),
+        stats: []
+      };
+    }) as playerScore[];
+
+    // add an entry to the stats array if this of this rounds yasat player
+    newScores.find((player) => player.id === yasatPlayer)!.stats.push({name:"yasat"});
     // Dispatch addYasat with the id of the player who called Yasat
     dispatch(addYasat({ id: yasatPlayer }));
 
-    // Iterate through the fieldValues object and dispatch addRoundScore for each player
-    Object.entries(fieldValues).forEach(([id, score]) => {
-      if (yasatPlayer === id) {
-        score = 0;
-      }
-      dispatch(addRoundScore(id, score));
-    });
+    // add the new score to state
+    dispatch(addScores(newScores));
 
     // Close the dialog
     handleClose();
   };
 
-  const [yasatPlayer, setYasatPlayer] = useState<string>("");
-  const handleYasat = (id: string) => {
-    // if the yasatPlayer fieldvalues is > 7 give an error
-    if (fieldValues[id] > 7) {
-      enqueueSnackbar("Yasat score cannot be more that 7", {
+  const [EnteredScores, setRoundScores] = useState<playerScore[]>([]);
+  const [errorStates, setErrorStates] = useState<{ [key: string]: boolean }>(
+    {}
+  );
+
+  // add the scores entered in text fields to the roundScores state
+  const handleTextFieldChange = (id: string, score: number) => {
+    // if the score entered is greater than 7 and the player is the yasat player give an error
+    if (score > 7 && id === yasatPlayer) {
+      enqueueSnackbar("Yasat score should be 7 or less", {
         variant: "error",
       });
       return;
     }
 
-    setYasatPlayer(id);
+    // if the roundScores array already contains a score for the player update the score
+    if (EnteredScores.some((player) => player.id === id)) {
+      setRoundScores((prevValues) =>
+        prevValues.map((player) =>
+          player.id === id ? { ...player, score: score } : player
+        )
+      );
+      return;
+    }
+
+    setRoundScores((prevValues) => [...prevValues, { id: id, score: score, stats: [] }]);
   };
 
   return (
@@ -208,23 +250,30 @@ export function ScoreEntryDialog() {
                   <ListItemAvatar>
                     <PlayerAvatar
                       name={player.name}
-                      score={player.score}
+                      score={
+                        currentScores.find((score) => score.id === player.id)
+                          ?.score || 0
+                      }
                       id={player.id}
                     />
                   </ListItemAvatar>
                 </Button>
 
                 <TextField
-                  onChange={(e) =>
-                    handleTextFieldChange(player.id, Number(e.target.value))
-                  }
+                  onChange={(e) => {
+                    const value = Number(e.target.value);
+                    handleTextFieldChange(player.id, value);
+                    setErrorStates((prevStates) => ({
+                      ...prevStates,
+                      [player.id]:
+                        value > 44 ||
+                        value < 1 ||
+                        isNaN(value) ||
+                        (player.id === yasatPlayer && value > 7),
+                    }));
+                  }}
                   required
-                  error={
-                    fieldValues[player.id] > 44 ||
-                    fieldValues[player.id] < 1 ||
-                    (isNaN(fieldValues[player.id]) &&
-                      fieldValues[player.id] !== undefined)
-                  }
+                  error={errorStates[player.id] || false}
                   label="Score"
                   variant="outlined"
                   inputProps={{ inputMode: "numeric" }}

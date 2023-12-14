@@ -1,82 +1,99 @@
-import React from 'react';
-import logo from './yasa7.png';
-import { useTheme, ThemeProvider, createTheme } from '@mui/material/styles';
-import { StatsFullScreenDialog } from './features/stats/StatsDialog'
-// import { ScoreHistory, } from './features/rounds/ScoreHistory';
-import { PlayerList } from './features/players/Players';
-import { ScoreEntryDialog } from './features/rounds/scoreEntryDialog';
-import Brightness4Icon from '@mui/icons-material/Brightness4';
-import Brightness7Icon from '@mui/icons-material/Brightness7';
-import Box from '@mui/material/Box';
-import './App.css';
-import { Grid, Stack} from '@mui/material';
+import React from "react";
+import logo from "./yasa7.png";
+import { ThemeProvider, createTheme } from "@mui/material/styles";
+import { StatsFullScreenDialog } from "./features/stats/StatsDialog";
+import { PlayerList } from "./features/players/Players";
+import { ScoreEntryDialog } from "./features/rounds/scoreEntryDialog";
+import Box from "@mui/material/Box";
+import "./App.css";
+import { Grid, IconButton, Stack } from "@mui/material";
 import AppBar from "@mui/material/AppBar";
 import Toolbar from "@mui/material/Toolbar";
-import IconButton from "@mui/material/IconButton";
-import Menu from './features/menu/menu';
-import { useSelector } from 'react-redux';
-import { RootState } from './app/store';
-import ScoresHistoryNew from './features/rounds/ScoresHistoryNew';
-import { SnackbarProvider } from 'notistack';
+import Menu from "./features/menu/menu";
+import { useSelector } from "react-redux";
+import { RootState } from "./app/store";
+import ScoresHistoryNew from "./features/rounds/ScoresHistoryNew";
+import { SnackbarProvider } from "notistack";
+import { ActionCreators } from "redux-undo";
+import UndoIcon from "@mui/icons-material/Undo";
+import RedoIcon from "@mui/icons-material/Redo";
+import { useAppDispatch, useAppSelector } from "./app/hooks";
+import { selectPlayerState } from "./features/players/playersSlice";
+
 const ColorModeContext = React.createContext({ toggleColorMode: () => {} });
 
 function App() {
-
-  const theme = useTheme();
   const colorMode = React.useContext(ColorModeContext);
-  const gameStatus = useSelector((state: RootState) => state.game.status)
-  
+  const gameStatus = useSelector((state: RootState) => state.game.status);
+  const dispatch = useAppDispatch();
+  const playerState = useAppSelector(selectPlayerState);
+
   return (
     <Stack
       direction="column"
       alignItems="center"
       sx={{
-        height: '100vh',
-        display: 'flex',
-        bgcolor: 'background.default',
-        color: 'text.primary',
+        height: "100vh",
+        bgcolor: "background.default",
+        color: "text.primary",
       }}
     >
       <img src={logo} className="App-logo" alt="logo" />
 
-      {gameStatus === 'new' && 
-      <PlayerList/>
-      }
-           
-      {gameStatus === 'started' && 
-      <ScoresHistoryNew/>
-      }
-      {/* <Counter/> */}
+      {gameStatus === "new" && <PlayerList />}
+
+      {gameStatus === "started" && <ScoresHistoryNew />}
 
       <Grid item>
-        <AppBar  position="fixed" color="default" sx={{background:"#424242", color:"#7df3e1", top: "auto", bottom: 0 }}>
+        <AppBar
+          position="fixed"
+          sx={{
+            background: "#424242",
+            color: "#7df3e1",
+            top: "auto",
+            bottom: 0,
+          }}
+        >
           <Toolbar>
-            <Menu/>
-            <ScoreEntryDialog/>
+            <Menu toggleColorMode={colorMode.toggleColorMode} />
+
+            <ScoreEntryDialog />
             <Box sx={{ flexGrow: 1 }} />
-            {gameStatus === "started" &&
-            <StatsFullScreenDialog/>
-            }
-            <IconButton sx={{ ml: 1 }} onClick={colorMode.toggleColorMode} color="inherit">
-            {theme.palette.mode === 'dark' ? <Brightness7Icon /> : <Brightness4Icon />}
-            </IconButton>
+            {gameStatus === "started" && (
+              <>
+                <IconButton
+                  disabled={playerState.scores.past.length === 1}
+                  onClick={() => dispatch(ActionCreators.undo())}
+                  color="inherit"
+                >
+                  <UndoIcon />
+                </IconButton>
+                <IconButton
+                  disabled={playerState.scores.future.length === 0}
+                  onClick={() => dispatch(ActionCreators.redo())}
+                  color="inherit"
+                >
+                  <RedoIcon />
+                </IconButton>
+                <StatsFullScreenDialog />
+              </>
+            )}
           </Toolbar>
         </AppBar>
       </Grid>
     </Stack>
-    
   );
 }
 
 export default function ToggleColorMode() {
-  const [mode, setMode] = React.useState<'dark' | 'light'>('dark');
+  const [mode, setMode] = React.useState<"light" | "dark">("dark");
   const colorMode = React.useMemo(
     () => ({
       toggleColorMode: () => {
-        setMode((prevMode) => (prevMode === 'light' ? 'dark' : 'light'));
+        setMode((prevMode) => (prevMode === "light" ? "dark" : "light"));
       },
     }),
-    [],
+    []
   );
 
   const theme = React.useMemo(
@@ -86,20 +103,16 @@ export default function ToggleColorMode() {
           mode,
         },
       }),
-    [mode],
+    [mode]
   );
 
   return (
-
     <ColorModeContext.Provider value={colorMode}>
       <ThemeProvider theme={theme}>
         <SnackbarProvider maxSnack={3}>
           <App />
         </SnackbarProvider>
       </ThemeProvider>
-        
     </ColorModeContext.Provider>
-
-
   );
 }

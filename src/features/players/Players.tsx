@@ -4,15 +4,17 @@ import {
   Button,
   TextField,
 } from "@mui/material";
-import { selectPlayers, addPlayer, removePlayer } from "./playersSlice";
 import { useAppSelector, useAppDispatch } from "../../app/hooks";
+import { selectPlayers, addPlayer, removePlayer } from "./playersSlice";
 import { startGame } from "../game/gameSlice";
+import { selectScores, setStartScores } from "../game/scoreSlice";
 import { useSelector } from "react-redux";
 import { RootState } from "../../app/store";
 import { PlayerAvatar } from "./PlayerAvatar";
 
 export function PlayerList() {
-  const Players = useAppSelector(selectPlayers);
+  const players = useAppSelector(selectPlayers);
+  const currentScores = useAppSelector(selectScores);
   const gameStatus = useSelector((state: RootState) => state.game.status);
   const dispatch = useAppDispatch();
   const [playerName, setPlayerName] = useState("");
@@ -20,10 +22,10 @@ export function PlayerList() {
   return (
     <>
       <Stack direction="row" spacing={2} mt={6} mb={3}>
-        {Players.map((player) => (
+        {players.map((player) => (
           <PlayerAvatar
             name={player.name}
-            score={player.score}
+            score={currentScores.find((score) => score.id === player.id)?.score || 0}
             id={player.id}
             key={player.id}
           />
@@ -51,7 +53,6 @@ export function PlayerList() {
             sx={{
               height: "50px",
               mr: 1,
-              mb: 1,
               color: "#7df3e1",
               outlineColor: "#7df3e1",
             }}
@@ -59,14 +60,11 @@ export function PlayerList() {
             Add player
           </Button>
           <Button
-            disabled={Players.length < 2}
+            disabled={players.length < 2 || playerName.length > 0}
             variant="outlined"
-            onClick={() => dispatch(startGame())}
+            onClick={() => dispatch(startGame()) && dispatch(setStartScores(players))}
             sx={{
               height: "50px",
-              mt: 1,
-              mr: 1,
-              mb: 1,
               color: "#7df3e1",
               outlineColor: "#7df3e1",
             }}
