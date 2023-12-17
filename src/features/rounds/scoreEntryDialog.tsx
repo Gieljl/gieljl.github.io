@@ -137,13 +137,18 @@ export function ScoreEntryDialog() {
       return;
     }
 
-    // set yassat stat for the yasat player
-    EnteredScores.find((player) => player.id === yasatPlayer)!.stats.push({ name: "Yasat" });
     // find the player id of the player in EnteredScores with the lowest score
-    
     const lowestScorePlayer = EnteredScores.reduce((prev, current) =>
       prev.score < current.score ? prev : current
     ).id;
+
+    // set yassat stat for the yasat player
+    EnteredScores.find((player) => player.id === yasatPlayer)!.stats.push({ name: "Yasat" });
+    
+    // set the yasatStreak for the yasat player
+    EnteredScores.find((player) => player.id === yasatPlayer)!.yasatStreak =
+      currentScores.find((score) => score.id === yasatPlayer)?.yasatStreak || 0;
+    
 
 
     // Handle Owns and Owned stats and scores
@@ -251,7 +256,7 @@ export function ScoreEntryDialog() {
 
     setRoundScores((prevValues) => [
       ...prevValues,
-      { id: id, score: score, stats: [] },
+      { id: id, score: score, stats: [], yasatStreak: 0 },
     ]);
   };
 

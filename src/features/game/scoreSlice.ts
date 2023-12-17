@@ -9,6 +9,7 @@ export type playerScore = {
   id: string;
   score: number;
   stats: stat[]
+  yasatStreak: number;
 }
 export type stat = {
   name: string
@@ -28,7 +29,7 @@ export const scoreSlice = createSlice({
       const players = action.payload;
       // for each player add a score to the playerscores array
       players.forEach(player => {
-        state.playerscores.push({id: player.id, score: 0, stats: []});
+        state.playerscores.push({id: player.id, score: 0, stats: [], yasatStreak: 0});
       });
     },
     // Use the PayloadAction type to declare the contents of `action.payload`

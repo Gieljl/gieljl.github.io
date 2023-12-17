@@ -36,6 +36,29 @@ export function StatsTable() {
       return total;
     }, 0);
   };
+  // check whats the highest value of the yasatStreak number for a player within the totalScores array
+  const getHighestYasatStreak = (playerId: string) => {
+    const yasatStreaks = totalScores.map((round) => {
+      const playerRound = round.playerscores.find(
+        (player) => player.id === playerId
+      );
+      if (playerRound) {
+        return playerRound.yasatStreak;
+      }
+      return [];
+    });
+    const yasatStreaksFlat = yasatStreaks.flat();
+    if (yasatStreaksFlat.length > 0) {
+      return yasatStreaksFlat.reduce((max, yasatStreak) => {
+        return Math.max(max, yasatStreak);
+      }, 0);
+    }
+    return 0;
+  }
+    
+
+
+
 
   return (
     <TableContainer component={Paper}>
@@ -63,6 +86,14 @@ export function StatsTable() {
             {players.map((player) => (
               <TableCell align="center" key={player.id}>
                 {getCount(player.id, "Yasat")}
+              </TableCell>
+            ))}
+          </TableRow>
+          <TableRow sx={{ margin: 2 }}>
+            <TableCell>Yasat Streak </TableCell>
+            {players.map((player) => (
+              <TableCell align="center" key={player.id}>
+                {getHighestYasatStreak(player.id)}
               </TableCell>
             ))}
           </TableRow>

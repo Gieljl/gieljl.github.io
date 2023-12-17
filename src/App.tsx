@@ -10,6 +10,8 @@ import { Grid, IconButton, Stack } from "@mui/material";
 import AppBar from "@mui/material/AppBar";
 import Toolbar from "@mui/material/Toolbar";
 import Menu from "./features/menu/menu";
+import FullWidthTabs from "./features/menu/Tabs";
+
 import { useSelector } from "react-redux";
 import { RootState } from "./app/store";
 import ScoresHistoryNew from "./features/rounds/ScoresHistoryNew";
@@ -29,6 +31,7 @@ function App() {
   const scoreState = useAppSelector(selectScoreState);
 
   return (
+    
     <Stack
       direction="column"
       alignItems="center"
@@ -39,6 +42,7 @@ function App() {
       }}
     >
       <img src={logo} className="App-logo" alt="logo" />
+      
 
       {gameStatus === "new" && <PlayerList />}
 
