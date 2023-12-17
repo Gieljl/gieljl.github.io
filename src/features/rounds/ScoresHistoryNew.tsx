@@ -44,7 +44,7 @@ export default function BasicTable() {
               {roundScores.playerscores.map((player) => {
                 let cellContent;
 
-                if (player.stats.some((stat) => stat.name === "yasat")) {
+                if (player.stats.some((stat) => stat.name === "Yasat")) {
                   cellContent = (
                     <>
                       <Chip
@@ -53,10 +53,11 @@ export default function BasicTable() {
                         label={player.score}
                       />
                       {player.stats
-                        .filter((stat) => stat.name !== "yasat")
+                        .filter((stat) => stat.name !== "Yasat")
                         .map((stat) => (
                           <Chip
                             variant="filled"
+                            size="small"
                             label={stat.name}
                             key={stat.name}
                             sx={{ margin: 1 }}
@@ -69,10 +70,11 @@ export default function BasicTable() {
                     <>
                       {player.score}
                       {player.stats
-                        .filter((stat) => stat.name !== "yasat")
+                        .filter((stat) => stat.name !== "Yasat")
                         .map((stat) => (
                           <Chip
                             variant="filled"
+                            size="small"
                             label={stat.name}
                             key={stat.name}
                             sx={{ margin: 1 }}
@@ -94,7 +96,7 @@ export default function BasicTable() {
             {currentScores.map((player) => {
               let cellContent;
 
-              if (player.stats.some((stat) => stat.name === "yasat")) {
+              if (player.stats.some((stat) => stat.name === "Yasat")) {
                 cellContent = (
                   <>
                     <Chip
@@ -103,10 +105,11 @@ export default function BasicTable() {
                       label={player.score}
                     />
                     {player.stats
-                      .filter((stat) => stat.name !== "yasat")
+                      .filter((stat) => stat.name !== "Yasat")
                       .map((stat) => (
                         <Chip
                           variant="filled"
+                          size="small"
                           label={stat.name}
                           key={stat.name}
                           sx={{ margin: 1 }}
@@ -119,10 +122,11 @@ export default function BasicTable() {
                   <>
                     {player.score}
                     {player.stats
-                      .filter((stat) => stat.name !== "yasat")
+                      .filter((stat) => stat.name !== "Yasat")
                       .map((stat) => (
                         <Chip
                           variant="filled"
+                          size="small"
                           label={stat.name}
                           key={stat.name}
                           sx={{ margin: 1 }}

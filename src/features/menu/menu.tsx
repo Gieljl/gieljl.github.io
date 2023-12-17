@@ -87,30 +87,6 @@ export default function Menu({
           </ListItemIcon>
           <ListItemText primary="Settings" />
         </ListItemButton>
-        <ListItemButton
-          disabled={scoreState.scores.past.length === 1}
-          key="undo"
-        >
-          <ListItemIcon>
-            <UndoIcon />
-          </ListItemIcon>
-          <ListItemText
-            primary="Undo"
-            onClick={() => dispatch(ActionCreators.undo())}
-          />
-        </ListItemButton>
-        <ListItemButton
-          disabled={scoreState.scores.future.length === 0}
-          key="redo"
-        >
-          <ListItemIcon>
-            <RedoIcon />
-          </ListItemIcon>
-          <ListItemText
-            primary="Redo"
-            onClick={() => dispatch(ActionCreators.redo())}
-          />
-        </ListItemButton>
         <ListItemButton key="Theme">
           <ListItemIcon>
             {theme.palette.mode === "dark" ? (

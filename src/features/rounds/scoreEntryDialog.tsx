@@ -137,11 +137,14 @@ export function ScoreEntryDialog() {
       return;
     }
 
-    // // set yasatPlayer round score to 0
-    // EnteredScores.find((player) => player.id === yasatPlayer)!.score = 0;
+    // set yassat stat for the yasat player
+    EnteredScores.find((player) => player.id === yasatPlayer)!.stats.push({ name: "Yasat" });
+    // find the player id of the player in EnteredScores with the lowest score
+    
+    const lowestScorePlayer = EnteredScores.reduce((prev, current) =>
+      prev.score < current.score ? prev : current
+    ).id;
 
-    // add a entry to the stats array if this of this rounds yasatPlayer
-    EnteredScores.find((player) => player.id === yasatPlayer)!.stats.push({ name: "yasat" });
 
     // Handle Owns and Owned stats and scores
     EnteredScores.forEach((player) => {
@@ -149,15 +152,15 @@ export function ScoreEntryDialog() {
         player.score <
         EnteredScores.find((player) => player.id === yasatPlayer)!.score
       ) {
-        player.stats.push({ name: "own" });
+        player.stats.push({ name: "Own" });
         player.score = 0;
-        EnteredScores.find((player) => player.id === yasatPlayer)!.stats.push({ name: "owned" });
+        EnteredScores.find((player) => player.id === yasatPlayer)!.stats.push({ name: "Owned" });
         EnteredScores.find((player) => player.id === yasatPlayer)!.score = 35;
       }
     });
 
     // if the yasat player is has no "owned" stat, set his entered score to 0
-    if (!EnteredScores.find((player) => player.id === yasatPlayer)!.stats.some((stat) => stat.name === "owned")) {
+    if (!EnteredScores.find((player) => player.id === yasatPlayer)!.stats.some((stat) => stat.name === "Owned")) {
       EnteredScores.find((player) => player.id === yasatPlayer)!.score = 0;
     }
     
@@ -173,31 +176,47 @@ export function ScoreEntryDialog() {
     // Check for deaths (> 100)
     EnteredScores.forEach((player) => {
       if (player.score > 100) {
-        player.stats.push({ name: "death" });
+        player.stats.push({ name: "Death" });
         player.score = 0;
         // add a Kill entry for each death player to the yasatPlayer of this round
         EnteredScores
           .find((player) => player.id === yasatPlayer)!
-          .stats.push({ name: "kill" });
+          .stats.push({ name: "Kill" });
       }
     });
-
+    
     // check for nullifies
     EnteredScores.forEach((player) => {
       const currentScore = currentScores.find((score) => score.id === player.id)?.score;
 
       if (player.score === 50) {
-        player.stats.push({ name: "nullify 50" });
+        player.stats.push({ name: "Nullify 50" });
         player.score = 0;
+        EnteredScores.find((player) => player.id === lowestScorePlayer)!.stats.push({ name: "Enable 50" });
       } else if (currentScore === 69 && player.score === 100)  {
         player.stats.push({ name: "Lullify" });
         player.score = 0;
+        EnteredScores.find((player) => player.id === lowestScorePlayer)!.stats.push({ name: "Enable 69" });
       } else if (player.score === 100) {
-        player.stats.push({ name: "nullify 100" });
+        player.stats.push({ name: "Nullify 100" });
         player.score = 0;
+        EnteredScores.find((player) => player.id === lowestScorePlayer)!.stats.push({ name: "Enable 100" });
       }
     });
-    
+
+    // Check for Contra Owns
+    EnteredScores.forEach((player) => {
+      const currentScore = currentScores.find((score) => score.id === player.id)?.score;
+      // if player.stats contains "nullify 50" and the currentScore is 15
+      if (player.stats.some((stat) => stat.name === "Nullify 50") && currentScore === 15) {
+        player.stats.push({ name: "Contra-own 50" });
+      }
+      if (player.stats.some((stat) => stat.name === "Nullify 100") && currentScore === 65) {
+        player.stats.push({ name: "Contra-own 100" });
+      }
+    });
+
+        
     // add the new score to state
     dispatch(addScores(EnteredScores));
 

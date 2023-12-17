@@ -62,7 +62,7 @@ export function StatsTable() {
             <TableCell>Yasat</TableCell>
             {players.map((player) => (
               <TableCell align="center" key={player.id}>
-                {getCount(player.id, "yasat")}
+                {getCount(player.id, "Yasat")}
               </TableCell>
             ))}
           </TableRow>
@@ -70,7 +70,7 @@ export function StatsTable() {
             <TableCell>Deaths</TableCell>
             {players.map((player) => (
               <TableCell align="center" key={player.id}>
-                {getCount(player.id, "death")}
+                {getCount(player.id, "Death")}
               </TableCell>
             ))}
           </TableRow>
@@ -78,7 +78,7 @@ export function StatsTable() {
             <TableCell>Kills</TableCell>
             {players.map((player) => (
               <TableCell align="center" key={player.id}>
-                {getCount(player.id, "kill")}
+                {getCount(player.id, "Kill")}
               </TableCell>
             ))}
           </TableRow>
@@ -86,7 +86,7 @@ export function StatsTable() {
             <TableCell>Owns</TableCell>
             {players.map((player) => (
               <TableCell align="center" key={player.id}>
-                {getCount(player.id, "own")}
+                {getCount(player.id, "Own")}
               </TableCell>
             ))}
           </TableRow>
@@ -94,7 +94,23 @@ export function StatsTable() {
             <TableCell>Owned</TableCell>
             {players.map((player) => (
               <TableCell align="center" key={player.id}>
-                {getCount(player.id, "owned")}
+                {getCount(player.id, "Owned")}
+              </TableCell>
+            ))}
+          </TableRow>
+          <TableRow sx={{ margin: 2 }}>
+            <TableCell>Contra-own 50</TableCell>
+            {players.map((player) => (
+              <TableCell align="center" key={player.id}>
+                {getCount(player.id, "Contra-own 50")}
+              </TableCell>
+            ))}
+          </TableRow>
+          <TableRow sx={{ margin: 2 }}>
+            <TableCell>Contra-own 100</TableCell>
+            {players.map((player) => (
+              <TableCell align="center" key={player.id}>
+                {getCount(player.id, "Contra-own 100")}
               </TableCell>
             ))}
           </TableRow>
@@ -102,7 +118,7 @@ export function StatsTable() {
             <TableCell>Nullify 50</TableCell>
             {players.map((player) => (
               <TableCell align="center" key={player.id}>
-                {getCount(player.id, "nullify 50")}
+                {getCount(player.id, "Nullify 50")}
               </TableCell>
             ))}
           </TableRow>
@@ -110,7 +126,7 @@ export function StatsTable() {
             <TableCell>Nullify 100</TableCell>
             {players.map((player) => (
               <TableCell align="center" key={player.id}>
-                {getCount(player.id, "nullify 100")}
+                {getCount(player.id, "Nullify 100")}
               </TableCell>
             ))}
           </TableRow>
@@ -119,6 +135,30 @@ export function StatsTable() {
             {players.map((player) => (
               <TableCell align="center" key={player.id}>
                 {getCount(player.id, "Lullify")}
+              </TableCell>
+            ))}
+          </TableRow>
+          <TableRow sx={{ margin: 2 }}>
+            <TableCell>Enable 69</TableCell>
+            {players.map((player) => (
+              <TableCell align="center" key={player.id}>
+                {getCount(player.id, "Enable 69")}
+              </TableCell>
+            ))}
+          </TableRow>
+          <TableRow sx={{ margin: 2 }}>
+            <TableCell>Enable 50</TableCell>
+            {players.map((player) => (
+              <TableCell align="center" key={player.id}>
+                {getCount(player.id, "Enable 50")}
+              </TableCell>
+            ))}
+          </TableRow>
+          <TableRow sx={{ margin: 2 }}>
+            <TableCell>Enable 100</TableCell>
+            {players.map((player) => (
+              <TableCell align="center" key={player.id}>
+                {getCount(player.id, "Enable 100")}
               </TableCell>
             ))}
           </TableRow>
