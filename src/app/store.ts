@@ -11,7 +11,7 @@ export const store = configureStore({
   reducer: {
     counter: counterReducer,
     scores: undoable(scoresReducer),
-    players: undoable(playersReducer),
+    players: playersReducer,
     game: gameReducer
   },
 });

@@ -37,23 +37,7 @@ export const playerSlice = createSlice({
       prepare: (name: string) => ({
         payload: {
           id: uuidv4(),
-          name,
-          yasat: 0,
-          yasatStreak: 0,
-          kill: 0,
-          ge0wned: 0,
-          nullify50: 0,
-          nullify100: 0,
-          enable50: 0,
-          enable100: 0,
-          contraOwn50: 0,
-          contraOwn100: 0,
-          fth: 0,
-          ftph: 0,
-          doubleKill: 0,
-          multiKill: 0,
-          megaKill: 0,
-          monsterKill: 0,
+          name
         } as player,
       })
     },
@@ -63,22 +47,17 @@ export const playerSlice = createSlice({
     },
     resetPlayers() {
       return initialState;
-    },
-    addYasat(state, action: PayloadAction<{id: string}>) {
-      const index = state.findIndex((player) => player.id === action.payload.id);
-      state[index].yasat += 1;
-    },
+    }
   },
 
 });
 
-export const { addPlayer, removePlayer, resetPlayers, addYasat } = playerSlice.actions;
+export const { addPlayer, removePlayer, resetPlayers } = playerSlice.actions;
 
 // The function below is called a selector and allows us to select a value from
 // the state. Selectors can also be defined inline where they're used instead of
 // in the slice file. For example: `useSelector((state: RootState) => state.counter.value)`
-export const selectPlayers = (state: RootState) => state.players.present;
-export const selectPlayerState = (state: RootState) => state;
+export const selectPlayers = (state: RootState) => state.players;
 
 // export const selectPlayersWithHistory = (state: RootState) => state.players;
 

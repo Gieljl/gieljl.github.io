@@ -25,7 +25,7 @@ import {
 
 import { useSelector } from "react-redux";
 import { RootState } from "../../app/store";
-import { addYasat, selectPlayers } from "../players/playersSlice";
+import { selectPlayers } from "../players/playersSlice";
 import { useAppSelector, useAppDispatch } from "../../app/hooks";
 import { PlayerAvatar } from "../players/PlayerAvatar";
 import { useSnackbar } from "notistack";
@@ -54,22 +54,20 @@ export function ScoreEntryDialog() {
   const { enqueueSnackbar } = useSnackbar();
   const [open, setOpen] = React.useState(false);
 
+  const resetState = () => {
+    setYasatPlayer("");
+    setRoundScores([]);
+    setErrorStates({});
+  };
+
   const handleClickOpen = () => {
     setOpen(true);
   };
 
   const handleClose = () => {
     setOpen(false);
-    // Reset the yasatPlayer state
-    setYasatPlayer("");
-    // Reset the fieldValues object
-    setRoundScores([]);
-    setErrorStates({});
+    resetState();
   };
-
-  // const icon = <CheckBoxOutlineBlankIcon fontSize="small" />;
-  // const checkedIcon = <CheckBoxIcon fontSize="small" />;
-  // const specials = [{ title: "FTH" }, { title: "FTPH" }];
 
   const gameStatus = useSelector((state: RootState) => state.game.status);
   const players = useAppSelector(selectPlayers);
@@ -139,32 +137,69 @@ export function ScoreEntryDialog() {
       return;
     }
 
-    // set the yassat player score to 0
+    // // set yasatPlayer round score to 0
+    // EnteredScores.find((player) => player.id === yasatPlayer)!.score = 0;
+
+    // add a entry to the stats array if this of this rounds yasatPlayer
+    EnteredScores.find((player) => player.id === yasatPlayer)!.stats.push({ name: "yasat" });
+
+    // Handle Owns and Owned stats and scores
+    EnteredScores.forEach((player) => {
+      if (
+        player.score <
+        EnteredScores.find((player) => player.id === yasatPlayer)!.score
+      ) {
+        player.stats.push({ name: "own" });
+        player.score = 0;
+        EnteredScores.find((player) => player.id === yasatPlayer)!.stats.push({ name: "owned" });
+        EnteredScores.find((player) => player.id === yasatPlayer)!.score = 35;
+      }
+    });
+
+    // if the yasat player is has no "owned" stat, set his entered score to 0
+    if (!EnteredScores.find((player) => player.id === yasatPlayer)!.stats.some((stat) => stat.name === "owned")) {
+      EnteredScores.find((player) => player.id === yasatPlayer)!.score = 0;
+    }
     
-      EnteredScores.find(
-        (player) => player.id === yasatPlayer
-      )!.score = 0;
+    //  Add scores to current scores
+    EnteredScores.forEach((player) => {
+      const currentScore = currentScores.find((score) => score.id === player.id)
+        ?.score;
+      if (currentScore) {
+        player.score = currentScore + player.score;
+      }
+    });
+
+    // Check for deaths (> 100)
+    EnteredScores.forEach((player) => {
+      if (player.score > 100) {
+        player.stats.push({ name: "death" });
+        player.score = 0;
+        // add a Kill entry for each death player to the yasatPlayer of this round
+        EnteredScores
+          .find((player) => player.id === yasatPlayer)!
+          .stats.push({ name: "kill" });
+      }
+    });
+
+    // check for nullifies
+    EnteredScores.forEach((player) => {
+      const currentScore = currentScores.find((score) => score.id === player.id)?.score;
+
+      if (player.score === 50) {
+        player.stats.push({ name: "nullify 50" });
+        player.score = 0;
+      } else if (currentScore === 69 && player.score === 100)  {
+        player.stats.push({ name: "Lullify" });
+        player.score = 0;
+      } else if (player.score === 100) {
+        player.stats.push({ name: "nullify 100" });
+        player.score = 0;
+      }
+    });
     
-
-    // calulate the new current state of the scores
-    const newScores = currentScores.map((score) => {
-      const roundScore = EnteredScores.find(
-        (player) => player.id === score.id
-      )?.score;
-      return {
-        id: score.id,
-        score: score.score + (roundScore || 0),
-        stats: []
-      };
-    }) as playerScore[];
-
-    // add an entry to the stats array if this of this rounds yasat player
-    newScores.find((player) => player.id === yasatPlayer)!.stats.push({name:"yasat"});
-    // Dispatch addYasat with the id of the player who called Yasat
-    dispatch(addYasat({ id: yasatPlayer }));
-
     // add the new score to state
-    dispatch(addScores(newScores));
+    dispatch(addScores(EnteredScores));
 
     // Close the dialog
     handleClose();
@@ -195,7 +230,10 @@ export function ScoreEntryDialog() {
       return;
     }
 
-    setRoundScores((prevValues) => [...prevValues, { id: id, score: score, stats: [] }]);
+    setRoundScores((prevValues) => [
+      ...prevValues,
+      { id: id, score: score, stats: [] },
+    ]);
   };
 
   return (
@@ -284,49 +322,6 @@ export function ScoreEntryDialog() {
             </Box>
           ))}
         </List>
-
-        {/* <Autocomplete
-                    multiple
-                    id="checkboxes-tags-demo"
-                    options={specials}
-                    disableCloseOnSelect
-                    getOptionLabel={(option) => option.title}
-                    renderOption={(props, option, { selected }) => (
-                      <li {...props}>
-                        <Checkbox
-                          icon={icon}
-                          checkedIcon={checkedIcon}
-                          style={{ marginRight: 8 }}
-                          checked={selected}
-                        />
-                        {option.title}
-                      </li>
-                    )}
-                    style={{ width: 180 }}
-                    renderInput={(params) => (
-                      <TextField {...params} placeholder="Specials" />
-                    )}
-                  /> */}
-
-        {/* <FormControl sx={{ m: 1, minWidth: 120 }}>
-                <InputLabel>Yasat</InputLabel>
-                <Select
-                  labelId="yasatSelectLabel"
-                  id="yasatSelect"
-                  value={yasat}
-                  label="Yasat"
-                  onChange={handleChange}
-                >
-                  {players.map((player) => (
-                    <MenuItem key={player.id} value={player.id}>
-                      {player.name}
-                    </MenuItem>
-                  ))}
-                </Select>
-                <FormHelperText>
-                  Select the player who called Yasat 🎉
-                </FormHelperText>
-              </FormControl> */}
       </Dialog>
     </div>
   );

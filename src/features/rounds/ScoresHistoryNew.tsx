@@ -20,7 +20,7 @@ export default function BasicTable() {
   const scoreHistory = useAppSelector((state: RootState) => state.scores.past);
 
   return (
-    <TableContainer sx={{ mt: 1, height: "78%"  }}>
+    <TableContainer sx={{ mt: 1, height: "78%" }}>
       <Table stickyHeader>
         <TableHead>
           <TableRow>
@@ -41,39 +41,103 @@ export default function BasicTable() {
         <TableBody>
           {scoreHistory.map((roundScores, roundIndex) => (
             <TableRow key={roundIndex}>
-              {roundScores.playerscores.map((player) => (
-                <TableCell align="center" key={player.id} >
-                 {player.stats.some((stat) => stat.name === "yasat") ? (
-                  <Chip
-                  avatar={<Avatar src="../logo192.png" />}
-                  variant="filled"
-                  label={player.score}
-                />
-                ) : (
-                  player.score
-                )} 
-                </TableCell>
-              ))}
+              {roundScores.playerscores.map((player) => {
+                let cellContent;
+
+                if (player.stats.some((stat) => stat.name === "yasat")) {
+                  cellContent = (
+                    <>
+                      <Chip
+                        avatar={<Avatar src="../logo192.png" />}
+                        variant="filled"
+                        label={player.score}
+                      />
+                      {player.stats
+                        .filter((stat) => stat.name !== "yasat")
+                        .map((stat) => (
+                          <Chip
+                            variant="filled"
+                            label={stat.name}
+                            key={stat.name}
+                            sx={{ margin: 1 }}
+                          />
+                        ))}
+                    </>
+                  );
+                } else {
+                  cellContent = (
+                    <>
+                      {player.score}
+                      {player.stats
+                        .filter((stat) => stat.name !== "yasat")
+                        .map((stat) => (
+                          <Chip
+                            variant="filled"
+                            label={stat.name}
+                            key={stat.name}
+                            sx={{ margin: 1 }}
+                          />
+                        ))}
+                    </>
+                  );
+                }
+
+                return (
+                  <TableCell align="center" key={player.id}>
+                    {cellContent}
+                  </TableCell>
+                );
+              })}
             </TableRow>
           ))}
           <TableRow>
-            {currentScores.map((player) => (
-                           
-              <TableCell align="center" key={player.id}>
-                {player.stats.some((stat) => stat.name === "yasat") ? (
-                  <Chip
-                  avatar={<Avatar src="../logo192.png" />}
-                  variant="filled"
-                  label={player.score}
-                />
-                ) : (
-                  player.score
-                )} 
-               
-                
-                
-              </TableCell>
-            ))}
+            {currentScores.map((player) => {
+              let cellContent;
+
+              if (player.stats.some((stat) => stat.name === "yasat")) {
+                cellContent = (
+                  <>
+                    <Chip
+                      avatar={<Avatar src="../logo192.png" />}
+                      variant="filled"
+                      label={player.score}
+                    />
+                    {player.stats
+                      .filter((stat) => stat.name !== "yasat")
+                      .map((stat) => (
+                        <Chip
+                          variant="filled"
+                          label={stat.name}
+                          key={stat.name}
+                          sx={{ margin: 1 }}
+                        />
+                      ))}
+                  </>
+                );
+              } else {
+                cellContent = (
+                  <>
+                    {player.score}
+                    {player.stats
+                      .filter((stat) => stat.name !== "yasat")
+                      .map((stat) => (
+                        <Chip
+                          variant="filled"
+                          label={stat.name}
+                          key={stat.name}
+                          sx={{ margin: 1 }}
+                        />
+                      ))}
+                  </>
+                );
+              }
+
+              return (
+                <TableCell align="center" key={player.id}>
+                  {cellContent}
+                </TableCell>
+              );
+            })}
           </TableRow>
         </TableBody>
       </Table>

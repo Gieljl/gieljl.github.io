@@ -18,7 +18,7 @@ import { ActionCreators } from "redux-undo";
 import UndoIcon from "@mui/icons-material/Undo";
 import RedoIcon from "@mui/icons-material/Redo";
 import { useAppDispatch, useAppSelector } from "./app/hooks";
-import { selectPlayerState } from "./features/players/playersSlice";
+import { selectScoreState } from "./features/game/scoreSlice";
 
 const ColorModeContext = React.createContext({ toggleColorMode: () => {} });
 
@@ -26,7 +26,7 @@ function App() {
   const colorMode = React.useContext(ColorModeContext);
   const gameStatus = useSelector((state: RootState) => state.game.status);
   const dispatch = useAppDispatch();
-  const playerState = useAppSelector(selectPlayerState);
+  const scoreState = useAppSelector(selectScoreState);
 
   return (
     <Stack
@@ -62,14 +62,14 @@ function App() {
             {gameStatus === "started" && (
               <>
                 <IconButton
-                  disabled={playerState.scores.past.length === 1}
+                  disabled={scoreState.scores.past.length === 1}
                   onClick={() => dispatch(ActionCreators.undo())}
                   color="inherit"
                 >
                   <UndoIcon />
                 </IconButton>
                 <IconButton
-                  disabled={playerState.scores.future.length === 0}
+                  disabled={scoreState.scores.future.length === 0}
                   onClick={() => dispatch(ActionCreators.redo())}
                   color="inherit"
                 >

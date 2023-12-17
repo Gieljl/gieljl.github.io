@@ -22,8 +22,8 @@ import AddCircleIcon from "@mui/icons-material/AddCircle";
 import InfoIcon from "@mui/icons-material/Info";
 import { useAppDispatch, useAppSelector } from "../../app/hooks";
 import { startNewGame } from "../game/gameSlice";
-import { resetPlayers, selectPlayerState } from "../players/playersSlice";
-import { resetScores } from "../game/scoreSlice";
+import { resetPlayers } from "../players/playersSlice";
+import { resetScores, selectScoreState } from "../game/scoreSlice";
 import { ActionCreators } from "redux-undo";
 import Brightness4Icon from "@mui/icons-material/Brightness4";
 import Brightness7Icon from "@mui/icons-material/Brightness7";
@@ -37,7 +37,7 @@ export default function Menu({
 }: {
   toggleColorMode: () => void;
 }) {
-  const playerState = useAppSelector(selectPlayerState);
+  const scoreState = useAppSelector(selectScoreState);
   const [state, setState] = React.useState({
     top: false,
     left: false,
@@ -88,7 +88,7 @@ export default function Menu({
           <ListItemText primary="Settings" />
         </ListItemButton>
         <ListItemButton
-          disabled={playerState.scores.past.length === 1}
+          disabled={scoreState.scores.past.length === 1}
           key="undo"
         >
           <ListItemIcon>
@@ -100,7 +100,7 @@ export default function Menu({
           />
         </ListItemButton>
         <ListItemButton
-          disabled={playerState.scores.future.length === 0}
+          disabled={scoreState.scores.future.length === 0}
           key="redo"
         >
           <ListItemIcon>
