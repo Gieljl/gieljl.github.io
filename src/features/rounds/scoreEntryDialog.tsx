@@ -57,10 +57,14 @@ const StyledFab = styled(Fab)({
 export function ScoreEntryDialog() {
   const { enqueueSnackbar } = useSnackbar();
   const [open, setOpen] = React.useState(false);
+  const [newScores, setNewScores] = useState<playerScore[]>([]);
+  const [errorStates, setErrorStates] = useState<{ [key: string]: boolean }>(
+    {}
+  );
 
   const resetState = () => {
     setYasatPlayer(null);
-    setRoundScores([]);
+    setNewScores([]);
     setErrorStates({});
   };
 
@@ -76,10 +80,10 @@ export function ScoreEntryDialog() {
   const gameStatus = useSelector((state: RootState) => state.game.status);
   const players = useAppSelector(selectPlayers);
   const currentScores = useAppSelector(selectScores);
-
   const dispatch = useAppDispatch();
 
   const [yasatPlayer, setYasatPlayer] = useState<number | null>(null);
+
   const handleYasat = (id: number) => {
     // if the player is already selected remove the selection
     if (yasatPlayer === id) {
@@ -88,7 +92,7 @@ export function ScoreEntryDialog() {
     }
 
     //check if score entered for the player is above 7
-    if (EnteredScores.some((player) => player.id === id && player.score > 7)) {
+    if (newScores.some((player) => player.id === id && player.score > 7)) {
       enqueueSnackbar("Yasat score should be 7 or less", {
         variant: "error",
       });
@@ -99,117 +103,97 @@ export function ScoreEntryDialog() {
     setYasatPlayer(id);
   };
 
-  const handleScores = () => {
-    // if count of roundScores array is smaller that the number of players give an error
-    if (EnteredScores.length < players.length) {
-      enqueueSnackbar("Enter all scores", { variant: "error" });
-      return;
+  const validateScores = () => {
+    if (newScores.length < players.length) {
+      return "Enter all scores";
     }
 
-    // if the roundscores contain a score that is Not a number give an error
-    if (EnteredScores.some((player) => isNaN(player.score))) {
-      enqueueSnackbar("Scores must be a number", { variant: "error" });
-      return;
+    if (newScores.some((player) => isNaN(player.score))) {
+      return "Scores must be a number";
     }
 
-    // if the fieldValues contains a score greater than 44 or less than 1 give an error
-    if (EnteredScores.some((player) => player.score > 44 || player.score < 1)) {
-      enqueueSnackbar(
-        "Scores must be at least 1 and cannot be higher that 44",
-        { variant: "error" }
-      );
-      return;
+    if (newScores.some((player) => player.score > 44 || player.score < 1)) {
+      return "Scores must be at least 1 and cannot be higher than 44";
     }
 
-    // Check if the yasatPlayer state is empty
     if (yasatPlayer === null) {
-      enqueueSnackbar("Select the player who called Yasat 🎉", {
-        variant: "info",
-      });
-      return;
+      return "Select the player who called Yasat 🎉";
     }
 
-    // Check if the yasatPlayer score is less than 7
     if (
-      EnteredScores.some(
+      newScores.some(
         (player) => player.id === yasatPlayer && player.score > 7
       )
     ) {
-      enqueueSnackbar("Yasat player score should be 7 or less", {
-        variant: "error",
-      });
+      return "Yasat player score should be 7 or less";
+    }
+
+    return null;
+  };
+
+  const handleScores = () => {
+    const validationError = validateScores();
+
+    if (validationError) {
+      enqueueSnackbar(validationError, { variant: "error" });
       return;
     }
 
-    // find the player id of the player in EnteredScores with the lowest score
-    const lowestScorePlayer = EnteredScores.reduce((prev, current) =>
-      prev.score < current.score ? prev : current
+    // Find the player id of the player in newScores with the lowest score
+    const lowestScorePlayerId = newScores.reduce(
+      (prev, current) => (prev.score < current.score ? prev : current)
     ).id;
 
-    // set yassat stat for the yasat player
-    EnteredScores.find((player) => player.id === yasatPlayer)!.stats.push({
-      name: "Yasat",
+    // Update yasat player stats
+    const yasatPlayerIndex = newScores.findIndex(
+      (player) => player.id === yasatPlayer
+    );
+    newScores[yasatPlayerIndex].stats.push({ name: "Yasat" });
+    newScores.forEach((player) => {
+      player.yasatStreak = player.id === yasatPlayer ? currentScores.find((score) => score.id === yasatPlayer)?.yasatStreak! + 1 : 0;
     });
-
-    // set yasatStreak to 0 for all players exept the yasat player
-    EnteredScores.forEach((player) => {
-      if (player.id !== yasatPlayer) {
-        player.yasatStreak = 0;
-      }
-    });
-
-    // set the yasatStreak for the yasat player
-    EnteredScores.find((player) => player.id === yasatPlayer)!.yasatStreak =
-      currentScores.find((score) => score.id === yasatPlayer)?.yasatStreak! + 1;
 
     // Handle Owns and Owned stats and scores
-    EnteredScores.forEach((player) => {
-      if (
-        player.score <
-        EnteredScores.find((player) => player.id === yasatPlayer)!.score
-      ) {
+    newScores.forEach((player) => {
+      if (player.score < newScores[yasatPlayerIndex].score) {
         player.stats.push({ name: "Own" });
         player.score = 0;
-        EnteredScores.find((player) => player.id === yasatPlayer)!.stats.push({
-          name: "Owned",
-        });
-        EnteredScores.find((player) => player.id === yasatPlayer)!.score = 35;
+        newScores[yasatPlayerIndex].stats.push({ name: "Owned" });
       }
     });
 
-    // if the yasat player is has no "owned" stat, set his entered score to 0
-    if (
-      !EnteredScores.find((player) => player.id === yasatPlayer)!.stats.some(
-        (stat) => stat.name === "Owned"
-      )
-    ) {
-      EnteredScores.find((player) => player.id === yasatPlayer)!.score = 0;
+    // Set yasat player score to 0 if no "owned" stat
+    if (newScores[yasatPlayerIndex].stats.some((stat) => stat.name === "Owned")) {
+      newScores[yasatPlayerIndex].score = 35;
+    } else {
+      newScores[yasatPlayerIndex].score = 0;
     }
 
-    //  Add scores to current scores
-    EnteredScores.forEach((player) => {
-      const currentScore = currentScores.find(
-        (score) => score.id === player.id
-      )?.score;
-      if (currentScore) {
-        player.score = currentScore + player.score;
-      }
+    // set multi-own stats
+    if (newScores[yasatPlayerIndex].stats.filter((stat) => stat.name === "Owned").length > 1) {
+      newScores[yasatPlayerIndex].stats.push({ name: "Multi-owned"});
+      newScores[yasatPlayerIndex].score = 35;      
+    }
+
+
+
+    // Add scores to current scores
+    newScores.forEach((player) => {
+      const currentScore = currentScores.find((score) => score.id === player.id)?.score || 0;
+      player.score = currentScore + player.score;
     });
 
     // Check for deaths (> 100)
-    EnteredScores.forEach((player) => {
+    newScores.forEach((player) => {
       if (player.score > 100) {
         player.stats.push({ name: "Death" });
         player.score = 0;
-        // add a Kill entry for each death player to the yasatPlayer of this round
-        EnteredScores.find((player) => player.id === yasatPlayer)!.stats.push({
-          name: "Kill",
-        });
+        newScores[yasatPlayerIndex].stats.push({ name: "Kill" });
       }
     });
 
-    // for multi's
-    EnteredScores.forEach((player) => {
+    // Handle multi-kills
+    newScores.forEach((player) => {
       const killCount = player.stats.filter(
         (stat) => stat.name === "Kill"
       ).length;
@@ -236,66 +220,44 @@ export function ScoreEntryDialog() {
       }
     });
 
-    // check for nullifies
-    EnteredScores.forEach((player) => {
-      const currentScore = currentScores.find(
-        (score) => score.id === player.id
-      )?.score;
-
+    // Check for nullifies
+    newScores.forEach((player) => {
+      const currentScore = currentScores.find((score) => score.id === player.id)?.score || 0;
       if (player.score === 50) {
         player.stats.push({ name: "Nullify 50" });
         player.score = 0;
-        EnteredScores.find(
-          (player) => player.id === lowestScorePlayer
-        )!.stats.push({ name: "Enable 50" });
+        newScores.find((player) => player.id === lowestScorePlayerId)!.stats.push({ name: "Enable 50" });
       } else if (currentScore === 69 && player.score === 100) {
         player.stats.push({ name: "Lullify" });
         player.score = 0;
-        EnteredScores.find(
-          (player) => player.id === lowestScorePlayer
-        )!.stats.push({ name: "Enable 69" });
+        newScores.find((player) => player.id === lowestScorePlayerId)!.stats.push({ name: "Enable 69" });
       } else if (player.score === 100) {
         player.stats.push({ name: "Nullify 100" });
         player.score = 0;
-        EnteredScores.find(
-          (player) => player.id === lowestScorePlayer
-        )!.stats.push({ name: "Enable 100" });
+        newScores.find((player) => player.id === lowestScorePlayerId)!.stats.push({ name: "Enable 100" });
       }
     });
 
     // Check for Contra Owns
-    EnteredScores.forEach((player) => {
-      const currentScore = currentScores.find(
-        (score) => score.id === player.id
-      )?.score;
-      // if player.stats contains "nullify 50" and the currentScore is 15
-      if (
-        player.stats.some((stat) => stat.name === "Nullify 50") &&
-        currentScore === 15
-      ) {
+    newScores.forEach((player) => {
+      const currentScore = currentScores.find((score) => score.id === player.id)?.score || 0;
+      if (player.stats.some((stat) => stat.name === "Nullify 50") && currentScore === 15) {
         player.stats.push({ name: "Contra-own 50" });
       }
-      if (
-        player.stats.some((stat) => stat.name === "Nullify 100") &&
-        currentScore === 65
-      ) {
+      if (player.stats.some((stat) => stat.name === "Nullify 100") && currentScore === 65) {
         player.stats.push({ name: "Contra-own 100" });
       }
     });
 
-    // sort array by player id
-    EnteredScores.sort((a, b) => a.id - b.id);
-    // add the new score to state
-    dispatch(addScores(EnteredScores));
+    // Sort array by player id
+    newScores.sort((a, b) => a.id - b.id);
+
+    // Add the new score to state
+    dispatch(addScores(newScores));
 
     // Close the dialog
     handleClose();
   };
-
-  const [EnteredScores, setRoundScores] = useState<playerScore[]>([]);
-  const [errorStates, setErrorStates] = useState<{ [key: string]: boolean }>(
-    {}
-  );
 
   // add the scores entered in text fields to the roundScores state
   const handleTextFieldChange = (id: number, score: number) => {
@@ -308,8 +270,8 @@ export function ScoreEntryDialog() {
     }
 
     // if the roundScores array already contains a score for the player update the score without change the position in the array
-    if (EnteredScores.some((player) => player.id === id)) {
-      setRoundScores((prevValues) =>
+    if (newScores.some((player) => player.id === id)) {
+      setNewScores((prevValues) =>
         prevValues.map((player) =>
           player.id === id ? { ...player, score: score } : player
         )
@@ -317,7 +279,7 @@ export function ScoreEntryDialog() {
       return;
     }
 
-    setRoundScores((prevValues) => [
+    setNewScores((prevValues) => [
       ...prevValues,
       { id: id, score: score, stats: [], yasatStreak: 0 },
     ]);

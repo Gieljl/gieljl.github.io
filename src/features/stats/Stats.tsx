@@ -11,6 +11,10 @@ import { selectPlayers } from "../players/playersSlice";
 import { PlayerAvatar } from "../players/PlayerAvatar";
 import { ScoreState, selectScores } from "../game/scoreSlice";
 import { RootState } from "../../app/store";
+import InfoIcon from "@mui/icons-material/Info";
+import { IconButton } from "@mui/material";
+import { SnackbarKey, closeSnackbar, enqueueSnackbar } from "notistack";
+import { HandymanOutlined } from "@mui/icons-material";
 
 export function StatsTable() {
   const players = useAppSelector(selectPlayers);
@@ -53,6 +57,46 @@ export function StatsTable() {
     return highestStreak;
   };
 
+  const handleMOInfo = () => {
+    const action = (snackbarId: SnackbarKey | undefined) => (
+      <button
+        onClick={() => {
+          closeSnackbar(snackbarId);
+        }}
+      >
+        Dismiss
+      </button>
+    );
+    enqueueSnackbar(
+      " Multiple owns in one round : +36 points, no contra-own possible",
+      {
+        variant: "default",
+        action,
+      }
+    );
+  };
+
+  const handleLullifyInfo = () => {
+    const action = (snackbarId: SnackbarKey | undefined) => (
+      <button
+        onClick={() => {
+          closeSnackbar(snackbarId);
+        }}
+      >
+        Dismiss
+      </button>
+    );
+    enqueueSnackbar(
+      "Nullify 100 when your score is 69",
+      {
+        variant: "default",
+        action,
+      }
+    );
+  };
+
+  
+
   return (
     <TableContainer component={Paper}>
       <Table stickyHeader sx={{ minWidth: "100%" }}>
@@ -74,7 +118,7 @@ export function StatsTable() {
           </TableRow>
         </TableHead>
         <TableBody>
-          <TableRow sx={{ margin: 2 }}>
+          <TableRow>
             <TableCell>Yasat</TableCell>
             {players.map((player) => (
               <TableCell align="center" key={player.id}>
@@ -82,7 +126,7 @@ export function StatsTable() {
               </TableCell>
             ))}
           </TableRow>
-          <TableRow sx={{ margin: 2 }}>
+          <TableRow>
             <TableCell>Current Streak</TableCell>
             {currentScores.map((player) => (
               <TableCell align="center" key={player.id}>
@@ -90,7 +134,7 @@ export function StatsTable() {
               </TableCell>
             ))}
           </TableRow>
-          <TableRow sx={{ margin: 2 }}>
+          <TableRow>
             <TableCell>Longest Streak</TableCell>
             {players.map((player) => (
               <TableCell align="center" key={player.id}>
@@ -98,7 +142,7 @@ export function StatsTable() {
               </TableCell>
             ))}
           </TableRow>
-          <TableRow sx={{ margin: 2 }}>
+          <TableRow>
             <TableCell>Deaths</TableCell>
             {players.map((player) => (
               <TableCell align="center" key={player.id}>
@@ -106,7 +150,7 @@ export function StatsTable() {
               </TableCell>
             ))}
           </TableRow>
-          <TableRow sx={{ margin: 2 }}>
+          <TableRow>
             <TableCell>Kills</TableCell>
             {players.map((player) => (
               <TableCell align="center" key={player.id}>
@@ -114,7 +158,7 @@ export function StatsTable() {
               </TableCell>
             ))}
           </TableRow>
-          <TableRow sx={{ margin: 2 }}>
+          <TableRow>
             <TableCell>Owns</TableCell>
             {players.map((player) => (
               <TableCell align="center" key={player.id}>
@@ -122,7 +166,7 @@ export function StatsTable() {
               </TableCell>
             ))}
           </TableRow>
-          <TableRow sx={{ margin: 2 }}>
+          <TableRow>
             <TableCell>Owned</TableCell>
             {players.map((player) => (
               <TableCell align="center" key={player.id}>
@@ -130,15 +174,43 @@ export function StatsTable() {
               </TableCell>
             ))}
           </TableRow>
-          <TableRow sx={{ margin: 2 }}>
-            <TableCell>Lullify</TableCell>
+          <TableRow>
+            <TableCell sx={{ margin: 1 }}>
+              Multi-owned
+              <IconButton
+                aria-label="delete"
+                size="small"
+                onClick={handleMOInfo}
+                sx={{ ml: 1 }}
+              >
+                <InfoIcon fontSize="small" />
+              </IconButton>
+            </TableCell>
+            {players.map((player) => (
+              <TableCell align="center" key={player.id}>
+                {getCount(player.id, "Multi-owned")}
+              </TableCell>
+            ))}
+          </TableRow>
+          <TableRow>
+            <TableCell>
+              Lullify
+              <IconButton
+                aria-label="delete"
+                size="small"
+                onClick={handleLullifyInfo}
+                sx={{ ml: 1 }}
+              >
+                <InfoIcon fontSize="small" />
+              </IconButton>
+            </TableCell>
             {players.map((player) => (
               <TableCell align="center" key={player.id}>
                 {getCount(player.id, "Lullify")}
               </TableCell>
             ))}
           </TableRow>
-          <TableRow sx={{ margin: 2 }}>
+          <TableRow>
             <TableCell>Enable 69</TableCell>
             {players.map((player) => (
               <TableCell align="center" key={player.id}>
@@ -146,7 +218,7 @@ export function StatsTable() {
               </TableCell>
             ))}
           </TableRow>
-          <TableRow sx={{ margin: 2 }}>
+          <TableRow>
             <TableCell>Contra-own 50</TableCell>
             {players.map((player) => (
               <TableCell align="center" key={player.id}>
@@ -154,7 +226,7 @@ export function StatsTable() {
               </TableCell>
             ))}
           </TableRow>
-          <TableRow sx={{ margin: 2 }}>
+          <TableRow>
             <TableCell>Contra-own 100</TableCell>
             {players.map((player) => (
               <TableCell align="center" key={player.id}>
@@ -162,7 +234,7 @@ export function StatsTable() {
               </TableCell>
             ))}
           </TableRow>
-          <TableRow sx={{ margin: 2 }}>
+          <TableRow>
             <TableCell>Nullify 50</TableCell>
             {players.map((player) => (
               <TableCell align="center" key={player.id}>
@@ -170,7 +242,7 @@ export function StatsTable() {
               </TableCell>
             ))}
           </TableRow>
-          <TableRow sx={{ margin: 2 }}>
+          <TableRow>
             <TableCell>Nullify 100</TableCell>
             {players.map((player) => (
               <TableCell align="center" key={player.id}>
@@ -178,7 +250,7 @@ export function StatsTable() {
               </TableCell>
             ))}
           </TableRow>
-          <TableRow sx={{ margin: 2 }}>
+          <TableRow>
             <TableCell>Enable 50</TableCell>
             {players.map((player) => (
               <TableCell align="center" key={player.id}>
@@ -186,7 +258,7 @@ export function StatsTable() {
               </TableCell>
             ))}
           </TableRow>
-          <TableRow sx={{ margin: 2 }}>
+          <TableRow>
             <TableCell>Enable 100</TableCell>
             {players.map((player) => (
               <TableCell align="center" key={player.id}>
@@ -194,7 +266,7 @@ export function StatsTable() {
               </TableCell>
             ))}
           </TableRow>
-          <TableRow sx={{ margin: 2 }}>
+          <TableRow>
             <TableCell>Double Kills</TableCell>
             {players.map((player) => (
               <TableCell align="center" key={player.id}>
@@ -202,7 +274,7 @@ export function StatsTable() {
               </TableCell>
             ))}
           </TableRow>
-          <TableRow sx={{ margin: 2 }}>
+          <TableRow>
             <TableCell>Multi Kills</TableCell>
             {players.map((player) => (
               <TableCell align="center" key={player.id}>
@@ -210,7 +282,7 @@ export function StatsTable() {
               </TableCell>
             ))}
           </TableRow>
-          <TableRow sx={{ margin: 2 }}>
+          <TableRow>
             <TableCell>Mega Kills</TableCell>
             {players.map((player) => (
               <TableCell align="center" key={player.id}>
@@ -218,7 +290,7 @@ export function StatsTable() {
               </TableCell>
             ))}
           </TableRow>
-          <TableRow sx={{ margin: 2 }}>
+          <TableRow>
             <TableCell>Monster Kills</TableCell>
             {players.map((player) => (
               <TableCell align="center" key={player.id}>
