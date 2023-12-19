@@ -6,7 +6,7 @@ import { PlayerList } from "./features/players/Players";
 import { ScoreEntryDialog } from "./features/rounds/scoreEntryDialog";
 import Box from "@mui/material/Box";
 import "./App.css";
-import { Grid, IconButton, Stack } from "@mui/material";
+import { Grid, IconButton, Stack, styled } from "@mui/material";
 import AppBar from "@mui/material/AppBar";
 import Toolbar from "@mui/material/Toolbar";
 import Menu from "./features/menu/menu";
@@ -23,6 +23,7 @@ import { useAppDispatch, useAppSelector } from "./app/hooks";
 import { selectScoreState } from "./features/game/scoreSlice";
 
 const ColorModeContext = React.createContext({ toggleColorMode: () => {} });
+const Offset = styled("div")(({ theme }) => theme.mixins.toolbar);
 
 function App() {
   const colorMode = React.useContext(ColorModeContext);
@@ -31,7 +32,6 @@ function App() {
   const scoreState = useAppSelector(selectScoreState);
 
   return (
-    
     <Stack
       direction="column"
       alignItems="center"
@@ -42,49 +42,47 @@ function App() {
       }}
     >
       <img src={logo} className="App-logo" alt="logo" />
-      
 
       {gameStatus === "new" && <PlayerList />}
 
       {gameStatus === "started" && <ScoresHistoryNew />}
 
-      <Grid item>
-        <AppBar
-          position="fixed"
-          sx={{
-            background: "#424242",
-            color: "#7df3e1",
-            top: "auto",
-            bottom: 0,
-          }}
-        >
-          <Toolbar>
-            <Menu toggleColorMode={colorMode.toggleColorMode} />
+      <AppBar
+        position="fixed"
+        sx={{
+          background: "#424242",
+          color: "#7df3e1",
+          top: "auto",
+          bottom: 0,
+        }}
+      >
+        <Toolbar>
+          <Menu toggleColorMode={colorMode.toggleColorMode} />
 
-            <ScoreEntryDialog />
-            <Box sx={{ flexGrow: 1 }} />
-            {gameStatus === "started" && (
-              <>
-                <IconButton
-                  disabled={scoreState.scores.past.length === 1}
-                  onClick={() => dispatch(ActionCreators.undo())}
-                  color="inherit"
-                >
-                  <UndoIcon />
-                </IconButton>
-                <IconButton
-                  disabled={scoreState.scores.future.length === 0}
-                  onClick={() => dispatch(ActionCreators.redo())}
-                  color="inherit"
-                >
-                  <RedoIcon />
-                </IconButton>
-                <StatsFullScreenDialog />
-              </>
-            )}
-          </Toolbar>
-        </AppBar>
-      </Grid>
+          <ScoreEntryDialog />
+          <Box sx={{ flexGrow: 1 }} />
+          {gameStatus === "started" && (
+            <>
+              <IconButton
+                disabled={scoreState.scores.past.length === 1}
+                onClick={() => dispatch(ActionCreators.undo())}
+                color="inherit"
+              >
+                <UndoIcon />
+              </IconButton>
+              <IconButton
+                disabled={scoreState.scores.future.length === 0}
+                onClick={() => dispatch(ActionCreators.redo())}
+                color="inherit"
+              >
+                <RedoIcon />
+              </IconButton>
+              <StatsFullScreenDialog />
+            </>
+          )}
+        </Toolbar>
+      </AppBar>
+      <Offset />
     </Stack>
   );
 }

@@ -22,7 +22,7 @@ export function StatsTable() {
   };
   const totalScores = [...scoreHistory, newScoreState];
 
-  const getCount = (playerId: string, statName: string) => {
+  const getCount = (playerId: number, statName: string) => {
     return totalScores.reduce((total, round) => {
       const playerRound = round.playerscores.find(
         (player) => player.id === playerId
@@ -37,28 +37,21 @@ export function StatsTable() {
     }, 0);
   };
   // check whats the highest value of the yasatStreak number for a player within the totalScores array
-  const getHighestYasatStreak = (playerId: string) => {
-    const yasatStreaks = totalScores.map((round) => {
+  const getHighestYasatStreak = (playerId: number): number => {
+    let highestStreak = 0;
+
+    totalScores.forEach((round) => {
       const playerRound = round.playerscores.find(
         (player) => player.id === playerId
       );
+
       if (playerRound) {
-        return playerRound.yasatStreak;
+        highestStreak = Math.max(highestStreak, playerRound.yasatStreak);
       }
-      return [];
     });
-    const yasatStreaksFlat = yasatStreaks.flat();
-    if (yasatStreaksFlat.length > 0) {
-      return yasatStreaksFlat.reduce((max, yasatStreak) => {
-        return Math.max(max, yasatStreak);
-      }, 0);
-    }
-    return 0;
-  }
-    
 
-
-
+    return highestStreak;
+  };
 
   return (
     <TableContainer component={Paper}>
@@ -90,7 +83,15 @@ export function StatsTable() {
             ))}
           </TableRow>
           <TableRow sx={{ margin: 2 }}>
-            <TableCell>Yasat Streak </TableCell>
+            <TableCell>Current Streak</TableCell>
+            {currentScores.map((player) => (
+              <TableCell align="center" key={player.id}>
+                {player.yasatStreak}
+              </TableCell>
+            ))}
+          </TableRow>
+          <TableRow sx={{ margin: 2 }}>
+            <TableCell>Longest Streak</TableCell>
             {players.map((player) => (
               <TableCell align="center" key={player.id}>
                 {getHighestYasatStreak(player.id)}
@@ -130,6 +131,22 @@ export function StatsTable() {
             ))}
           </TableRow>
           <TableRow sx={{ margin: 2 }}>
+            <TableCell>Lullify</TableCell>
+            {players.map((player) => (
+              <TableCell align="center" key={player.id}>
+                {getCount(player.id, "Lullify")}
+              </TableCell>
+            ))}
+          </TableRow>
+          <TableRow sx={{ margin: 2 }}>
+            <TableCell>Enable 69</TableCell>
+            {players.map((player) => (
+              <TableCell align="center" key={player.id}>
+                {getCount(player.id, "Enable 69")}
+              </TableCell>
+            ))}
+          </TableRow>
+          <TableRow sx={{ margin: 2 }}>
             <TableCell>Contra-own 50</TableCell>
             {players.map((player) => (
               <TableCell align="center" key={player.id}>
@@ -162,22 +179,6 @@ export function StatsTable() {
             ))}
           </TableRow>
           <TableRow sx={{ margin: 2 }}>
-            <TableCell>Lullify</TableCell>
-            {players.map((player) => (
-              <TableCell align="center" key={player.id}>
-                {getCount(player.id, "Lullify")}
-              </TableCell>
-            ))}
-          </TableRow>
-          <TableRow sx={{ margin: 2 }}>
-            <TableCell>Enable 69</TableCell>
-            {players.map((player) => (
-              <TableCell align="center" key={player.id}>
-                {getCount(player.id, "Enable 69")}
-              </TableCell>
-            ))}
-          </TableRow>
-          <TableRow sx={{ margin: 2 }}>
             <TableCell>Enable 50</TableCell>
             {players.map((player) => (
               <TableCell align="center" key={player.id}>
@@ -190,6 +191,38 @@ export function StatsTable() {
             {players.map((player) => (
               <TableCell align="center" key={player.id}>
                 {getCount(player.id, "Enable 100")}
+              </TableCell>
+            ))}
+          </TableRow>
+          <TableRow sx={{ margin: 2 }}>
+            <TableCell>Double Kills</TableCell>
+            {players.map((player) => (
+              <TableCell align="center" key={player.id}>
+                {getCount(player.id, "Double Kill")}
+              </TableCell>
+            ))}
+          </TableRow>
+          <TableRow sx={{ margin: 2 }}>
+            <TableCell>Multi Kills</TableCell>
+            {players.map((player) => (
+              <TableCell align="center" key={player.id}>
+                {getCount(player.id, "Multi Kill")}
+              </TableCell>
+            ))}
+          </TableRow>
+          <TableRow sx={{ margin: 2 }}>
+            <TableCell>Mega Kills</TableCell>
+            {players.map((player) => (
+              <TableCell align="center" key={player.id}>
+                {getCount(player.id, "Mega Kill")}
+              </TableCell>
+            ))}
+          </TableRow>
+          <TableRow sx={{ margin: 2 }}>
+            <TableCell>Monster Kills</TableCell>
+            {players.map((player) => (
+              <TableCell align="center" key={player.id}>
+                {getCount(player.id, "Monster Kill")}
               </TableCell>
             ))}
           </TableRow>

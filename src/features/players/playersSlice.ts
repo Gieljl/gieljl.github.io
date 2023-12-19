@@ -1,29 +1,14 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 import { RootState} from '../../app/store';
-import { v4 as uuidv4 } from "uuid";
 
 export type player = {
-  id: string;
+  id: number;
   name: string;
-  yasat: number;
-  yasatStreak: number;
-  kill: number;
-  ge0wned: number;
-  nullify50: number;
-  nullify100: number;
-  enable50: number;
-  enable100: number;
-  contraOwn50: number;
-  contraOwn100: number;
-  fth: number;
-  ftph: number;
-  doubleKill: number;
-  multiKill: number;
-  megaKill: number;
-  monsterKill: number;
 }
 
 const initialState = [] as player[] 
+let nextPlayerId = 1
+
 
 export const playerSlice = createSlice({
   name: 'players',
@@ -36,12 +21,12 @@ export const playerSlice = createSlice({
       },
       prepare: (name: string) => ({
         payload: {
-          id: uuidv4(),
+          id: nextPlayerId ++,
           name
         } as player,
       })
     },
-    removePlayer(state, action: PayloadAction<string>) {
+    removePlayer(state, action: PayloadAction<number>) {
       const index = state.findIndex((player) => player.id === action.payload);
       state.splice(index, 1);
     },

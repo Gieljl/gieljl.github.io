@@ -20,7 +20,7 @@ export default function BasicTable() {
   const scoreHistory = useAppSelector((state: RootState) => state.scores.past);
 
   return (
-    <TableContainer sx={{ mt: 1, height: "78%" }}>
+    <TableContainer sx={{ mt: 1}}>
       <Table stickyHeader>
         <TableHead>
           <TableRow>
@@ -137,7 +137,7 @@ export default function BasicTable() {
               }
 
               return (
-                <TableCell align="center" key={player.id}>
+                <TableCell sx={{ margin: 2 }} align="center" key={player.id}>
                   {cellContent}
                 </TableCell>
               );

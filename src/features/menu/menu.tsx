@@ -14,21 +14,18 @@ import {
   DialogTitle,
   IconButton,
   ListItemButton,
-  createTheme,
   useTheme,
 } from "@mui/material";
 import MenuIcon from "@mui/icons-material/Menu";
 import AddCircleIcon from "@mui/icons-material/AddCircle";
 import InfoIcon from "@mui/icons-material/Info";
-import { useAppDispatch, useAppSelector } from "../../app/hooks";
+import { useAppDispatch } from "../../app/hooks";
 import { startNewGame } from "../game/gameSlice";
 import { resetPlayers } from "../players/playersSlice";
-import { resetScores, selectScoreState } from "../game/scoreSlice";
+import { resetScores } from "../game/scoreSlice";
 import { ActionCreators } from "redux-undo";
 import Brightness4Icon from "@mui/icons-material/Brightness4";
 import Brightness7Icon from "@mui/icons-material/Brightness7";
-import UndoIcon from "@mui/icons-material/Undo";
-import RedoIcon from "@mui/icons-material/Redo";
 
 type Anchor = "top" | "left" | "bottom" | "right";
 
@@ -37,7 +34,6 @@ export default function Menu({
 }: {
   toggleColorMode: () => void;
 }) {
-  const scoreState = useAppSelector(selectScoreState);
   const [state, setState] = React.useState({
     top: false,
     left: false,

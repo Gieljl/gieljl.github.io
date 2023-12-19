@@ -6,7 +6,7 @@ export type ScoreState = {
   playerscores: playerScore[];
 }
 export type playerScore = {
-  id: string;
+  id: number;
   score: number;
   stats: stat[]
   yasatStreak: number;

@@ -3,7 +3,7 @@ import { deepOrange, deepPurple, indigo, yellow, teal } from '@mui/material/colo
 
 
 export type PlayerAvatarProps = {
-    id: string; 
+    id: number; 
     name: string;
     score: number;
   };
