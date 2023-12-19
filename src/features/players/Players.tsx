@@ -52,9 +52,7 @@ export function PlayerList() {
             variant="outlined"
             sx={{
               height: "50px",
-              mr: 1,
-              color: "#7df3e1",
-              outlineColor: "#7df3e1",
+              mr: 1
             }}
           >
             Add player
@@ -64,9 +62,7 @@ export function PlayerList() {
             variant="outlined"
             onClick={() => dispatch(startGame()) && dispatch(setStartScores(players))}
             sx={{
-              height: "50px",
-              color: "#7df3e1",
-              outlineColor: "#7df3e1",
+              height: "50px"
             }}
           >
             Start game
