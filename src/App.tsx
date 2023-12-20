@@ -11,7 +11,6 @@ import AppBar from "@mui/material/AppBar";
 import Toolbar from "@mui/material/Toolbar";
 import Menu from "./features/menu/menu";
 import FullWidthTabs from "./features/menu/Tabs";
-
 import { useSelector } from "react-redux";
 import { RootState } from "./app/store";
 import ScoresHistoryNew from "./features/rounds/ScoresHistoryNew";
@@ -104,10 +103,10 @@ export default function ToggleColorMode() {
         palette: {
           mode,
           primary: {
-            main: '#7df3e1',
+            main: "#7df3e1",
           },
           secondary: {
-            main: '#f50057',
+            main: "#f50057",
           },
         },
       }),
@@ -115,12 +114,12 @@ export default function ToggleColorMode() {
   );
 
   return (
-    <ColorModeContext.Provider value={colorMode}>
-      <ThemeProvider theme={theme}>
-        <SnackbarProvider maxSnack={3}>
-          <App />
-        </SnackbarProvider>
-      </ThemeProvider>
-    </ColorModeContext.Provider>
+      <ColorModeContext.Provider value={colorMode}>
+        <ThemeProvider theme={theme}>
+          <SnackbarProvider maxSnack={3}>
+            <App />
+          </SnackbarProvider>
+        </ThemeProvider>
+      </ColorModeContext.Provider>
   );
 }

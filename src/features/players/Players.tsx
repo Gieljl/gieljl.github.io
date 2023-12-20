@@ -49,7 +49,7 @@ export function PlayerList() {
           <Button
             disabled={playerName.length === 0}
             onClick={() => dispatch(addPlayer(playerName)) && setPlayerName("")}
-            variant="outlined"
+            variant="contained"
             sx={{
               height: "50px",
               mr: 1
@@ -59,7 +59,8 @@ export function PlayerList() {
           </Button>
           <Button
             disabled={players.length < 2 || playerName.length > 0}
-            variant="outlined"
+            variant="contained"
+            color="success"
             onClick={() => dispatch(startGame()) && dispatch(setStartScores(players))}
             sx={{
               height: "50px"

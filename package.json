@@ -30,7 +30,8 @@
     "typescript": "^4.9.5",
     "uuid": "^9.0.1",
     "web-vitals": "^2.1.4",
-    "use-sound": "^4.0.1"
+    "use-sound": "^4.0.1",
+    "redux-persist": "^6.0.0"
   },
   "scripts": {
     "start": "react-scripts start",
