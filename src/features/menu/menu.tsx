@@ -26,6 +26,7 @@ import { resetScores } from "../game/scoreSlice";
 import { ActionCreators } from "redux-undo";
 import Brightness4Icon from "@mui/icons-material/Brightness4";
 import Brightness7Icon from "@mui/icons-material/Brightness7";
+import RefreshIcon from "@mui/icons-material/Refresh";
 
 type Anchor = "top" | "left" | "bottom" | "right";
 
@@ -55,6 +56,10 @@ export default function Menu({
 
       setState({ ...state, [anchor]: open });
     };
+
+  const refreshApp = async () => {
+    window.location.reload();
+  };
 
   const list = (anchor: Anchor) => (
     <Box
@@ -95,6 +100,12 @@ export default function Menu({
             primary={theme.palette.mode === "dark" ? "Light Mode" : "Dark Mode"}
             onClick={toggleColorMode}
           />
+        </ListItemButton>
+        <ListItemButton key="">
+          <ListItemIcon>
+            <RefreshIcon />
+          </ListItemIcon>
+          <ListItemText primary="Refresh" onClick={refreshApp} />
         </ListItemButton>
         <ListItemButton key="about">
           <ListItemIcon>

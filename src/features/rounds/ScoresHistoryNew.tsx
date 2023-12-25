@@ -10,9 +10,10 @@ import { PlayerAvatar } from "../players/PlayerAvatar";
 import { useSelector } from "react-redux";
 import { RootState } from "../../app/store";
 import { selectScores } from "../game/scoreSlice";
-import { Avatar, Badge, Chip, IconButton, Stack } from "@mui/material";
+import { Avatar, Badge, Chip, IconButton, Paper, Stack } from "@mui/material";
 import { GiHastyGrave } from "react-icons/gi";
 import { RiCrosshairLine } from "react-icons/ri";
+import { ThemeContext, useTheme } from "@emotion/react";
 
 export default function BasicTable() {
   const players = useAppSelector(selectPlayers);
@@ -20,7 +21,8 @@ export default function BasicTable() {
   const scoreHistory = useAppSelector((state: RootState) => state.scores.past);
 
   return (
-    <TableContainer sx={{ mt: 1}}>
+    <TableContainer sx={{ mt: 2}}>
+      <Paper>
       <Table stickyHeader>
         <TableHead>
           <TableRow>
@@ -30,7 +32,7 @@ export default function BasicTable() {
                   name={player.name}
                   score={
                     currentScores.find((score) => score.id === player.id)
-                      ?.score || 0
+                    ?.score || 0
                   }
                   id={player.id}
                 />
@@ -43,7 +45,7 @@ export default function BasicTable() {
             <TableRow key={roundIndex}>
               {roundScores.playerscores.map((player) => {
                 let cellContent;
-
+                
                 if (player.stats.some((stat) => stat.name === "Yasat")) {
                   cellContent = (
                     <>
@@ -51,7 +53,7 @@ export default function BasicTable() {
                         avatar={<Avatar src="../logo192.png" />}
                         variant="filled"
                         label={player.score}
-                      />
+                        />
                       {player.stats
                         .filter((stat) => stat.name !== "Yasat")
                         .map((stat) => (
@@ -61,8 +63,8 @@ export default function BasicTable() {
                             label={stat.name}
                             key={stat.name}
                             sx={{ margin: 1 }}
-                          />
-                        ))}
+                            />
+                            ))}
                     </>
                   );
                 } else {
@@ -73,13 +75,13 @@ export default function BasicTable() {
                         .filter((stat) => stat.name !== "Yasat")
                         .map((stat) => (
                           <Chip
-                            variant="filled"
-                            size="small"
-                            label={stat.name}
-                            key={stat.name}
-                            sx={{ margin: 1 }}
+                          variant="filled"
+                          size="small"
+                          label={stat.name}
+                          key={stat.name}
+                          sx={{ margin: 1 }}
                           />
-                        ))}
+                          ))}
                     </>
                   );
                 }
@@ -95,7 +97,7 @@ export default function BasicTable() {
           <TableRow>
             {currentScores.map((player) => {
               let cellContent;
-
+              
               if (player.stats.some((stat) => stat.name === "Yasat")) {
                 cellContent = (
                   <>
@@ -103,18 +105,18 @@ export default function BasicTable() {
                       avatar={<Avatar src="../logo192.png" />}
                       variant="filled"
                       label={player.score}
-                    />
+                      />
                     {player.stats
                       .filter((stat) => stat.name !== "Yasat")
                       .map((stat) => (
                         <Chip
-                          variant="filled"
-                          size="small"
-                          label={stat.name}
-                          key={stat.name}
-                          sx={{ margin: 1 }}
+                        variant="filled"
+                        size="small"
+                        label={stat.name}
+                        key={stat.name}
+                        sx={{ margin: 1 }}
                         />
-                      ))}
+                        ))}
                   </>
                 );
               } else {
@@ -125,13 +127,13 @@ export default function BasicTable() {
                       .filter((stat) => stat.name !== "Yasat")
                       .map((stat) => (
                         <Chip
-                          variant="filled"
-                          size="small"
-                          label={stat.name}
-                          key={stat.name}
-                          sx={{ margin: 1 }}
+                        variant="filled"
+                        size="small"
+                        label={stat.name}
+                        key={stat.name}
+                        sx={{ margin: 1 }}
                         />
-                      ))}
+                        ))}
                   </>
                 );
               }
@@ -145,6 +147,7 @@ export default function BasicTable() {
           </TableRow>
         </TableBody>
       </Table>
+    </Paper>
     </TableContainer>
   );
 }

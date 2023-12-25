@@ -56,7 +56,7 @@ export function StatsFullScreenDialog() {
               <CloseIcon />
             </IconButton>
             <Typography sx={{ ml: 2, flex: 1 }} variant="h6" component="div">
-              Statistieken
+              Statistics
             </Typography>
           </Toolbar>
         </AppBar>

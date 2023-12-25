@@ -1,9 +1,11 @@
-.App {
-  text-align: center;
-}
 
 .App-logo {
-  height: 90px;
+  height: 70px;
+  pointer-events: none;
+}
+
+.App-logo-big {
+  height: 100px;
   pointer-events: none;
 }
 
@@ -11,16 +13,6 @@
   .App-logo {
     animation: App-logo-float infinite 3s ease-in-out;
   }
-}
-
-.App-header {
-  font-size: calc(10px + 2vmin);
-
-}
-
-
-.App-link {
-  color: rgb(17, 197, 221);
 }
 
 @keyframes App-logo-float {

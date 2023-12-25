@@ -14,7 +14,6 @@ import { RootState } from "../../app/store";
 import InfoIcon from "@mui/icons-material/Info";
 import { IconButton } from "@mui/material";
 import { SnackbarKey, closeSnackbar, enqueueSnackbar } from "notistack";
-import { HandymanOutlined } from "@mui/icons-material";
 
 export function StatsTable() {
   const players = useAppSelector(selectPlayers);
@@ -98,9 +97,9 @@ export function StatsTable() {
   
 
   return (
-    <TableContainer component={Paper}>
+    <TableContainer>
       <Table stickyHeader sx={{ minWidth: "100%" }}>
-        <TableHead>
+        <TableHead >
           <TableRow sx={{ "&:last-child td, &:last-child th": { border: 0 } }}>
             <TableCell></TableCell>
             {players.map((player) => (

@@ -6,11 +6,12 @@ import { PlayerList } from "./features/players/Players";
 import { ScoreEntryDialog } from "./features/rounds/scoreEntryDialog";
 import Box from "@mui/material/Box";
 import "./App.css";
-import { Grid, IconButton, Stack, styled } from "@mui/material";
+import { IconButton, Paper, Stack, styled } from "@mui/material";
 import AppBar from "@mui/material/AppBar";
 import Toolbar from "@mui/material/Toolbar";
 import Menu from "./features/menu/menu";
-import FullWidthTabs from "./features/menu/Tabs";
+import TabPFullWidthTabs from "./features/menu/Tabs";
+import { GameCreator } from "./features/game/GameCreator";
 import { useSelector } from "react-redux";
 import { RootState } from "./app/store";
 import ScoresHistoryNew from "./features/rounds/ScoresHistoryNew";
@@ -20,7 +21,7 @@ import UndoIcon from "@mui/icons-material/Undo";
 import RedoIcon from "@mui/icons-material/Redo";
 import { useAppDispatch, useAppSelector } from "./app/hooks";
 import { selectScoreState } from "./features/game/scoreSlice";
-
+import { useTheme } from "@mui/system";
 const ColorModeContext = React.createContext({ toggleColorMode: () => {} });
 const Offset = styled("div")(({ theme }) => theme.mixins.toolbar);
 
@@ -29,6 +30,7 @@ function App() {
   const gameStatus = useSelector((state: RootState) => state.game.status);
   const dispatch = useAppDispatch();
   const scoreState = useAppSelector(selectScoreState);
+  const theme = useTheme();
 
   return (
     <Stack
@@ -40,9 +42,22 @@ function App() {
         color: "text.primary",
       }}
     >
-      <img src={logo} className="App-logo" alt="logo" />
+      {gameStatus === "started" && (
+        <Stack
+          sx={{
+            width: "100%",
+            height: "75px",
+            bgcolor: theme.palette.mode === "light" ? "#424242" : "#121212",
+            alignItems: "center",
+          }}
+        >
+          <img src={logo} className="App-logo" alt="logo" />
+        </Stack>
+      )}
 
-      {gameStatus === "new" && <PlayerList />}
+      {gameStatus === "new" && <GameCreator />}
+
+      {/* {gameStatus === "new" && <PlayerList />} */}
 
       {gameStatus === "started" && <ScoresHistoryNew />}
 
@@ -57,7 +72,6 @@ function App() {
       >
         <Toolbar>
           <Menu toggleColorMode={colorMode.toggleColorMode} />
-
           <ScoreEntryDialog />
           <Box sx={{ flexGrow: 1 }} />
           {gameStatus === "started" && (
@@ -69,6 +83,7 @@ function App() {
               >
                 <UndoIcon />
               </IconButton>
+
               <IconButton
                 disabled={scoreState.scores.future.length === 0}
                 onClick={() => dispatch(ActionCreators.redo())}
@@ -114,12 +129,12 @@ export default function ToggleColorMode() {
   );
 
   return (
-      <ColorModeContext.Provider value={colorMode}>
-        <ThemeProvider theme={theme}>
-          <SnackbarProvider maxSnack={3}>
-            <App />
-          </SnackbarProvider>
-        </ThemeProvider>
-      </ColorModeContext.Provider>
+    <ColorModeContext.Provider value={colorMode}>
+      <ThemeProvider theme={theme}>
+        <SnackbarProvider maxSnack={3}>
+          <App />
+        </SnackbarProvider>
+      </ThemeProvider>
+    </ColorModeContext.Provider>
   );
 }

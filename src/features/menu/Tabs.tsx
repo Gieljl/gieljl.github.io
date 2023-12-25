@@ -8,9 +8,7 @@ import Typography from "@mui/material/Typography";
 import Box from "@mui/material/Box";
 import ScoresHistoryNew from "../rounds/ScoresHistoryNew";
 import { StatsTable } from "../stats/Stats";
-import QueryStatsIcon from "@mui/icons-material/QueryStats";
-import SportsScoreIcon from '@mui/icons-material/SportsScore';
-
+import { styled } from "@mui/material";
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -31,7 +29,7 @@ function TabPanel(props: TabPanelProps) {
       {...other}
     >
       {value === index && (
-        <Box sx={{ mt: 1 }}>
+        <Box sx={{ mt: 2 }}>
           <Typography>{children}</Typography>
         </Box>
       )}
@@ -58,35 +56,37 @@ export default function FullWidthTabs() {
     setValue(index);
   };
 
+  const Offset = styled("div")(({ theme }) => theme.mixins.toolbar);
+
   return (
-    <Box sx={{ width: "100%", mt:7 }}>
+    <Box sx={{ bgcolor: "background.paper", width: "100%" }}>
         <Tabs
           value={value}
           onChange={handleChange}
-          textColor="inherit"
-          indicatorColor="secondary"
+          indicatorColor="primary"
+          textColor="primary"
           variant="fullWidth"
+          centered
           aria-label="full width tabs"
-          sx={{ ml:10, mr: 10, mb:1 }}
         >
-          <Tab icon={<SportsScoreIcon />}  {...a11yProps(0)} />
-          <Tab icon={<QueryStatsIcon />}  {...a11yProps(1)} />
-          {/* <Tab label="stats" {...a11yProps(2)} /> */}
+          <Tab label="Ranks" {...a11yProps(0)} />
+          <Tab label="Rounds" {...a11yProps(1)} />
+          <Tab label="stats" {...a11yProps(2)} />
         </Tabs>
       <SwipeableViews
         axis={theme.direction === "rtl" ? "x-reverse" : "x"}
         index={value}
         onChangeIndex={handleChangeIndex}
       >
-        <TabPanel value={value} index={0} dir={theme.direction}>
+        <TabPanel value={value} index={0} dir={theme.direction}></TabPanel>
+        <TabPanel value={value} index={1} dir={theme.direction}>
           <ScoresHistoryNew />
         </TabPanel>
-        <TabPanel value={value} index={1} dir={theme.direction}>
+        <TabPanel value={value} index={2} dir={theme.direction}>
           <StatsTable />
         </TabPanel>
-        {/* <TabPanel value={value} index={2} dir={theme.direction}>
-        </TabPanel> */}
       </SwipeableViews>
+      <Offset />
     </Box>
   );
 }

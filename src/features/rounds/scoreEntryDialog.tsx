@@ -17,6 +17,7 @@ import doublekill from "../../assets/audio/doublekill.mp3";
 import multikill from "../../assets/audio/multikill.mp3";
 import megakill from "../../assets/audio/megakill.mp3";
 import monsterkill from "../../assets/audio/monsterkill.mp3";
+import AddCircleIcon from "@mui/icons-material/AddCircle";
 
 import {
   Avatar,
@@ -121,9 +122,7 @@ export function ScoreEntryDialog() {
     }
 
     if (
-      newScores.some(
-        (player) => player.id === yasatPlayer && player.score > 7
-      )
+      newScores.some((player) => player.id === yasatPlayer && player.score > 7)
     ) {
       return "Yasat player score should be 7 or less";
     }
@@ -140,8 +139,8 @@ export function ScoreEntryDialog() {
     }
 
     // Find the player id of the player in newScores with the lowest score
-    const lowestScorePlayerId = newScores.reduce(
-      (prev, current) => (prev.score < current.score ? prev : current)
+    const lowestScorePlayerId = newScores.reduce((prev, current) =>
+      prev.score < current.score ? prev : current
     ).id;
 
     // Update yasat player stats
@@ -150,7 +149,11 @@ export function ScoreEntryDialog() {
     );
     newScores[yasatPlayerIndex].stats.push({ name: "Yasat" });
     newScores.forEach((player) => {
-      player.yasatStreak = player.id === yasatPlayer ? currentScores.find((score) => score.id === yasatPlayer)?.yasatStreak! + 1 : 0;
+      player.yasatStreak =
+        player.id === yasatPlayer
+          ? currentScores.find((score) => score.id === yasatPlayer)
+              ?.yasatStreak! + 1
+          : 0;
     });
 
     // Handle Owns and Owned stats and scores
@@ -163,23 +166,27 @@ export function ScoreEntryDialog() {
     });
 
     // Set yasat player score to 0 if no "owned" stat
-    if (newScores[yasatPlayerIndex].stats.some((stat) => stat.name === "Owned")) {
+    if (
+      newScores[yasatPlayerIndex].stats.some((stat) => stat.name === "Owned")
+    ) {
       newScores[yasatPlayerIndex].score = 35;
     } else {
       newScores[yasatPlayerIndex].score = 0;
     }
 
     // set multi-own stats
-    if (newScores[yasatPlayerIndex].stats.filter((stat) => stat.name === "Owned").length > 1) {
-      newScores[yasatPlayerIndex].stats.push({ name: "Multi-owned"});
-      newScores[yasatPlayerIndex].score = 35;      
+    if (
+      newScores[yasatPlayerIndex].stats.filter((stat) => stat.name === "Owned")
+        .length > 1
+    ) {
+      newScores[yasatPlayerIndex].stats.push({ name: "Multi-owned" });
+      newScores[yasatPlayerIndex].score = 35;
     }
-
-
 
     // Add scores to current scores
     newScores.forEach((player) => {
-      const currentScore = currentScores.find((score) => score.id === player.id)?.score || 0;
+      const currentScore =
+        currentScores.find((score) => score.id === player.id)?.score || 0;
       player.score = currentScore + player.score;
     });
 
@@ -222,29 +229,43 @@ export function ScoreEntryDialog() {
 
     // Check for nullifies
     newScores.forEach((player) => {
-      const currentScore = currentScores.find((score) => score.id === player.id)?.score || 0;
+      const currentScore =
+        currentScores.find((score) => score.id === player.id)?.score || 0;
       if (player.score === 50) {
         player.stats.push({ name: "Nullify 50" });
         player.score = 0;
-        newScores.find((player) => player.id === lowestScorePlayerId)!.stats.push({ name: "Enable 50" });
+        newScores
+          .find((player) => player.id === lowestScorePlayerId)!
+          .stats.push({ name: "Enable 50" });
       } else if (currentScore === 69 && player.score === 100) {
         player.stats.push({ name: "Lullify" });
         player.score = 0;
-        newScores.find((player) => player.id === lowestScorePlayerId)!.stats.push({ name: "Enable 69" });
+        newScores
+          .find((player) => player.id === lowestScorePlayerId)!
+          .stats.push({ name: "Enable 69" });
       } else if (player.score === 100) {
         player.stats.push({ name: "Nullify 100" });
         player.score = 0;
-        newScores.find((player) => player.id === lowestScorePlayerId)!.stats.push({ name: "Enable 100" });
+        newScores
+          .find((player) => player.id === lowestScorePlayerId)!
+          .stats.push({ name: "Enable 100" });
       }
     });
 
     // Check for Contra Owns
     newScores.forEach((player) => {
-      const currentScore = currentScores.find((score) => score.id === player.id)?.score || 0;
-      if (player.stats.some((stat) => stat.name === "Nullify 50") && currentScore === 15) {
+      const currentScore =
+        currentScores.find((score) => score.id === player.id)?.score || 0;
+      if (
+        player.stats.some((stat) => stat.name === "Nullify 50") &&
+        currentScore === 15
+      ) {
         player.stats.push({ name: "Contra-own 50" });
       }
-      if (player.stats.some((stat) => stat.name === "Nullify 100") && currentScore === 65) {
+      if (
+        player.stats.some((stat) => stat.name === "Nullify 100") &&
+        currentScore === 65
+      ) {
         player.stats.push({ name: "Contra-own 100" });
       }
     });
