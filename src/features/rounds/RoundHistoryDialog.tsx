@@ -5,10 +5,10 @@ import Toolbar from "@mui/material/Toolbar";
 import IconButton from "@mui/material/IconButton";
 import Typography from "@mui/material/Typography";
 import CloseIcon from "@mui/icons-material/Close";
-import QueryStatsIcon from "@mui/icons-material/QueryStats";
 import Slide from "@mui/material/Slide";
 import { TransitionProps } from "@mui/material/transitions";
-import { StatsTable } from "./Stats";
+import HistoryIcon from "@mui/icons-material/History";
+import ScoreHistoryNew from "../rounds/ScoresHistoryNew";
 
 const Transition = React.forwardRef(function Transition(
   props: TransitionProps & {
@@ -19,7 +19,7 @@ const Transition = React.forwardRef(function Transition(
   return <Slide direction="up" ref={ref} {...props} />;
 });
 
-export function StatsFullScreenDialog() {
+export function RoundHistoryDialog() {
   const [open, setOpen] = React.useState(false);
 
   const handleClickOpen = () => {
@@ -32,8 +32,13 @@ export function StatsFullScreenDialog() {
 
   return (
     <div>
-      <IconButton onClick={handleClickOpen} color="primary" size="large">
-        <QueryStatsIcon />
+      <IconButton
+        onClick={handleClickOpen}
+        size="large"
+        aria-label="History"
+        color="primary"
+      >
+        <HistoryIcon />
       </IconButton>
 
       <Dialog
@@ -56,11 +61,11 @@ export function StatsFullScreenDialog() {
               <CloseIcon />
             </IconButton>
             <Typography sx={{ ml: 2, flex: 1 }} variant="h6" component="div">
-              Statistics
+              Rounds History
             </Typography>
           </Toolbar>
         </AppBar>
-        <StatsTable />
+        <ScoreHistoryNew />
       </Dialog>
     </div>
   );

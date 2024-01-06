@@ -2,6 +2,7 @@ import { configureStore, ThunkAction, Action, combineReducers } from '@reduxjs/t
 import counterReducer from '../features/counter/counterSlice';
 import scoresReducer from '../features/game/scoreSlice';
 import playersReducer from '../features/players/playersSlice';
+import statsReducer from '../features/stats/statsSlice';
 import gameReducer from '../features/game/gameSlice';
 import undoable from 'redux-undo';
 import { persistReducer } from 'redux-persist';
@@ -11,7 +12,8 @@ const reducers = combineReducers({
   counter: counterReducer,
   scores: undoable(scoresReducer),
   players: playersReducer,
-  game: gameReducer
+  game: gameReducer,
+  stats: statsReducer
 });
 
 const persistConfig = {

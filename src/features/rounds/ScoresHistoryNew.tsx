@@ -6,14 +6,11 @@ import TableHead from "@mui/material/TableHead";
 import TableRow from "@mui/material/TableRow";
 import { useAppSelector } from "../../app/hooks";
 import { selectPlayers } from "../players/playersSlice";
-import { PlayerAvatar } from "../players/PlayerAvatar";
-import { useSelector } from "react-redux";
+import { PlayerAvatar } from "../players/PlayerAvatarScore";
 import { RootState } from "../../app/store";
 import { selectScores } from "../game/scoreSlice";
-import { Avatar, Badge, Chip, IconButton, Paper, Stack } from "@mui/material";
-import { GiHastyGrave } from "react-icons/gi";
-import { RiCrosshairLine } from "react-icons/ri";
-import { ThemeContext, useTheme } from "@emotion/react";
+import { Avatar, Chip, Paper } from "@mui/material";
+
 
 export default function BasicTable() {
   const players = useAppSelector(selectPlayers);
@@ -21,7 +18,7 @@ export default function BasicTable() {
   const scoreHistory = useAppSelector((state: RootState) => state.scores.past);
 
   return (
-    <TableContainer sx={{ mt: 2}}>
+    <TableContainer  >
       <Paper>
       <Table stickyHeader>
         <TableHead>

@@ -3,10 +3,12 @@ import { RootState, AppThunk } from '../../app/store';
 
 export interface GameState {
   status: 'new' | 'started' ;
+  type: 'classic' | 'ranked'
 }
 
 const initialState: GameState = {
   status: 'new',
+  type: 'ranked'
 };
 
 
@@ -21,6 +23,9 @@ export const gameSlice = createSlice({
     startNewGame: (state) => {
       state.status = 'new';
     },
+    setGameType: (state, action: PayloadAction<'classic' | 'ranked'>) => {
+      state.type = action.payload;
+    }
 
 
   },
@@ -41,11 +46,12 @@ export const gameSlice = createSlice({
   // },
 });
 
-export const { startGame, startNewGame } = gameSlice.actions;
+export const { startGame, startNewGame, setGameType } = gameSlice.actions;
 
 // The function below is called a selector and allows us to select a value from
 // the state. Selectors can also be defined inline where they're used instead of
 // in the slice file. For example: `useSelector((state: RootState) => state.counter.value)`
+
 
 // We can also write thunks by hand, which may contain both sync and async logic.
 // Here's an example of conditionally dispatching actions based on current state.

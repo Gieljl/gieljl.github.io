@@ -8,13 +8,14 @@ import {
   MenuItem,
   Select,
   SelectChangeEvent,
+  Box,
 } from "@mui/material";
 import React, { useState } from "react";
 import { useAppSelector, useAppDispatch } from "../../app/hooks";
 import { setStartScores } from "../game/scoreSlice";
 import { addPlayer, selectPlayers } from "../players/playersSlice";
 import { PlayerList } from "../players/Players";
-import { startGame } from "./gameSlice";
+import { startGame, setGameType } from "./gameSlice";
 import logo from "../../yasa7.png";
 import "../../App.css";
 
@@ -22,77 +23,70 @@ export const GameCreator = () => {
   const dispatch = useAppDispatch();
   const [playerName, setPlayerName] = useState("");
   const players = useAppSelector(selectPlayers);
-  const [gameType, setGameType] = React.useState("");
+  const [gameType, setGameTypeState] = useState("ranked");
   const handleChange = (event: SelectChangeEvent) => {
-    setGameType(event.target.value);
+    setGameTypeState(event.target.value);
   };
 
   return (
+    <><Box mt={5}>
+      <img src={logo} className="App-logo-big" alt="logo" />
+    </Box>
     <Stack
       direction="column"
       alignItems="left"
       spacing={5}
       mt={5}
     >
-      
-        <img src={logo} className="App-logo-big" alt="logo" />
-      
-      <TextField
-        value={playerName}
-        onChange={(e) => setPlayerName(e.target.value)}
-        required
-        placeholder="Enter player name"
-        label="Player name"
-        type="text"
-        variant="outlined"
-        sx={{ mr: 1, width: "250px" }}
-        inputProps={{ inputMode: "text" }}
-      />
-      <Button
-        disabled={playerName.length === 0}
-        onClick={() => dispatch(addPlayer(playerName)) && setPlayerName("")}
-        variant="contained"
-        sx={{
-          height: "50px"
-        }}
-      >
-        Add player
-      </Button>
-      <PlayerList />
-
-      <FormControl required>
-        <InputLabel id="demo-simple-select-required-label">
-          Game Type
-        </InputLabel>
-        <Select
-          labelId="demo-simple-select-required-label"
-          id="demo-simple-select-required"
-          value={gameType}
-          label="Game Type"
-          onChange={handleChange}
-          sx={{ width: "250px" }}
+        <TextField
+          value={playerName}
+          onChange={(e) => setPlayerName(e.target.value)}
+          required
+          placeholder="Enter player name"
+          label="Player name"
+          type="text"
           variant="outlined"
+          inputProps={{ inputMode: "text" }} />
+        <Button
+          disabled={playerName.length === 0}
+          onClick={() => dispatch(addPlayer(playerName)) && setPlayerName("")}
+          variant="contained"
+          sx={{
+            height: "50px"
+          }}
         >
-          <MenuItem value={10}>Classic</MenuItem>
-          <MenuItem value={20}>Ranked</MenuItem>
-        </Select>
-      </FormControl>
+          Add player
+        </Button>
+        <PlayerList />
 
-      <Button
-        disabled={
-          players.length < 2 || playerName.length > 0 || gameType.length === 0
-        }
-        variant="contained"
-        onClick={() =>
-          dispatch(startGame()) && dispatch(setStartScores(players))
-        }
-        sx={{
-          height: "50px",
-        }}
-      >
-        Start game
-      </Button>
-      {/* </Stack> */}
-    </Stack>
+        <FormControl required>
+          <InputLabel id="demo-simple-select-required-label">
+            Game Type
+          </InputLabel>
+          <Select
+            labelId="demo-simple-select-required-label"
+            id="demo-simple-select-required"
+            value={gameType}
+            label="Game Type"
+            onChange={handleChange}
+            variant="outlined"
+          >
+            <MenuItem value={"classic"}>Classic</MenuItem>
+            <MenuItem value={"ranked"}>Ranked</MenuItem>
+          </Select>
+        </FormControl>
+
+        <Button
+          disabled={players.length < 2 || playerName.length > 0 || gameType.length === 0}
+          variant="contained"
+          onClick={() => dispatch(startGame()) && dispatch(setStartScores(players)) && dispatch(setGameType(gameType as "classic" | "ranked"))}
+          sx={{
+            height: "50px",
+          }}
+        >
+          Start game
+        </Button>
+      </Stack>
+    </>
   );
 };

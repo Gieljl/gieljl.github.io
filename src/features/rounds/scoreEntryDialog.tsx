@@ -32,7 +32,7 @@ import { useSelector } from "react-redux";
 import { RootState } from "../../app/store";
 import { selectPlayers } from "../players/playersSlice";
 import { useAppSelector, useAppDispatch } from "../../app/hooks";
-import { PlayerAvatar } from "../players/PlayerAvatar";
+import { PlayerAvatar } from "../players/PlayerAvatarScore";
 import { useSnackbar } from "notistack";
 import { addScores, playerScore, selectScores } from "../game/scoreSlice";
 

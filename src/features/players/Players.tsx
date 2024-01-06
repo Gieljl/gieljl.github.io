@@ -2,7 +2,7 @@ import { AvatarGroup, Stack } from "@mui/material";
 import { useAppSelector } from "../../app/hooks";
 import { selectPlayers } from "./playersSlice";
 import { selectScores } from "../game/scoreSlice";
-import { PlayerAvatar } from "./PlayerAvatar";
+import { PlayerAvatar } from "./PlayerAvatarScore";
 import { Avatar, Badge } from "@mui/material";
 
 export function PlayerList() {
@@ -41,7 +41,7 @@ export function PlayerList() {
     <Stack direction="row" >
       <AvatarGroup max={6}>
         {players.map((player) => (
-          <Avatar {...stringAvatar(player.name)} variant="circular" />
+          <Avatar {...stringAvatar(player.name)} key={player.id} variant="circular" />
         ))}
       </AvatarGroup>
     </Stack>

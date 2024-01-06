@@ -12,8 +12,15 @@ import {
   DialogContent,
   DialogContentText,
   DialogTitle,
+  FormControl,
   IconButton,
+  InputLabel,
   ListItemButton,
+  MenuItem,
+  Select,
+  SelectChangeEvent,
+  Stack,
+
   useTheme,
 } from "@mui/material";
 import MenuIcon from "@mui/icons-material/Menu";
@@ -27,6 +34,9 @@ import { ActionCreators } from "redux-undo";
 import Brightness4Icon from "@mui/icons-material/Brightness4";
 import Brightness7Icon from "@mui/icons-material/Brightness7";
 import RefreshIcon from "@mui/icons-material/Refresh";
+import { useSelector } from "react-redux";
+import { RootState } from "../../app/store";
+import { setGameType } from "../game/gameSlice";
 
 type Anchor = "top" | "left" | "bottom" | "right";
 
@@ -42,6 +52,7 @@ export default function Menu({
     right: false,
   });
   const theme = useTheme();
+  const dispatch = useAppDispatch();
 
   const toggleDrawer =
     (anchor: Anchor, open: boolean) =>
@@ -60,6 +71,7 @@ export default function Menu({
   const refreshApp = async () => {
     window.location.reload();
   };
+
 
   const list = (anchor: Anchor) => (
     <Box
@@ -82,14 +94,14 @@ export default function Menu({
             }
           />
         </ListItemButton>
-        <ListItemButton disabled key="settings">
+        <ListItemButton key="settings" onClick={handleClickOpenSettings}>
           <ListItemIcon>
             <SettingsIcon />
           </ListItemIcon>
-          <ListItemText primary="Settings" />
+          <ListItemText primary="Settings" onClick={handleClickOpenSettings} />
         </ListItemButton>
         <ListItemButton key="Theme">
-          <ListItemIcon>
+          <ListItemIcon onClick={toggleColorMode}>
             {theme.palette.mode === "dark" ? (
               <Brightness7Icon />
             ) : (
@@ -101,7 +113,7 @@ export default function Menu({
             onClick={toggleColorMode}
           />
         </ListItemButton>
-        <ListItemButton key="">
+        <ListItemButton key="refresh">
           <ListItemIcon>
             <RefreshIcon />
           </ListItemIcon>
@@ -118,6 +130,27 @@ export default function Menu({
   );
 
   const [open, setOpen] = React.useState(false);
+  const [openSettings, setOpenSettings] = React.useState(false);
+  const [gameTypeState, setGameTypeState] = React.useState(
+    useSelector((state: RootState) => state.game.type)
+  );
+
+  React.useEffect(() => {
+    dispatch(setGameType(gameTypeState as "classic" | "ranked"));
+  }, [gameTypeState, dispatch]);
+  
+  
+  const handleChange = (event: SelectChangeEvent) => {
+    setGameTypeState(event.target.value as "classic" | "ranked");
+  };
+
+  const handleClickOpenSettings = () => {
+    setOpenSettings(true);
+  };
+
+  const handleCloseSettings = () => {
+    setOpenSettings(false);
+  };
 
   const handleClickOpen = () => {
     setOpen(true);
@@ -127,7 +160,6 @@ export default function Menu({
     setOpen(false);
   };
 
-  const dispatch = useAppDispatch();
 
   return (
     <div>
@@ -154,6 +186,36 @@ export default function Menu({
               </Button>
             </DialogActions>
           </Dialog>
+
+          <Dialog open={openSettings} onClose={handleCloseSettings} fullWidth>
+            <DialogTitle id="settings-dialog">{"Game Settings"}</DialogTitle>
+            <DialogContent>
+              <Stack direction="column" alignItems="left" spacing={5} mt={5}>
+                <FormControl required>
+                  <InputLabel id="demo-simple-select-required-label">
+                    Game Type
+                  </InputLabel>
+                  <Select
+                    labelId="demo-simple-select-required-label"
+                    id="demo-simple-select-required"
+                    value={gameTypeState}
+                    label="Game Type"
+                    onChange={handleChange}
+                    variant="outlined"
+                  >
+                    <MenuItem value={"classic"}>Classic</MenuItem>
+                    <MenuItem value={"ranked"}>Ranked</MenuItem>
+                  </Select>
+                </FormControl>
+              </Stack>
+            </DialogContent>
+            <DialogActions>
+              <Button onClick={handleCloseSettings} autoFocus>
+                Save
+              </Button>
+            </DialogActions>
+          </Dialog>
+
           <Drawer
             ModalProps={{
               keepMounted: false,

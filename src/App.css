@@ -13,6 +13,13 @@
   .App-logo {
     animation: App-logo-float infinite 3s ease-in-out;
   }
+  .App-logo-big{
+    animation: App-logo-float infinite 3s ease-in-out;
+  }
+}
+
+.App-background {
+  background-color: #282c34;
 }
 
 @keyframes App-logo-float {
