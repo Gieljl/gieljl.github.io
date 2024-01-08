@@ -15,7 +15,6 @@ import { WeightedValuesDialog } from "../stats/WeightedValues";
 import { StatsFullScreenDialog } from "../stats/StatsDialog";
 import { RoundHistoryDialog } from "../rounds/RoundHistoryDialog";
 import { selectStatsWeight } from "../stats/statsSlice";
-import { WidthFull } from "@mui/icons-material";
 
 export type PlayerStats = {
   stats: Stat[];
@@ -52,7 +51,7 @@ export function PlayerRanking() {
     }, 0);
   };
 
-  const getLongestYasatStreak = (playerId: number) => {
+  const getLongestYasatStreakPlayer = (playerId: number) => {
     return totalScores.reduce((longestStreak, round) => {
       const playerRound = round.playerscores.find(
         (player) => player.id === playerId
@@ -63,6 +62,17 @@ export function PlayerRanking() {
     }, 0);
   };
 
+  // get player with longest yasat streak of the game
+  const getLongestYasatStreak = () => {
+    return totalScores.reduce((longestStreak, round) => {
+      return Math.max(
+        longestStreak,
+        Math.max(...round.playerscores.map((player) => player.yasatStreak))
+      );
+    }, 0);
+  };
+
+
   const getCurrentYasatStreak = (playerId: number) => {
     const currentRound = currentScores.find((player) => player.id === playerId);
     return currentRound ? currentRound.yasatStreak : 0;
@@ -71,14 +81,23 @@ export function PlayerRanking() {
   const getPlayerStats = (playerId: number) => {
     const playerStatistics: PlayerStats = { stats: [], weightedScore: 0 };
 
-    const longestStreak = getLongestYasatStreak(playerId);
+    const longestStreak = getLongestYasatStreakPlayer(playerId);
     if (longestStreak > 1) {
       playerStatistics.stats.push({
         name: "Longest Streak",
         count: longestStreak,
       });
-      const statWeight = statsWeigts.find((stat) => stat.statName === "Longest Streak")!;
-      playerStatistics.weightedScore += longestStreak * statWeight.weight;
+
+      // const statWeight = statsWeigts.find((stat) => stat.statName === "Longest Streak")!;
+      // playerStatistics.weightedScore += longestStreak * statWeight.weight;
+    }
+
+    // if player is equal to the longest streak of the game player add "Longest Streak" stat to playerStatistics.weightedScore
+    if (longestStreak === getLongestYasatStreak() && longestStreak > 1) {
+      const statWeight = statsWeigts.find(
+        (stat) => stat.statName === "Longest Streak"
+      )!;
+      playerStatistics.weightedScore += 1 * statWeight.weight;
     }
 
     const statNames = [
@@ -165,10 +184,9 @@ export function PlayerRanking() {
             statistics={player.stats}
             key={player.playerInfo.id}
             streak={
-              getCurrentYasatStreak(player.playerInfo.id) > 1
-                ? getCurrentYasatStreak(player.playerInfo.id)
-                : 0
+              getCurrentYasatStreak(player.playerInfo.id)
             }
+            longestStreak={getLongestYasatStreak() === player.stats.stats.find((stat) => stat.name === "Longest Streak")?.count}
           />
         ))}
         <Offset />

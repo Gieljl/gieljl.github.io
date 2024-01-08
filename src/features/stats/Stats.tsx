@@ -11,7 +11,7 @@ import { PlayerAvatar } from "../players/PlayerAvatarScore";
 import { ScoreState, selectScores } from "../game/scoreSlice";
 import { RootState } from "../../app/store";
 import InfoIcon from "@mui/icons-material/Info";
-import { IconButton } from "@mui/material";
+import { Button, IconButton, Stack, Typography } from "@mui/material";
 import { SnackbarKey, closeSnackbar, enqueueSnackbar } from "notistack";
 
 export function StatsTable() {
@@ -57,18 +57,19 @@ export function StatsTable() {
 
   const handleMOInfo = () => {
     const action = (snackbarId: SnackbarKey | undefined) => (
-      <button
+      <Button
+        color="inherit"
         onClick={() => {
           closeSnackbar(snackbarId);
         }}
       >
-        Dismiss
-      </button>
+        close
+      </Button>
     );
     enqueueSnackbar(
       "Multiple owns in one round : +36 points, no contra-own possible",
       {
-        variant: "default",
+        variant: "success",
         action,
       }
     );
@@ -76,29 +77,25 @@ export function StatsTable() {
 
   const handleLullifyInfo = () => {
     const action = (snackbarId: SnackbarKey | undefined) => (
-      <button
+      <Button
+        color="inherit"
         onClick={() => {
           closeSnackbar(snackbarId);
         }}
       >
-        Dismiss
-      </button>
+        close
+      </Button>
     );
-    enqueueSnackbar(
-      "Nullify 100 when your score is 69",
-      {
-        variant: "default",
-        action,
-      }
-    );
+    enqueueSnackbar("Nullify 100 when your score is 69", {
+      variant: "success",
+      action,
+    });
   };
-
-  
 
   return (
     <TableContainer>
       <Table stickyHeader sx={{ minWidth: "100%" }}>
-        <TableHead >
+        <TableHead>
           <TableRow sx={{ "&:last-child td, &:last-child th": { border: 0 } }}>
             <TableCell></TableCell>
             {players.map((player) => (
@@ -174,15 +171,12 @@ export function StatsTable() {
           </TableRow>
           <TableRow>
             <TableCell sx={{ margin: 1 }}>
-              Multi-owned
-              <IconButton
-                aria-label="delete"
-                size="small"
-                onClick={handleMOInfo}
-                sx={{ ml: 1 }}
-              >
-                <InfoIcon fontSize="small" />
-              </IconButton>
+              <Stack direction="row" alignItems="center">
+                <Typography>Multi-owned </Typography>
+                <IconButton size="small" onClick={handleMOInfo} sx={{ ml: 1 }}>
+                  <InfoIcon fontSize="small" />
+                </IconButton>
+              </Stack>
             </TableCell>
             {players.map((player) => (
               <TableCell align="center" key={player.id}>
@@ -192,15 +186,17 @@ export function StatsTable() {
           </TableRow>
           <TableRow>
             <TableCell>
-              Lullify
-              <IconButton
-                aria-label="delete"
-                size="small"
-                onClick={handleLullifyInfo}
-                sx={{ ml: 1 }}
-              >
-                <InfoIcon fontSize="small" />
-              </IconButton>
+              <Stack direction="row" alignItems="center">
+                <Typography>Lullify</Typography>
+
+                <IconButton
+                  size="small"
+                  onClick={handleLullifyInfo}
+                  sx={{ ml: 1 }}
+                >
+                  <InfoIcon fontSize="small" />
+                </IconButton>
+              </Stack>
             </TableCell>
             {players.map((player) => (
               <TableCell align="center" key={player.id}>

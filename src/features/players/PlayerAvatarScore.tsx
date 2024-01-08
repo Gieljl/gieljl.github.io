@@ -1,11 +1,4 @@
 import { Avatar, Badge } from "@mui/material";
-import {
-  deepOrange,
-  deepPurple,
-  indigo,
-  yellow,
-  teal,
-} from "@mui/material/colors";
 
 export type PlayerAvatarProps = {
   id: number;
@@ -52,12 +45,12 @@ export const PlayerAvatar = ({ id, name, score }: PlayerAvatarProps) => {
     | "warning"
     | "info" = "primary";
 
-  if (score === 15 || score === 65 || score === 0) {
+  if (score === 15 || score === 65 || score === 69 || score === 0) {
     badgecolor = "success";
-  } else if (score > 55) {
-    badgecolor = "error";
+  } else if (score > 60) {
+    badgecolor = "secondary";
   } else {
-    badgecolor = "warning";
+    badgecolor = "primary";
   }
 
   return (

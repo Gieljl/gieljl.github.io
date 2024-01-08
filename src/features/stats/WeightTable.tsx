@@ -8,6 +8,7 @@ import TableRow from "@mui/material/TableRow";
 import IconButton from "@mui/material/IconButton";
 import AddIcon from "@mui/icons-material/Add";
 import RemoveIcon from "@mui/icons-material/Remove";
+import InfoIcon from "@mui/icons-material/Info";
 import {
   FormControl,
   InputLabel,
@@ -16,12 +17,20 @@ import {
   SelectChangeEvent,
   Typography,
   Stack,
+  Button,
 } from "@mui/material";
 
 import { useAppSelector } from "../../app/hooks";
 import { useAppDispatch } from "../../app/hooks";
 
-import { selectStatsWeight, resetStats, updateStatWeight, updateGameType, selectStatsGameType } from "./statsSlice";
+import {
+  selectStatsWeight,
+  resetStats,
+  updateStatWeight,
+  updateGameType,
+  selectStatsGameType,
+} from "./statsSlice";
+import { SnackbarKey, closeSnackbar, enqueueSnackbar } from "notistack";
 
 export function WeightTable() {
   const dispatch = useAppDispatch();
@@ -46,19 +55,43 @@ export function WeightTable() {
   };
 
   const handleIncrement = (statName: string) => {
-    const statToUpdate = statsWeights.find((stat) => stat.statName === statName);
+    const statToUpdate = statsWeights.find(
+      (stat) => stat.statName === statName
+    );
     if (statToUpdate !== undefined) {
       const updatedWeight = statToUpdate.weight + 1;
       dispatch(updateStatWeight({ statName, weight: updatedWeight }));
     }
   };
-  
+
   const handleDecrement = (statName: string) => {
-    const statToUpdate = statsWeights.find((stat) => stat.statName === statName);
+    const statToUpdate = statsWeights.find(
+      (stat) => stat.statName === statName
+    );
     if (statToUpdate !== undefined) {
       const updatedWeight = statToUpdate.weight - 1;
       dispatch(updateStatWeight({ statName, weight: updatedWeight }));
     }
+  };
+
+  const handleStreakInfo = () => {
+    const action = (snackbarId: SnackbarKey | undefined) => (
+      <Button
+        onClick={() => {
+          closeSnackbar(snackbarId);
+        }}
+        color="inherit"
+      >
+        close
+      </Button>
+    );
+    enqueueSnackbar(
+      "Player(s) with the highest streak of the game will get 1 * weighted value as Bonus.",
+      {
+        variant: "success",
+        action,
+      }
+    );
   };
 
   return (
@@ -68,8 +101,8 @@ export function WeightTable() {
           Game Type
         </InputLabel>
         <Select
-          labelId="demo-simple-select-required-label"
-          id="demo-simple-select-required"
+          labelId="simple-select-required-label"
+          id="simple-select-required"
           value={gameType}
           label="Game Type"
           onChange={handleChange}
@@ -96,20 +129,38 @@ export function WeightTable() {
                 sx={{ "&:last-child td, &:last-child th": { border: 0 } }}
               >
                 <TableCell component="th" scope="row">
-                  {row.statName}
+                  <Stack direction="row" alignItems="center">
+                    <Typography>{row.statName}</Typography>
+                    {row.statName === "Longest Streak" ? (
+                      <IconButton
+                        size="small"
+                        onClick={handleStreakInfo}
+                        sx={{ ml: 1 }}
+                      >
+                        <InfoIcon fontSize="small" />
+                      </IconButton>
+                    ) : null}
+                  </Stack>
                 </TableCell>
                 <TableCell align="center">
                   {gameType === "custom" ? (
-                    <Stack direction="row"
+                    <Stack
+                      direction="row"
                       alignItems="center"
                       justifyContent="center"
                       spacing={1}
                     >
-                      <IconButton color="primary" onClick={() => handleDecrement(row.statName)}>
+                      <IconButton
+                        color="primary"
+                        onClick={() => handleDecrement(row.statName)}
+                      >
                         <RemoveIcon />
                       </IconButton>
                       <Typography>{row.weight}</Typography>
-                      <IconButton color="primary" onClick={() => handleIncrement(row.statName)}>
+                      <IconButton
+                        color="primary"
+                        onClick={() => handleIncrement(row.statName)}
+                      >
                         <AddIcon />
                       </IconButton>
                     </Stack>

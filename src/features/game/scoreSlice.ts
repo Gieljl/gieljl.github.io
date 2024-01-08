@@ -32,10 +32,12 @@ export const scoreSlice = createSlice({
         state.playerscores.push({id: player.id, score: 0, stats: [], yasatStreak: 0});
       });
     },
+    
     // Use the PayloadAction type to declare the contents of `action.payload`
     addScores: (state, action: PayloadAction<playerScore[]>) => {
       state.playerscores = action.payload;     
     },
+
     resetScores() {
       return initialState;
     },

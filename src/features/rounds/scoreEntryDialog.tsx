@@ -17,8 +17,6 @@ import doublekill from "../../assets/audio/doublekill.mp3";
 import multikill from "../../assets/audio/multikill.mp3";
 import megakill from "../../assets/audio/megakill.mp3";
 import monsterkill from "../../assets/audio/monsterkill.mp3";
-import AddCircleIcon from "@mui/icons-material/AddCircle";
-
 import {
   Avatar,
   Box,
@@ -180,7 +178,7 @@ export function ScoreEntryDialog() {
         .length > 1
     ) {
       newScores[yasatPlayerIndex].stats.push({ name: "Multi-owned" });
-      newScores[yasatPlayerIndex].score = 35;
+      newScores[yasatPlayerIndex].score = 36;
     }
 
     // Add scores to current scores
@@ -333,12 +331,8 @@ export function ScoreEntryDialog() {
               <CloseIcon />
             </IconButton>
             <Typography sx={{ ml: 2, flex: 1 }} variant="h6" component="div">
-              Add Scores
+              Enter round scores
             </Typography>
-
-            <Button autoFocus color="inherit" onClick={handleScores}>
-              Save
-            </Button>
           </Toolbar>
         </AppBar>
 
@@ -348,7 +342,7 @@ export function ScoreEntryDialog() {
               <ListItem
                 secondaryAction={
                   yasatPlayer === player.id ? (
-                    <Avatar src="../../logo192.png" />
+                    <Avatar sx={{ mr: 2 }} src="../../logo192.png" />
                   ) : (
                     <></>
                   )
@@ -385,13 +379,23 @@ export function ScoreEntryDialog() {
                   label="Score"
                   variant="outlined"
                   inputProps={{ inputMode: "numeric" }}
-                  sx={{ ml: 2, mr: 2, width: "100px" }}
+                  sx={{ ml: 2, mr: 2, width: "80px" }}
                 />
               </ListItem>
               <Divider sx={{ margin: 1 }} />
             </Box>
           ))}
         </List>
+        <Button
+          autoFocus
+          variant="contained"
+          sx={{ alignSelf: "center", height: 50, width: 100, mt: 2 }}
+          color="primary"
+          onClick={handleScores}
+        >
+          Save
+        </Button>
+        
       </Dialog>
     </div>
   );

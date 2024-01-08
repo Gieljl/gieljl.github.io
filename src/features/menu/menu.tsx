@@ -211,7 +211,7 @@ export default function Menu({
             </DialogContent>
             <DialogActions>
               <Button onClick={handleCloseSettings} autoFocus>
-                Save
+                Close
               </Button>
             </DialogActions>
           </Dialog>

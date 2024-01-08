@@ -18,6 +18,7 @@ export type PlayerScoreCardProps = {
   statistics: PlayerStats;
   score: number;
   streak?: number;
+  longestStreak: boolean;
 };
 
 export const PlayerScoreCard = ({
@@ -25,9 +26,8 @@ export const PlayerScoreCard = ({
   statistics,
   score,
   streak,
+  longestStreak,
 }: PlayerScoreCardProps) => {
-
-
   function stringToColor(string: string) {
     let hash = 0;
     let i;
@@ -68,16 +68,6 @@ export const PlayerScoreCard = ({
             key={stat.name}
           />
         );
-      case "Highest Streak":
-        return (
-          <Chip
-            avatar={<Avatar src="../logo192.png" />}
-            variant="filled"
-            label={"streak"}
-            size="small"
-            key={stat.name}
-          />
-        );
       case "Death":
         return (
           <Chip
@@ -109,19 +99,22 @@ export const PlayerScoreCard = ({
       case "Owned":
         return (
           <Chip
-            icon={<FaSadCry size={"17px"} />}
+            icon={<FaSadCry size={"16px"} />}
             variant="filled"
             size="small"
             key={stat.name}
           />
         );
-      case "Multi-Owned":
+
+      case "Longest Streak":
         return (
           <Chip
+            icon={<FaFire size={"14px"} />}
             variant="filled"
+            {...(longestStreak && { color: "success" })}
             size="small"
-            label={stat.name}
-            key={stat.name}
+            label={stat.count}
+            sx={{ ml: 1, mr: 1 }}
           />
         );
 
@@ -148,8 +141,8 @@ export const PlayerScoreCard = ({
 
   if (score === 15 || score === 65 || score === 69 || score === 0) {
     badgecolor = "success";
-  } else if (score > 55) {
-    badgecolor = "error";
+  } else if (score > 60) {
+    badgecolor = "secondary";
   } else {
     badgecolor = "default";
   }
@@ -158,16 +151,16 @@ export const PlayerScoreCard = ({
   const getStatBadgeColor = (statName: string) => {
     const foundStat = statsWeigts.find((stat) => stat.statName === statName);
     if (foundStat && foundStat.weight < 0) {
-      return "error";
+      return "secondary";
     } else if (foundStat && foundStat.weight > 0) {
       return "success";
     } else {
       return "primary";
     }
-  }
+  };
 
   return (
-    <Card elevation={2} sx={{width:"100%"}}>
+    <Card elevation={2} sx={{ width: "100%" }}>
       <CardContent>
         <Stack
           justifyContent={"left"}
@@ -193,23 +186,6 @@ export const PlayerScoreCard = ({
             </Typography>
             <Chip label={score} variant="filled" color={badgecolor} />
           </Stack>
-          {(streak ?? 0 > 1) && (
-            <Stack alignItems={"center"} spacing={1} direction="column">
-              <Typography
-                sx={{ fontSize: 11 }}
-                color="text.secondary"
-                gutterBottom
-              >
-                Streak
-              </Typography>
-              <Chip
-                icon={<FaFire size={"17px"} />}
-                label={streak}
-                variant="filled"
-                color="warning"
-              />
-            </Stack>
-          )}
 
           <Stack alignItems={"center"} spacing={1} direction="column">
             <Typography
@@ -225,20 +201,45 @@ export const PlayerScoreCard = ({
               color="primary"
             />
           </Stack>
+          {streak && (
+            <Stack alignItems={"center"} spacing={1} direction="column">
+              <Typography
+                sx={{ fontSize: 11 }}
+                color="text.secondary"
+                gutterBottom
+              >
+                Streak
+              </Typography>
+              {streak === 1 ? (
+                <Chip label={streak} variant="filled" />
+              ) : (
+                <Chip
+                  icon={<FaFire size={"17px"} />}
+                  label={streak}
+                  variant="filled"
+                />
+              )}
+            </Stack>
+          )}
         </Stack>
         {statistics.stats.length > 0 && (
           <>
             <Divider variant="middle" sx={{ mt: 2, mb: 2 }} />
 
             {statistics.stats.map((stat) => (
-              <Badge
-                badgeContent={stat.count}
-                color={getStatBadgeColor(stat.name)}
-                sx={{ margin: 1 }}
-                key={stat.name}
-              >
-                {renderStat(stat)}
-              </Badge>
+              <React.Fragment key={stat.name}>
+                {stat.name !== "Longest Streak" ? (
+                  <Badge
+                    badgeContent={stat.count}
+                    color={getStatBadgeColor(stat.name)}
+                    sx={{ margin: 1 }}
+                  >
+                    {renderStat(stat)}
+                  </Badge>
+                ) : (
+                  renderStat(stat)
+                )}
+              </React.Fragment>
             ))}
           </>
         )}

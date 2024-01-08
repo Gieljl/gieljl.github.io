@@ -5,11 +5,10 @@ import { StatsFullScreenDialog } from "./features/stats/StatsDialog";
 import { ScoreEntryDialog } from "./features/rounds/scoreEntryDialog";
 import Box from "@mui/material/Box";
 import "./App.css";
-import { IconButton, Paper, Stack, styled } from "@mui/material";
+import { IconButton, Stack } from "@mui/material";
 import AppBar from "@mui/material/AppBar";
 import Toolbar from "@mui/material/Toolbar";
 import Menu from "./features/menu/menu";
-import TabPFullWidthTabs from "./features/menu/Tabs";
 import { PlayerRanking } from "./features/players/Ranking";
 import { GameCreator } from "./features/game/GameCreator";
 import { useSelector } from "react-redux";
@@ -22,8 +21,8 @@ import RedoIcon from "@mui/icons-material/Redo";
 import { useAppDispatch, useAppSelector } from "./app/hooks";
 import { selectScoreState } from "./features/game/scoreSlice";
 import { useTheme } from "@mui/system";
+import  ServiceWorkerWrapper  from "./serviceworkerWrapper";
 const ColorModeContext = React.createContext({ toggleColorMode: () => {} });
-const Offset = styled("div")(({ theme }) => theme.mixins.toolbar);
 
 function App() {
   const colorMode = React.useContext(ColorModeContext);
@@ -43,6 +42,7 @@ function App() {
           color: "text.primary",
         }}
       >
+        <ServiceWorkerWrapper/>
         {gameStatus === "started" && (
           <Stack
             sx={{
@@ -80,7 +80,7 @@ function App() {
             {gameStatus === "started" && (
               <>
                 <IconButton
-                  disabled={scoreState.scores.past.length === 1}
+                  disabled={scoreState.scores.past.length < 2}
                   onClick={() => dispatch(ActionCreators.undo())}
                   color="inherit"
                 >
