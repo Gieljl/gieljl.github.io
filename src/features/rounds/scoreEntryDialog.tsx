@@ -31,8 +31,13 @@ import { RootState } from "../../app/store";
 import { selectPlayers } from "../players/playersSlice";
 import { useAppSelector, useAppDispatch } from "../../app/hooks";
 import { PlayerAvatar } from "../players/PlayerAvatarScore";
-import { useSnackbar } from "notistack";
-import { addScores, playerScore, selectScores } from "../game/scoreSlice";
+import { closeSnackbar, useSnackbar } from "notistack";
+import {
+  addScores,
+  playerScore,
+  selectScoreState,
+  selectScores,
+} from "../game/scoreSlice";
 
 const Transition = React.forwardRef(function Transition(
   props: TransitionProps & {
@@ -79,11 +84,12 @@ export function ScoreEntryDialog() {
   const gameStatus = useSelector((state: RootState) => state.game.status);
   const players = useAppSelector(selectPlayers);
   const currentScores = useAppSelector(selectScores);
-  const dispatch = useAppDispatch();
+  const scoreState = useAppSelector(selectScoreState);
 
+  const dispatch = useAppDispatch();
   const [yasatPlayer, setYasatPlayer] = useState<number | null>(null);
 
-  const handleYasat = (id: number) => {
+    const handleYasat = (id: number) => {
     // if the player is already selected remove the selection
     if (yasatPlayer === id) {
       setYasatPlayer(null);
@@ -271,6 +277,44 @@ export function ScoreEntryDialog() {
     // Sort array by player id
     newScores.sort((a, b) => a.id - b.id);
 
+    // check if there is a score future in undo history
+    if (scoreState.future.length > 0) {
+      // give a message with the numer of rounds that is going to be deleted with an optopn to proceed or cancel
+      enqueueSnackbar(
+        `This will delete ${scoreState.future.length} rounds of redo "future". Are you sure you want to proceed?`,
+        {
+          variant: "warning",
+          persist: true,
+          action: (key) => (
+            <>
+              <Button
+                color="inherit"
+                onClick={() => {
+                  dispatch(addScores(newScores));
+                  handleClose();
+                  enqueueSnackbar("Scores updated! ", { variant: "success" });
+                  closeSnackbar(key);
+                }}
+              >
+                Yes
+              </Button>
+              <Button
+                color="inherit"
+                onClick={() => {
+                  enqueueSnackbar("Scores not updated", { variant: "info" });
+                  closeSnackbar(key);
+                  handleClose();
+                }}
+              >
+                No
+              </Button>
+            </>
+          ),
+        }
+      );
+      return;
+    }
+
     // Add the new score to state
     dispatch(addScores(newScores));
 
@@ -395,7 +439,6 @@ export function ScoreEntryDialog() {
         >
           Save
         </Button>
-        
       </Dialog>
     </div>
   );

@@ -80,7 +80,7 @@ function App() {
             {gameStatus === "started" && (
               <>
                 <IconButton
-                  disabled={scoreState.scores.past.length < 2}
+                  disabled={scoreState.past.length < 2}
                   onClick={() => dispatch(ActionCreators.undo())}
                   color="inherit"
                 >
@@ -88,7 +88,7 @@ function App() {
                 </IconButton>
 
                 <IconButton
-                  disabled={scoreState.scores.future.length === 0}
+                  disabled={scoreState.future.length === 0}
                   onClick={() => dispatch(ActionCreators.redo())}
                   color="inherit"
                 >
