@@ -9,6 +9,7 @@ import Slide from "@mui/material/Slide";
 import { TransitionProps } from "@mui/material/transitions";
 import { LiaBalanceScaleRightSolid } from "react-icons/lia";
 import { WeightTable } from "./WeightTable";
+import { useTheme } from "@mui/material";
 
 const Transition = React.forwardRef(function Transition(
   props: TransitionProps & {
@@ -20,6 +21,7 @@ const Transition = React.forwardRef(function Transition(
 });
 
 export function WeightedValuesDialog() {
+  const theme = useTheme();
   const [open, setOpen] = React.useState(false);
 
   const handleClickOpen = () => {
@@ -32,7 +34,11 @@ export function WeightedValuesDialog() {
 
   return (
     <div>
-      <IconButton onClick={handleClickOpen} color="primary" size="large">
+      <IconButton
+        onClick={handleClickOpen}
+        color="primary"
+        size="large"
+      >
         <LiaBalanceScaleRightSolid />
       </IconButton>
 
@@ -43,13 +49,12 @@ export function WeightedValuesDialog() {
         TransitionComponent={Transition}
       >
         <AppBar
-          color="default"
-          sx={{ background: "#424242", color: "#7df3e1", position: "relative" }}
+          sx={{ background: "#424242", color:"#7df3e1", position: "relative" }}
         >
           <Toolbar>
             <IconButton
               edge="start"
-              color="inherit"
+              color="primary"
               onClick={handleClose}
               aria-label="close"
             >

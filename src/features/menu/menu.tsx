@@ -165,7 +165,7 @@ export default function Menu({
     <div>
       {(["bottom"] as const).map((anchor) => (
         <React.Fragment key={anchor}>
-          <IconButton color="inherit" onClick={toggleDrawer(anchor, true)}>
+          <IconButton color="primary" onClick={toggleDrawer(anchor, true)}>
             <MenuIcon />
           </IconButton>
           <Dialog

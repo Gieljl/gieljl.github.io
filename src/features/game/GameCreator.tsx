@@ -3,12 +3,12 @@ import {
   Stack,
   Button,
   FormControl,
-  FormHelperText,
   InputLabel,
   MenuItem,
   Select,
   SelectChangeEvent,
   Box,
+  useTheme,
 } from "@mui/material";
 import React, { useState } from "react";
 import { useAppSelector, useAppDispatch } from "../../app/hooks";
@@ -17,9 +17,11 @@ import { addPlayer, selectPlayers } from "../players/playersSlice";
 import { PlayerList } from "../players/Players";
 import { startGame, setGameType } from "./gameSlice";
 import logo from "../../yasa7.png";
+import logolight from "../../yasa7_light.png";
 import "../../App.css";
 
 export const GameCreator = () => {
+  const theme = useTheme();
   const dispatch = useAppDispatch();
   const [playerName, setPlayerName] = useState("");
   const players = useAppSelector(selectPlayers);
@@ -30,13 +32,18 @@ export const GameCreator = () => {
 
   return (
     <><Box mt={5}>
-      <img src={logo} className="App-logo-big" alt="logo" />
+      <img src={theme.palette.mode === "light" ? logolight : logo } className="App-logo-big" alt="logo" />
     </Box>
     <Stack
       direction="column"
       alignItems="left"
       spacing={5}
       mt={5}
+      sx={{
+        height: "100vh",
+        bgcolor: "background.default",
+        color: "text.primary",
+      }}
     >
         <TextField
           value={playerName}

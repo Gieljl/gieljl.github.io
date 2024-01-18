@@ -21,7 +21,6 @@ const Transition = React.forwardRef(function Transition(
 
 export function RoundHistoryDialog() {
   const [open, setOpen] = React.useState(false);
-
   const handleClickOpen = () => {
     setOpen(true);
   };
@@ -48,13 +47,12 @@ export function RoundHistoryDialog() {
         TransitionComponent={Transition}
       >
         <AppBar
-          color="default"
-          sx={{ background: "#424242", color: "#7df3e1", position: "relative" }}
+          sx={{ background: "#424242", color:"#7df3e1", position: "relative" }}
         >
           <Toolbar>
             <IconButton
               edge="start"
-              color="inherit"
+              color="primary"
               onClick={handleClose}
               aria-label="close"
             >

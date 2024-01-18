@@ -67,7 +67,7 @@ export function StatsTable() {
       </Button>
     );
     enqueueSnackbar(
-      "Multiple owns in one round : +36 points, no contra-own possible",
+      "Multiple owns in one round",
       {
         variant: "success",
         action,

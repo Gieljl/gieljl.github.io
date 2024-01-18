@@ -32,7 +32,11 @@ export function StatsFullScreenDialog() {
 
   return (
     <div>
-      <IconButton onClick={handleClickOpen} color="primary" size="large">
+      <IconButton
+        onClick={handleClickOpen}
+        color="primary"
+        size="large"
+      >
         <QueryStatsIcon />
       </IconButton>
 
@@ -43,13 +47,12 @@ export function StatsFullScreenDialog() {
         TransitionComponent={Transition}
       >
         <AppBar
-          color="default"
-          sx={{ background: "#424242", color: "#7df3e1", position: "relative" }}
+          sx={{ background: "#424242", color:"#7df3e1", position: "relative" }}
         >
           <Toolbar>
             <IconButton
               edge="start"
-              color="inherit"
+              color="primary"
               onClick={handleClose}
               aria-label="close"
             >

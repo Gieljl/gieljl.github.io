@@ -24,6 +24,7 @@ import {
   List,
   ListItem,
   ListItemAvatar,
+  useTheme,
 } from "@mui/material";
 
 import { useSelector } from "react-redux";
@@ -48,17 +49,19 @@ const Transition = React.forwardRef(function Transition(
   return <Slide direction="up" ref={ref} {...props} />;
 });
 
-const StyledFab = styled(Fab)({
-  background: "#7df3e1",
-  position: "absolute",
-  zIndex: 1,
-  top: -30,
-  left: 0,
-  right: 0,
-  margin: "0 auto",
-});
-
 export function ScoreEntryDialog() {
+  const theme = useTheme();
+  const fabColor = theme.palette.mode === "light" ? "#4BCDB9" : "#7df3e1";
+  const StyledFab = styled(Fab)({
+    background: fabColor,
+    position: "absolute",
+    zIndex: 5,
+    top: -30,
+    left: 0,
+    right: 0,
+    margin: "0 auto",
+  });
+
   const { enqueueSnackbar } = useSnackbar();
   const [open, setOpen] = React.useState(false);
   const [newScores, setNewScores] = useState<playerScore[]>([]);
@@ -89,7 +92,7 @@ export function ScoreEntryDialog() {
   const dispatch = useAppDispatch();
   const [yasatPlayer, setYasatPlayer] = useState<number | null>(null);
 
-    const handleYasat = (id: number) => {
+  const handleYasat = (id: number) => {
     // if the player is already selected remove the selection
     if (yasatPlayer === id) {
       setYasatPlayer(null);
@@ -173,9 +176,9 @@ export function ScoreEntryDialog() {
     if (
       newScores[yasatPlayerIndex].stats.some((stat) => stat.name === "Owned")
     ) {
-      newScores[yasatPlayerIndex].score = 35;
+      newScores[yasatPlayerIndex].score = 35; // owned score
     } else {
-      newScores[yasatPlayerIndex].score = 0;
+      newScores[yasatPlayerIndex].score = 0; // yasat score
     }
 
     // set multi-own stats
@@ -184,7 +187,6 @@ export function ScoreEntryDialog() {
         .length > 1
     ) {
       newScores[yasatPlayerIndex].stats.push({ name: "Multi-owned" });
-      newScores[yasatPlayerIndex].score = 36;
     }
 
     // Add scores to current scores
@@ -351,7 +353,7 @@ export function ScoreEntryDialog() {
   return (
     <div>
       {gameStatus === "started" && (
-        <StyledFab color="default" aria-label="add" onClick={handleClickOpen}>
+        <StyledFab color="primary" aria-label="add" onClick={handleClickOpen}>
           <AddIcon />
         </StyledFab>
       )}
@@ -362,13 +364,12 @@ export function ScoreEntryDialog() {
         TransitionComponent={Transition}
       >
         <AppBar
-          color="default"
-          sx={{ background: "#424242", color: "#7df3e1", position: "relative" }}
+          sx={{ background: "#424242", color:"#7df3e1", position: "relative" }}
         >
           <Toolbar>
             <IconButton
               edge="start"
-              color="inherit"
+              color="primary"
               onClick={handleClose}
               aria-label="close"
             >
