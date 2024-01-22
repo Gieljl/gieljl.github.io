@@ -19,6 +19,7 @@ export type PlayerScoreCardProps = {
   score: number;
   streak?: number;
   longestStreak: boolean;
+  showStats: boolean;
 };
 
 export const PlayerScoreCard = ({
@@ -27,6 +28,7 @@ export const PlayerScoreCard = ({
   score,
   streak,
   longestStreak,
+  showStats
 }: PlayerScoreCardProps) => {
   
 
@@ -202,7 +204,7 @@ export const PlayerScoreCard = ({
             </Stack>
           )}
         </Stack>
-        {statistics.stats.length > 0 && (
+        {showStats && statistics.stats.length > 0 && (
           <>
             <Divider variant="middle" sx={{ mt: 2, mb: 2 }} />
 

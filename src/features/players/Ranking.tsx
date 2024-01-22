@@ -17,7 +17,7 @@ import { WeightedValuesDialog } from "../stats/WeightedValues";
 import { StatsFullScreenDialog } from "../stats/StatsDialog";
 import { RoundHistoryDialog } from "../rounds/RoundHistoryDialog";
 import { selectStatsWeight } from "../stats/statsSlice";
-import SwapVertIcon from '@mui/icons-material/SwapVert';
+import SwapVertIcon from "@mui/icons-material/SwapVert";
 import logo from "../../yasa7.png";
 import logolight from "../../yasa7_light.png";
 
@@ -38,9 +38,8 @@ export function PlayerRanking() {
   const players = useAppSelector(selectPlayers);
   const currentScores = useAppSelector(selectScores);
   const scoreHistory = useAppSelector((state: RootState) => state.scores.past);
-  const [statsView, setStatsView] = useState("true");
+  const [showStats, setShowStats] = useState(true);
 
-  
   const newScoreState: ScoreState = {
     playerscores: [...currentScores],
   };
@@ -173,19 +172,19 @@ export function PlayerRanking() {
     }
   });
 
-
-
   return (
-    
     <>
-      
-      <img
+      <Stack
+        direction="row"
+        alignItems={"center"}
+        sx={{ margin: 1, overflowX: "auto", maxWidth: "90%" }}
+      >
+        <img
           src={theme.palette.mode === "light" ? logolight : logo}
           className="App-logo-small"
           alt="logo"
         />
-      <Stack direction="row" alignItems={"center"} sx={{ margin: 1, overflowX: 'auto', maxWidth: '90%' }}>
-        
+
         <RoundHistoryDialog />
         <StatsFullScreenDialog />
         <WeightedValuesDialog />
@@ -194,13 +193,14 @@ export function PlayerRanking() {
           label="Rank"
           variant="filled"
           color="primary"
-          sx={{ml:1}}
+          sx={{ ml: 1 }}
         />
         <Chip
           label="Stats"
-          variant="filled"
+          variant={showStats ? "filled" : "outlined"}
           color="primary"
-          sx={{ml:1}}
+          onClick={() => setShowStats(!showStats)}
+          sx={{ ml: 1 }}
         />
       </Stack>
 
@@ -220,6 +220,7 @@ export function PlayerRanking() {
               player.stats.stats.find((stat) => stat.name === "Longest Streak")
                 ?.count
             }
+            showStats={showStats}
           />
         ))}
         <Offset />
