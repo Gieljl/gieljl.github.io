@@ -107,6 +107,7 @@ export function StatsTable() {
                       ?.score || 0
                   }
                   id={player.id}
+                  color={player.color}
                 />
               </TableCell>
             ))}

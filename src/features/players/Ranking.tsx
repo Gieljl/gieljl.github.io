@@ -1,10 +1,12 @@
-import React from "react";
+import React, { useState } from "react";
 import {
+  Chip,
   IconButton,
   Paper,
   Stack,
   collapseClasses,
   styled,
+  useTheme,
 } from "@mui/material";
 import { PlayerScoreCard } from "./PlayerScoreCard";
 import { useAppSelector } from "../../app/hooks";
@@ -15,6 +17,9 @@ import { WeightedValuesDialog } from "../stats/WeightedValues";
 import { StatsFullScreenDialog } from "../stats/StatsDialog";
 import { RoundHistoryDialog } from "../rounds/RoundHistoryDialog";
 import { selectStatsWeight } from "../stats/statsSlice";
+import SwapVertIcon from '@mui/icons-material/SwapVert';
+import logo from "../../yasa7.png";
+import logolight from "../../yasa7_light.png";
 
 export type PlayerStats = {
   stats: Stat[];
@@ -27,11 +32,15 @@ export type Stat = {
 };
 
 export function PlayerRanking() {
+  const theme = useTheme();
   const Offset = styled("div")(({ theme }) => theme.mixins.toolbar);
   const statsWeigts = useAppSelector(selectStatsWeight);
   const players = useAppSelector(selectPlayers);
   const currentScores = useAppSelector(selectScores);
   const scoreHistory = useAppSelector((state: RootState) => state.scores.past);
+  const [statsView, setStatsView] = useState("true");
+
+  
   const newScoreState: ScoreState = {
     playerscores: [...currentScores],
   };
@@ -71,7 +80,6 @@ export function PlayerRanking() {
       );
     }, 0);
   };
-
 
   const getCurrentYasatStreak = (playerId: number) => {
     const currentRound = currentScores.find((player) => player.id === playerId);
@@ -166,31 +174,55 @@ export function PlayerRanking() {
   });
 
 
+
   return (
+    
     <>
-      <Stack direction="row" justifyContent="center" >
+      
+      <img
+          src={theme.palette.mode === "light" ? logolight : logo}
+          className="App-logo-small"
+          alt="logo"
+        />
+      <Stack direction="row" alignItems={"center"} sx={{ margin: 1, overflowX: 'auto', maxWidth: '90%' }}>
+        
         <RoundHistoryDialog />
         <StatsFullScreenDialog />
         <WeightedValuesDialog />
+        <Chip
+          icon={<SwapVertIcon />}
+          label="Rank"
+          variant="filled"
+          color="primary"
+          sx={{ml:1}}
+        />
+        <Chip
+          label="Stats"
+          variant="filled"
+          color="primary"
+          sx={{ml:1}}
+        />
       </Stack>
 
-      <Stack direction="column" spacing={3}  width={"85%"}>
+      <Stack direction="column" spacing={3} width={"85%"}>
         {sortedPlayers.map((player) => (
           <PlayerScoreCard
             player={player.playerInfo}
             score={
-              currentScores.find((score) => score.id === player.playerInfo.id)!.score || 0
+              currentScores.find((score) => score.id === player.playerInfo.id)!
+                .score || 0
             }
             statistics={player.stats}
             key={player.playerInfo.id}
-            streak={
-              getCurrentYasatStreak(player.playerInfo.id)
+            streak={getCurrentYasatStreak(player.playerInfo.id)}
+            longestStreak={
+              getLongestYasatStreak() ===
+              player.stats.stats.find((stat) => stat.name === "Longest Streak")
+                ?.count
             }
-            longestStreak={getLongestYasatStreak() === player.stats.stats.find((stat) => stat.name === "Longest Streak")?.count}
           />
         ))}
         <Offset />
-
       </Stack>
     </>
   );

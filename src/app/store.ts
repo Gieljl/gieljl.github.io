@@ -7,6 +7,7 @@ import gameReducer from '../features/game/gameSlice';
 import undoable, { ActionCreators } from 'redux-undo';
 import { persistReducer, persistStore } from 'redux-persist';
 import storage from 'redux-persist/lib/storage';
+import { useSelector } from 'react-redux';
 
 const reducers = combineReducers({
   counter: counterReducer,
@@ -17,7 +18,7 @@ const reducers = combineReducers({
 });
 
 const persistConfig = {
-  timeout: 1000, //Set the timeout function to 2 seconds
+  timeout: 1000, //Set the timeout function to 1 seconds
   key: 'root',
   storage
 };
@@ -29,10 +30,13 @@ export const store = configureStore({
   // devTools: process.env.NODE_ENV !== 'production'
 });
 
+
+
 export const persistor = persistStore(store, null, () => {
   // This callback is called after rehydration is finished
-  store.dispatch(ActionCreators.undo()); 
-  store.dispatch(ActionCreators.redo()); 
+    store.dispatch(ActionCreators.undo()); 
+    store.dispatch(ActionCreators.redo()); 
+  
 
 });
 

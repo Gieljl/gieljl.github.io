@@ -33,6 +33,7 @@
     "uuid": "^9.0.1",
     "web-vitals": "^3.5.1",
     "@uiw/react-color-circle": "^2.0.5",
+    "@uiw/react-color-wheel": "2.0.6",
     "@mui/styles": "^5.12.2",
     "@babel/plugin-transform-private-property-in-object": "^7.23.4"
   },

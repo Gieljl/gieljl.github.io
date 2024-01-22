@@ -44,7 +44,7 @@ function App() {
       }}
     >
       <ServiceWorkerWrapper />
-      {gameStatus === "started" && (
+      {gameStatus === "started" && gameType === "classic" && (
         <img
           src={theme.palette.mode === "light" ? logolight : logo}
           className="App-logo"
@@ -54,12 +54,14 @@ function App() {
 
       {gameStatus === "new" && <GameCreator />}
 
-      {/* {gameStatus === "new" && <PlayerList />} */}
 
       {gameStatus === "started" && gameType === "classic" && (
         <ScoresHistoryNew />
       )}
+      
+      
       {gameStatus === "started" && gameType === "ranked" && <PlayerRanking />}
+      
       <AppBar
         position="fixed"
         sx={{

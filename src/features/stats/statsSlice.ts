@@ -15,24 +15,24 @@ const initialState: statsState = {
   gameType: 'default',
   weightedStats: [
       {statName: 'Yasat', weight: 1},
-      {statName: 'Longest Streak', weight: 1},
-      {statName: 'Death', weight: -1},
-      {statName: 'Kill', weight: 1},
-      {statName: 'Own', weight: 1},
-      {statName: 'Owned', weight: -1},
+      {statName: 'Longest Streak', weight: 3},
+      {statName: 'Death', weight: -5},
+      {statName: 'Kill', weight: 2},
+      {statName: 'Own', weight: 3},
+      {statName: 'Owned', weight: -2},
       {statName: 'Multi-owned', weight: -1},
-      {statName: 'Lullify', weight: 1},
-      {statName: 'Enable 69', weight: -1},
-      {statName: 'Contra-own 50', weight: 1},
-      {statName: 'Contra-own 100', weight: 1},
+      {statName: 'Lullify', weight: 2},
+      {statName: 'Enable 69', weight: 0},
+      {statName: 'Contra-own 50', weight: 2},
+      {statName: 'Contra-own 100', weight: 2},
       {statName: 'Nullify 50', weight: 1},
-      {statName: 'Nullify 100', weight: 1},
+      {statName: 'Nullify 100', weight: 2},
       {statName: 'Enable 50', weight: -1},
       {statName: 'Enable 100', weight: -1},
       {statName: 'Double kill', weight: 1},
-      {statName: 'Multi Kill', weight: 1},
-      {statName: 'Mega Kill', weight: 1},
-      {statName: 'Monster Kill', weight: 1}
+      {statName: 'Multi Kill', weight: 2},
+      {statName: 'Mega Kill', weight: 3},
+      {statName: 'Monster Kill', weight: 4}
     ]
 };
 

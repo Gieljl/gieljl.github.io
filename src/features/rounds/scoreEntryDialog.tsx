@@ -402,6 +402,7 @@ export function ScoreEntryDialog() {
                           ?.score || 0
                       }
                       id={player.id}
+                      color={player.color}
                     />
                   </ListItemAvatar>
                 </Button>

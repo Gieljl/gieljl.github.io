@@ -60,7 +60,7 @@ export function WeightedValuesDialog() {
             >
               <CloseIcon />
             </IconButton>
-            <Typography sx={{ ml: 2, flex: 1 }} variant="h6" component="div">
+            <Typography sx={{ ml: 1, flex: 1 }} variant="h6" component="div">
               Weighted Values
             </Typography>
           </Toolbar>

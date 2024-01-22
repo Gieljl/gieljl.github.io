@@ -32,6 +32,7 @@ export default function BasicTable() {
                     ?.score || 0
                   }
                   id={player.id}
+                  color={player.color}
                 />
               </TableCell>
             ))}

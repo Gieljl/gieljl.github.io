@@ -4,6 +4,7 @@ import { RootState} from '../../app/store';
 export type player = {
   id: number;
   name: string;
+  color: string;
 }
 
 const initialState = [] as player[] 
@@ -19,10 +20,11 @@ export const playerSlice = createSlice({
       reducer: (state, action: PayloadAction<player>) => {
         state.push(action.payload);
       },
-      prepare: (name: string) => ({
+      prepare: (name: string, color: string) => ({
         payload: {
           id: nextPlayerId ++,
-          name
+          name,
+          color
         } as player,
       })
     },
