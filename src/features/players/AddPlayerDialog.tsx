@@ -19,7 +19,6 @@ import {
 import { addPlayer } from "./playersSlice";
 import { useAppDispatch, useAppSelector } from "../../app/hooks";
 import { useState } from "react";
-import AddIcon from "@mui/icons-material/Add";
 import Circle from "@uiw/react-color-circle";
 import Wheel from "@uiw/react-color-wheel";
 import { hsvaToHex } from "@uiw/color-convert";

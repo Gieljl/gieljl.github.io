@@ -23,6 +23,8 @@ import { useAppDispatch, useAppSelector } from "./app/hooks";
 import { selectScoreState } from "./features/game/scoreSlice";
 import { useTheme } from "@mui/system";
 import ServiceWorkerWrapper from "./serviceworkerWrapper";
+import { ErrorBoundary } from "react-error-boundary";
+
 const ColorModeContext = React.createContext({ toggleColorMode: () => {} });
 
 function App() {
@@ -54,14 +56,14 @@ function App() {
 
       {gameStatus === "new" && <GameCreator />}
 
-
       {gameStatus === "started" && gameType === "classic" && (
         <ScoresHistoryNew />
       )}
-      
-      
-      {gameStatus === "started" && gameType === "ranked" && <PlayerRanking />}
-      
+
+      <ErrorBoundary fallback={<div>Something went wrong</div>}>
+        {gameStatus === "started" && gameType === "ranked" && <PlayerRanking />}
+      </ErrorBoundary>
+
       <AppBar
         position="fixed"
         sx={{
@@ -83,16 +85,16 @@ function App() {
                 color="secondary"
                 sx={{
                   ":disabled": {
-                    bgcolor: "#585858"
+                    bgcolor: "#585858",
                   },
                   ":hover": {
-                    bgcolor: "#585858"
+                    bgcolor: "#585858",
                   },
                   ":active": {
-                    bgcolor: "#585858"
+                    bgcolor: "#585858",
                   },
                   ":focus": {
-                    bgcolor: "#585858"
+                    bgcolor: "#585858",
                   },
                   bgcolor: "#585858",
                   width: 45,
@@ -114,16 +116,16 @@ function App() {
                 color="secondary"
                 sx={{
                   ":disabled": {
-                    bgcolor: "#585858"
+                    bgcolor: "#585858",
                   },
                   ":hover": {
-                    bgcolor: "#585858"
+                    bgcolor: "#585858",
                   },
                   ":active": {
-                    bgcolor: "#585858"
+                    bgcolor: "#585858",
                   },
                   ":focus": {
-                    bgcolor: "#585858"
+                    bgcolor: "#585858",
                   },
                   bgcolor: "#585858",
                   width: 45,

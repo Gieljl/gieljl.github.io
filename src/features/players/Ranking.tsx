@@ -1,13 +1,5 @@
 import React, { useState } from "react";
-import {
-  Chip,
-  IconButton,
-  Paper,
-  Stack,
-  collapseClasses,
-  styled,
-  useTheme,
-} from "@mui/material";
+import { Chip, Stack, styled, useTheme } from "@mui/material";
 import { PlayerScoreCard } from "./PlayerScoreCard";
 import { useAppSelector } from "../../app/hooks";
 import { RootState } from "../../app/store";
@@ -39,6 +31,8 @@ export function PlayerRanking() {
   const currentScores = useAppSelector(selectScores);
   const scoreHistory = useAppSelector((state: RootState) => state.scores.past);
   const [showStats, setShowStats] = useState(true);
+  //const [sorting, setSorting] = useState("rank");
+
 
   const newScoreState: ScoreState = {
     playerscores: [...currentScores],
@@ -174,35 +168,40 @@ export function PlayerRanking() {
 
   return (
     <>
-      <Stack
-        direction="row"
-        alignItems={"center"}
-        sx={{ margin: 1, overflowX: "auto", maxWidth: "90%" }}
-      >
-        <img
-          src={theme.palette.mode === "light" ? logolight : logo}
-          className="App-logo-small"
-          alt="logo"
-        />
+        <Stack
+          direction="row"
+          alignItems={"center"}
+          sx={{
+            margin: 1,
+            overflowX: "auto",
+            maxWidth: "90%",
+          }}
+        >
+          <img
+            src={theme.palette.mode === "light" ? logolight : logo}
+            className="App-logo-small"
+            alt="logo"
+          />
 
-        <RoundHistoryDialog />
-        <StatsFullScreenDialog />
-        <WeightedValuesDialog />
-        <Chip
-          icon={<SwapVertIcon />}
-          label="Rank"
-          variant="filled"
-          color="primary"
-          sx={{ ml: 1 }}
-        />
-        <Chip
-          label="Stats"
-          variant={showStats ? "filled" : "outlined"}
-          color="primary"
-          onClick={() => setShowStats(!showStats)}
-          sx={{ ml: 1 }}
-        />
-      </Stack>
+          <RoundHistoryDialog />
+          <StatsFullScreenDialog />
+          <WeightedValuesDialog />
+
+          <Chip
+            label="Show stats"
+            variant={showStats ? "filled" : "outlined"}
+            color="primary"
+            onClick={() => setShowStats(!showStats)}
+            sx={{ ml: 1 }}
+          />
+          <Chip
+            icon={<SwapVertIcon />}
+            label="Rank"
+            variant="filled"
+            color="primary"
+            sx={{ ml: 1 }}
+          />
+        </Stack>
 
       <Stack direction="column" spacing={3} width={"85%"}>
         {sortedPlayers.map((player) => (

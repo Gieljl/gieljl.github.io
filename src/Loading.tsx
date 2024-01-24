@@ -2,13 +2,11 @@ import * as React from "react";
 import Backdrop from "@mui/material/Backdrop";
 import CircularProgress from "@mui/material/CircularProgress";
 import logo from "./yasa7.png";
-import { Stack, Typography } from "@mui/material";
+import { Stack } from "@mui/material";
 
 export default function Loading() {
-  const [open, setOpen] = React.useState(true);
-  const handleClose = () => {
-    setOpen(false);
-  };
+  const [open] = React.useState(true);
+
 
   return (
     <div>

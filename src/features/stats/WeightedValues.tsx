@@ -9,7 +9,6 @@ import Slide from "@mui/material/Slide";
 import { TransitionProps } from "@mui/material/transitions";
 import { LiaBalanceScaleRightSolid } from "react-icons/lia";
 import { WeightTable } from "./WeightTable";
-import { useTheme } from "@mui/material";
 
 const Transition = React.forwardRef(function Transition(
   props: TransitionProps & {
@@ -21,7 +20,6 @@ const Transition = React.forwardRef(function Transition(
 });
 
 export function WeightedValuesDialog() {
-  const theme = useTheme();
   const [open, setOpen] = React.useState(false);
 
   const handleClickOpen = () => {

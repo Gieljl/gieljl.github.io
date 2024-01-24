@@ -11,6 +11,7 @@ import {
 } from "@mui/material";
 import React, { useState } from "react";
 import { useAppSelector, useAppDispatch } from "../../app/hooks";
+import { ActionCreators } from "redux-undo";
 import { setStartScores } from "../game/scoreSlice";
 import {  selectPlayers } from "../players/playersSlice";
 import { PlayerList } from "../players/Players";
@@ -68,7 +69,7 @@ export const GameCreator = () => {
         <Button
           disabled={players.length < 2 || gameType.length === 0}
           variant="contained"
-          onClick={() => dispatch(startGame()) && dispatch(setStartScores(players)) && dispatch(setGameType(gameType as "classic" | "ranked"))}
+          onClick={() => dispatch(ActionCreators.clearHistory()) && dispatch(startGame()) && dispatch(setStartScores(players)) && dispatch(setGameType(gameType as "classic" | "ranked"))}
           sx={{
             height: "50px",
             width:  "150px"

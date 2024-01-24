@@ -7,7 +7,6 @@ import gameReducer from '../features/game/gameSlice';
 import undoable, { ActionCreators } from 'redux-undo';
 import { persistReducer, persistStore } from 'redux-persist';
 import storage from 'redux-persist/lib/storage';
-import { useSelector } from 'react-redux';
 
 const reducers = combineReducers({
   counter: counterReducer,

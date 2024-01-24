@@ -1,4 +1,4 @@
-import { Avatar, Badge, colors } from "@mui/material";
+import { Avatar, Badge } from "@mui/material";
 
 export type PlayerAvatarProps = {
   id: number;
