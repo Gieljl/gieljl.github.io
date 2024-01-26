@@ -141,7 +141,7 @@ export const PlayerScoreCard = ({
   };
 
   return (
-    <Card elevation={2} sx={{ width: "100%" }}>
+    <Card elevation={2} sx={{ width: "100%"}}>
       <CardContent>
         <Stack
           justifyContent={"left"}

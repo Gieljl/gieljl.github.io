@@ -98,14 +98,45 @@ export function AddPlayerDialog() {
             </Typography>
           </Toolbar>
         </AppBar>
-        <DialogContent>
-          <Stack
-            direction={"column"}
-            alignItems={"center"}
-            height="400px"
-            spacing={2}
-            margin={2}
-          >
+        <DialogContent >
+          <Stack direction={"column"} spacing={2} alignItems={"center"}   >
+            <Stack direction={"row"} spacing={2}   >
+              <Stack direction={"column"} alignItems={"center"} >
+                <Typography
+                  sx={{ fontSize: 13 }}
+                  color="text.secondary"
+                  gutterBottom
+                >
+                  Preview
+                </Typography>
+                <Avatar
+                  {...stringAvatar(playerName)}
+                  variant="circular"
+                  sx={{
+                    width: 55,
+                    height: 55,
+                    fontSize: "26px",
+                    bgcolor: hex,
+                  }}
+                />
+              </Stack>
+
+              <Stack direction={"column"} maxWidth={250}>
+                {players.length !== 0 && (
+                  <>
+                    <Typography
+                      sx={{ fontSize: 13 }}
+                      color="text.secondary"
+                      gutterBottom
+                    >
+                      Others
+                    </Typography>
+                    <PlayerList />
+                  </>
+                )}
+              </Stack>
+            </Stack>
+
             <TextField
               value={playerName}
               onChange={(e) => setPlayerName(e.target.value)}
@@ -115,7 +146,8 @@ export function AddPlayerDialog() {
               type="text"
               variant="outlined"
               inputProps={{ inputMode: "text" }}
-              sx={{ width: "250px" }}
+              sx={{ width: "250px"}}
+              
             />
             <Stack width={"250px"}>
               <Typography
@@ -154,36 +186,11 @@ export function AddPlayerDialog() {
                 />
               </Stack>
             </Stack>
-            <Typography
-              sx={{ mb: 2, fontSize: 13 }}
-              color="text.secondary"
-              gutterBottom
-            >
-              Avatar Preview:
-            </Typography>
-            <Avatar
-              {...stringAvatar(playerName)}
-              variant="circular"
-              sx={{ width: 100, height: 100, fontSize: "50px", bgcolor: hex }}
-            />
-
-            {players.length !== 0 && (
-              <>
-                <Typography
-                  sx={{ mb: 2, mt: 2, fontSize: 13 }}
-                  color="text.secondary"
-                  gutterBottom
-                >
-                  Other Players
-                </Typography>
-                <PlayerList />
-              </>
-            )}
           </Stack>
         </DialogContent>
         <DialogActions>
           <Button
-            sx={{margin:1}}
+            sx={{ margin: 1 }}
             disabled={hex === "" || playerName.length === 0}
             onClick={() =>
               dispatch(addPlayer(playerName, hex)) && handleClose()

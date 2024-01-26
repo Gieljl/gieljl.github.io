@@ -37,7 +37,7 @@ export const GameCreator = () => {
     </Box>
     <Stack
       direction="column"
-      alignItems="left"
+      alignItems="center"
       spacing={5}
       mt={5}
       sx={{
@@ -46,8 +46,10 @@ export const GameCreator = () => {
         bgcolor: "background.default",
         color: "text.primary",
       }}
-    >
-        <PlayerList />
+    >   
+       
+                <PlayerList />
+               
         <AddPlayerDialog/>
         <FormControl required>
           <InputLabel id="demo-simple-select-required-label">
@@ -60,6 +62,10 @@ export const GameCreator = () => {
             label="Game Type"
             onChange={handleChange}
             variant="outlined"
+            sx={{
+              height: "50px",
+              width:  "150px"
+            }}
           >
             <MenuItem value={"classic"}>Classic</MenuItem>
             <MenuItem value={"ranked"}>Ranked</MenuItem>

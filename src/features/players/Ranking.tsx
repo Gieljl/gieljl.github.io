@@ -10,8 +10,8 @@ import { StatsFullScreenDialog } from "../stats/StatsDialog";
 import { RoundHistoryDialog } from "../rounds/RoundHistoryDialog";
 import { selectStatsWeight } from "../stats/statsSlice";
 import SwapVertIcon from "@mui/icons-material/SwapVert";
-import logo from "../../yasa7.png";
-import logolight from "../../yasa7_light.png";
+import logo from "../../logo192.png";
+import logolight from "../../logo192_light.png";
 
 export type PlayerStats = {
   stats: Stat[];
@@ -141,6 +141,12 @@ export function PlayerRanking() {
     return playerStatistics;
   };
 
+  const [sortingMethod, setSortingMethod] = useState<"ranked" | "points">("ranked");
+
+  const handleSortChipClick = () => {
+    setSortingMethod((prevMethod) => (prevMethod === "ranked" ? "points" : "ranked"));
+  };
+
   // create an array of players with their stats and weighted score
   // sort the array by weighted score
   const sortedPlayers = players.map((player) => {
@@ -151,21 +157,24 @@ export function PlayerRanking() {
       weightedScore: playerStats.weightedScore,
     };
   });
-  //sort by weighted score and if equal sort by the lowest currentScores
+  // Sort players based on the chosen method
   sortedPlayers.sort((a, b) => {
-    if (a.weightedScore === b.weightedScore) {
-      const aCurrentScore = currentScores.find(
-        (score) => score.id === a.playerInfo.id
-      )!.score;
-      const bCurrentScore = currentScores.find(
-        (score) => score.id === b.playerInfo.id
-      )!.score;
-      return aCurrentScore - bCurrentScore;
+    if (sortingMethod === "ranked") {
+      // Sorting based on weighted score and then current score
+      if (a.weightedScore === b.weightedScore) {
+        const aCurrentScore = currentScores.find((score) => score.id === a.playerInfo.id)!.score;
+        const bCurrentScore = currentScores.find((score) => score.id === b.playerInfo.id)!.score;
+        return aCurrentScore - bCurrentScore;
+      } else {
+        return b.weightedScore - a.weightedScore;
+      }
     } else {
-      return b.weightedScore - a.weightedScore;
+      // Sorting based solely on current score
+      const aCurrentScore = currentScores.find((score) => score.id === a.playerInfo.id)!.score;
+      const bCurrentScore = currentScores.find((score) => score.id === b.playerInfo.id)!.score;
+      return aCurrentScore - bCurrentScore;
     }
   });
-
   return (
     <>
         <Stack
@@ -173,8 +182,7 @@ export function PlayerRanking() {
           alignItems={"center"}
           sx={{
             margin: 1,
-            overflowX: "auto",
-            maxWidth: "90%",
+            maxWidth: "95%",
           }}
         >
           <img
@@ -188,15 +196,15 @@ export function PlayerRanking() {
           <WeightedValuesDialog />
 
           <Chip
-            label="Show stats"
+            label="Stats"
             variant={showStats ? "filled" : "outlined"}
             color="primary"
             onClick={() => setShowStats(!showStats)}
-            sx={{ ml: 1 }}
           />
           <Chip
             icon={<SwapVertIcon />}
-            label="Rank"
+            label={sortingMethod === "ranked" ? "Rank" : "Points"}
+            onClick={handleSortChipClick}
             variant="filled"
             color="primary"
             sx={{ ml: 1 }}

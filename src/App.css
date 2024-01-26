@@ -4,7 +4,7 @@
   pointer-events: none;
 }
 .App-logo-small {
-  height: 40px;
+  height: 31px;
   pointer-events: none;
 }
 
@@ -43,10 +43,10 @@
 
 @keyframes App-logo-float-small {
   0% {
-    transform: translateY(0);
+    transform: translateY(0px);
   }
   50% {
-    transform: translateY(4px);
+    transform: translateY(2px);
   }
   100% {
     transform: translateY(0px);

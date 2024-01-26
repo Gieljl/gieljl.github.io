@@ -14,14 +14,18 @@ export function PlayerList() {
 
   return (
     <Stack direction="row">
-      
       <AvatarGroup max={6}>
         {players.map((player) => (
           <Avatar
             {...stringAvatar(player.name)}
             key={player.id}
             variant="circular"
-            sx={{bgcolor: player.color}}
+            sx={{
+              bgcolor: player.color,
+              width: 55,
+              height: 55,
+              fontSize: "26px",
+            }}
           />
         ))}
       </AvatarGroup>
