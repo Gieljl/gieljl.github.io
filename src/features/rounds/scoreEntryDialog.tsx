@@ -1,5 +1,5 @@
 import * as React from "react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Button from "@mui/material/Button";
 import Dialog from "@mui/material/Dialog";
 import AppBar from "@mui/material/AppBar";
@@ -7,6 +7,8 @@ import Toolbar from "@mui/material/Toolbar";
 import IconButton from "@mui/material/IconButton";
 import Typography from "@mui/material/Typography";
 import CloseIcon from "@mui/icons-material/Close";
+import CheckCircleOutlineIcon from "@mui/icons-material/CheckCircleOutline";
+import ErrorOutlineIcon from "@mui/icons-material/ErrorOutline";
 import Slide from "@mui/material/Slide";
 import { TransitionProps } from "@mui/material/transitions";
 import TextField from "@mui/material/TextField";
@@ -20,10 +22,12 @@ import monsterkill from "../../assets/audio/monsterkill.mp3";
 import {
   Avatar,
   Box,
+  Chip,
   Divider,
   List,
   ListItem,
   ListItemAvatar,
+  Stack,
   useTheme,
 } from "@mui/material";
 
@@ -85,12 +89,37 @@ export function ScoreEntryDialog() {
   };
 
   const gameStatus = useSelector((state: RootState) => state.game.status);
+  const gameType = useSelector((state: RootState) => state.game.type);
+
   const players = useAppSelector(selectPlayers);
   const currentScores = useAppSelector(selectScores);
   const scoreState = useAppSelector(selectScoreState);
 
   const dispatch = useAppDispatch();
   const [yasatPlayer, setYasatPlayer] = useState<number | null>(null);
+  const [autoYasat, setAutoYasat] = useState<boolean>(true);
+
+  useEffect(() => {
+    // Check if all player scores are entered
+    const allScoresEntered = newScores.length === players.length;
+
+    // Count the number of players with a score of 7 or less
+    const lowScorePlayers = newScores.filter((player) => player.score <= 7);
+
+    if (allScoresEntered && lowScorePlayers.length === 1) {
+      // Set the yasatPlayer state to the ID of the player with a score of 7 or less
+      setYasatPlayer(lowScorePlayers[0].id);
+      setAutoYasat(true);
+    } else if (allScoresEntered && lowScorePlayers.length > 1) {
+      // If there are more than one player with a score of 7 or less
+      // Reset yasatPlayer state
+      setYasatPlayer(null);
+      setAutoYasat(false);
+    } else {
+      // Reset yasatPlayer state if conditions are not met
+      setYasatPlayer(null);
+    }
+  }, [newScores, players]);
 
   const handleYasat = (id: number) => {
     // if the player is already selected remove the selection
@@ -327,12 +356,6 @@ export function ScoreEntryDialog() {
   // add the scores entered in text fields to the roundScores state
   const handleTextFieldChange = (id: number, score: number) => {
     // if the score entered is greater than 7 and the player is the yasat player give an error
-    if (score > 7 && id === yasatPlayer) {
-      enqueueSnackbar("Yasat score should be 7 or less", {
-        variant: "error",
-      });
-      return;
-    }
 
     // if the roundScores array already contains a score for the player update the score without change the position in the array
     if (newScores.some((player) => player.id === id)) {
@@ -348,6 +371,40 @@ export function ScoreEntryDialog() {
       ...prevValues,
       { id: id, score: score, stats: [], yasatStreak: 0 },
     ]);
+
+    if (score > 7 && id === yasatPlayer) {
+      enqueueSnackbar("Yasat score should be 7 or less", {
+        variant: "error",
+      });
+      return;
+    }
+  };
+
+  function stringAvatar(name: string) {
+    return {
+      children: `${name.slice(0, 2)}`,
+    };
+  }
+
+  const getBadgecolor = (score: number) => {
+    let badgecolor:
+      | "default"
+      | "primary"
+      | "secondary"
+      | "error"
+      | "success"
+      | "warning"
+      | "info" = "primary";
+
+    if (score === 15 || score === 65 || score === 69 || score === 0) {
+      badgecolor = "success";
+    } else if (score > 60) {
+      badgecolor = "secondary";
+    } else {
+      badgecolor = "default";
+    }
+
+    return badgecolor;
   };
 
   return (
@@ -364,7 +421,7 @@ export function ScoreEntryDialog() {
         TransitionComponent={Transition}
       >
         <AppBar
-          sx={{ background: "#424242", color:"#7df3e1", position: "relative" }}
+          sx={{ background: "#424242", color: "#7df3e1", position: "relative" }}
         >
           <Toolbar>
             <IconButton
@@ -393,19 +450,54 @@ export function ScoreEntryDialog() {
                   )
                 }
               >
-                <Button onClick={() => handleYasat(player.id)}>
-                  <ListItemAvatar>
-                    <PlayerAvatar
-                      name={player.name}
-                      score={
-                        currentScores.find((score) => score.id === player.id)
-                          ?.score || 0
-                      }
-                      id={player.id}
-                      color={player.color}
-                    />
-                  </ListItemAvatar>
-                </Button>
+                <Stack direction={"row"} maxWidth={"80px"}>
+                  <Button onClick={() => handleYasat(player.id)}>
+                    <ListItemAvatar>
+                      {gameType === "ranked" ? (
+                        <Avatar
+                          {...stringAvatar(player.name)}
+                          sx={{ bgcolor: player.color }}
+                          key={player.id}
+                          variant="rounded"
+                        />
+                      ) : (
+                        <PlayerAvatar
+                          name={player.name}
+                          score={
+                            currentScores.find(
+                              (score) => score.id === player.id
+                            )?.score || 0
+                          }
+                          id={player.id}
+                          color={player.color}
+                        />
+                      )}
+                    </ListItemAvatar>
+                  </Button>
+
+                  {gameType === "ranked" && (
+                    <Stack alignItems={"center"} spacing={1} direction="column">
+                      <Typography
+                        sx={{ fontSize: 11 }}
+                        color="text.secondary"
+                        gutterBottom
+                      >
+                        Points
+                      </Typography>
+                      <Chip
+                        label={
+                          currentScores.find((score) => score.id === player.id)
+                            ?.score || 0
+                        }
+                        variant="filled"
+                        color={getBadgecolor(
+                          currentScores.find((score) => score.id === player.id)
+                            ?.score || 0
+                        )}
+                      />
+                    </Stack>
+                  )}
+                </Stack>
 
                 <TextField
                   onChange={(e) => {
@@ -425,13 +517,37 @@ export function ScoreEntryDialog() {
                   label="Score"
                   variant="outlined"
                   inputProps={{ inputMode: "numeric" }}
-                  sx={{ ml: 2, mr: 2, width: "80px" }}
+                  sx={{ ml: 6, mr: 2, width: "77px" }}
                 />
               </ListItem>
               <Divider sx={{ margin: 1 }} />
             </Box>
           ))}
         </List>
+        <Stack direction={"row"} spacing={1} alignSelf={"center"}>
+          {autoYasat ? (
+            <Typography
+              sx={{ fontSize: 14 }}
+              color="text.secondary"
+              gutterBottom
+            >
+              Auto Yasat
+            </Typography>
+          ) : (
+            <Typography
+              sx={{ fontSize: 14 }}
+              color="text.secondary"
+              gutterBottom
+            >
+              Select Yasat player
+            </Typography>
+          )}
+          {autoYasat ? (
+            <CheckCircleOutlineIcon sx={{ fontSize: 16 }} color="success" />
+          ) : (
+            <ErrorOutlineIcon sx={{ fontSize: 16 }} color="warning" />
+          )}
+        </Stack>
         <Button
           autoFocus
           variant="contained"
