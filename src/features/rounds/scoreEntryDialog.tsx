@@ -77,6 +77,8 @@ export function ScoreEntryDialog() {
     setYasatPlayer(null);
     setNewScores([]);
     setErrorStates({});
+    setManualYasat(false);
+    setAutoYasat(true);
   };
 
   const handleClickOpen = () => {
@@ -98,15 +100,28 @@ export function ScoreEntryDialog() {
   const dispatch = useAppDispatch();
   const [yasatPlayer, setYasatPlayer] = useState<number | null>(null);
   const [autoYasat, setAutoYasat] = useState<boolean>(true);
+  const [manualYasat, setManualYasat] = useState<boolean>(false);
+
 
   useEffect(() => {
+
+    if (manualYasat) {
+      setAutoYasat(false);
+      return;
+    }
+
     // Check if all player scores are entered
     const allScoresEntered = newScores.length === players.length;
 
     // Count the number of players with a score of 7 or less
     const lowScorePlayers = newScores.filter((player) => player.score <= 7);
 
-    if (allScoresEntered && lowScorePlayers.length === 1) {
+    if (lowScorePlayers.length > 1) {
+      // If there are more than one player with a score of 7 or less
+      // Reset yasatPlayer state
+      setYasatPlayer(null);
+      setAutoYasat(false);
+    } else if (allScoresEntered && lowScorePlayers.length === 1) {
       // Set the yasatPlayer state to the ID of the player with a score of 7 or less
       setYasatPlayer(lowScorePlayers[0].id);
       setAutoYasat(true);
@@ -119,12 +134,17 @@ export function ScoreEntryDialog() {
       // Reset yasatPlayer state if conditions are not met
       setYasatPlayer(null);
     }
-  }, [newScores, players]);
+  }, [newScores, players, manualYasat]);
 
   const handleYasat = (id: number) => {
+    // set yasat manually
+    setManualYasat(true);
+
     // if the player is already selected remove the selection
     if (yasatPlayer === id) {
       setYasatPlayer(null);
+      setManualYasat(false);
+      setAutoYasat(true);
       return;
     }
 
@@ -524,28 +544,15 @@ export function ScoreEntryDialog() {
             </Box>
           ))}
         </List>
-        <Stack direction={"row"} spacing={1} alignSelf={"center"}>
+        <Stack direction={"row"} spacing={1} alignItems={"center"} alignSelf={"center"}>
+          <Typography sx={{ fontSize: 14 }} color="text.secondary" gutterBottom>
+            Auto Yasat
+          </Typography>
+
           {autoYasat ? (
-            <Typography
-              sx={{ fontSize: 14 }}
-              color="text.secondary"
-              gutterBottom
-            >
-              Auto Yasat
-            </Typography>
+            <CheckCircleOutlineIcon sx={{ fontSize: 25 }} color="success" />
           ) : (
-            <Typography
-              sx={{ fontSize: 14 }}
-              color="text.secondary"
-              gutterBottom
-            >
-              Select Yasat player
-            </Typography>
-          )}
-          {autoYasat ? (
-            <CheckCircleOutlineIcon sx={{ fontSize: 16 }} color="success" />
-          ) : (
-            <ErrorOutlineIcon sx={{ fontSize: 16 }} color="warning" />
+            <ErrorOutlineIcon sx={{ fontSize: 25 }} color="warning" />
           )}
         </Stack>
         <Button
