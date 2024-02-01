@@ -7,11 +7,13 @@ import { ScoreState, selectScores } from "../game/scoreSlice";
 import { selectPlayers } from "./playersSlice";
 import { WeightedValuesDialog } from "../stats/WeightedValues";
 import { StatsFullScreenDialog } from "../stats/StatsDialog";
+import CheckIcon from '@mui/icons-material/Check';
 import { RoundHistoryDialog } from "../rounds/RoundHistoryDialog";
 import { selectStatsWeight } from "../stats/statsSlice";
 import SwapVertIcon from "@mui/icons-material/SwapVert";
-import logo from "../../logo192.png";
-import logolight from "../../logo192_light.png";
+import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown';
+import logo from "../../yasa7.png";
+import logolight from "../../yasa7_light.png";
 
 export type PlayerStats = {
   stats: Stat[];
@@ -31,8 +33,6 @@ export function PlayerRanking() {
   const currentScores = useAppSelector(selectScores);
   const scoreHistory = useAppSelector((state: RootState) => state.scores.past);
   const [showStats, setShowStats] = useState(true);
-  //const [sorting, setSorting] = useState("rank");
-
 
   const newScoreState: ScoreState = {
     playerscores: [...currentScores],
@@ -181,10 +181,21 @@ export function PlayerRanking() {
           direction="row"
           alignItems={"center"}
           sx={{
-            margin: 1,
-            maxWidth: "95%",
+            zIndex: 2,
+            maxWidth: "100%",
+            position: "fixed",
+            overflowX: "visible",
+            overflowY: "hidden",
+            bgcolor: theme.palette.background.paper,
+            '&::-webkit-scrollbar': {
+              display: 'none'
+            }
           }}
         >
+
+          <Stack
+          direction="row" mt={1} alignItems={"center"}>
+
           <img
             src={theme.palette.mode === "light" ? logolight : logo}
             className="App-logo-small"
@@ -194,24 +205,36 @@ export function PlayerRanking() {
           <RoundHistoryDialog />
           <StatsFullScreenDialog />
           <WeightedValuesDialog />
-
+          
           <Chip
             label="Stats"
+            icon={showStats ? <CheckIcon/> : <></>}
             variant={showStats ? "filled" : "outlined"}
             color="primary"
-            onClick={() => setShowStats(!showStats)}
-          />
+            onClick={() => setShowStats(!showStats)}            
+            />
+            <Chip
+            label="Game"
+            variant="filled"
+            color="primary"
+            sx={{ ml: 1}}
+            deleteIcon={<ArrowDropDownIcon />}
+            onDelete={() => {}}
+            />
           <Chip
             icon={<SwapVertIcon />}
             label={sortingMethod === "ranked" ? "Rank" : "Points"}
             onClick={handleSortChipClick}
             variant="filled"
             color="primary"
-            sx={{ ml: 1 }}
-          />
+            sx={{ ml: 1, mr: 1}}
+            deleteIcon={<ArrowDropDownIcon />}
+            onDelete={handleSortChipClick}
+            />
+            </Stack>
         </Stack>
 
-      <Stack direction="column" spacing={3} width={"85%"}>
+      <Stack direction="column" spacing={2} mt={"70px"} width={"85%"}>
         {sortedPlayers.map((player) => (
           <PlayerScoreCard
             player={player.playerInfo}

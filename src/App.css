@@ -4,8 +4,9 @@
   pointer-events: none;
 }
 .App-logo-small {
-  height: 31px;
+  height: 45px;
   pointer-events: none;
+  margin-left: 10px;
 }
 
 .App-logo-big {
@@ -46,7 +47,7 @@
     transform: translateY(0px);
   }
   50% {
-    transform: translateY(2px);
+    transform: translateY(4px);
   }
   100% {
     transform: translateY(0px);
