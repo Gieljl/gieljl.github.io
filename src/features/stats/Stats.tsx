@@ -69,7 +69,7 @@ export function StatsTable() {
     enqueueSnackbar(
       "Multiple owns in one round",
       {
-        variant: "success",
+        variant: "info",
         action,
       }
     );
@@ -87,7 +87,7 @@ export function StatsTable() {
       </Button>
     );
     enqueueSnackbar("Nullify 100 when your score is 69", {
-      variant: "success",
+      variant: "info",
       action,
     });
   };

@@ -86,9 +86,9 @@ export function WeightTable() {
       </Button>
     );
     enqueueSnackbar(
-      "Player(s) with the highest streak of the game will get 1 * weighted value as Bonus.",
+      "Player(s) with the highest streak of the game will get 1 * weighted value as a Bonus.",
       {
-        variant: "success",
+        variant: "info",
         action,
       }
     );

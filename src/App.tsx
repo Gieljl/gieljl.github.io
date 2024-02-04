@@ -6,7 +6,7 @@ import { StatsFullScreenDialog } from "./features/stats/StatsDialog";
 import { ScoreEntryDialog } from "./features/rounds/scoreEntryDialog";
 import Box from "@mui/material/Box";
 import "./App.css";
-import { IconButton, Stack } from "@mui/material";
+import { IconButton, Stack, styled } from "@mui/material";
 import AppBar from "@mui/material/AppBar";
 import Toolbar from "@mui/material/Toolbar";
 import Menu from "./features/menu/menu";
@@ -15,7 +15,7 @@ import { GameCreator } from "./features/game/GameCreator";
 import { useSelector } from "react-redux";
 import { RootState } from "./app/store";
 import ScoresHistoryNew from "./features/rounds/ScoresHistoryNew";
-import { SnackbarProvider } from "notistack";
+import { SnackbarProvider, MaterialDesignContent } from "notistack";
 import { ActionCreators } from "redux-undo";
 import UndoIcon from "@mui/icons-material/Undo";
 import RedoIcon from "@mui/icons-material/Redo";
@@ -159,7 +159,7 @@ export default function ToggleColorMode() {
     }),
     []
   );
-
+  // Different colors for light and dark mode
   const theme = React.useMemo(
     () =>
       createTheme({
@@ -187,10 +187,24 @@ export default function ToggleColorMode() {
     [mode]
   );
 
+  // Customized Material Design Snackbar
+
+  const StyledMaterialDesignContent = styled(MaterialDesignContent)(() => ({
+    "&.notistack-MuiContent-info": {
+      backgroundColor: "#7df3e1",
+      color: "#424242",
+      },
+  }));
+
   return (
     <ColorModeContext.Provider value={colorMode}>
       <ThemeProvider theme={theme}>
-        <SnackbarProvider maxSnack={3}>
+        <SnackbarProvider
+          maxSnack={3}
+          Components={{
+            info: StyledMaterialDesignContent,
+          }}
+        >
           <App />
         </SnackbarProvider>
       </ThemeProvider>

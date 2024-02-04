@@ -3,7 +3,7 @@ import Card from "@mui/material/Card";
 import CardContent from "@mui/material/CardContent";
 import Typography from "@mui/material/Typography";
 import { player } from "./playersSlice";
-import { Chip, Stack, Badge, Divider, Avatar } from "@mui/material";
+import { Chip, Stack, Badge, Divider, Avatar, Tooltip } from "@mui/material";
 import { PlayerStats, Stat } from "./Ranking";
 import { GiDeathSkull } from "react-icons/gi";
 import { GiPistolGun } from "react-icons/gi";
@@ -12,6 +12,7 @@ import { FaSadCry } from "react-icons/fa";
 import { FaFire } from "react-icons/fa";
 import { useAppSelector } from "../../app/hooks";
 import { selectStatsWeight } from "../stats/statsSlice";
+import TrendingFlatIcon from "@mui/icons-material/TrendingFlat";
 
 export type PlayerScoreCardProps = {
   player: player;
@@ -20,6 +21,7 @@ export type PlayerScoreCardProps = {
   streak?: number;
   longestStreak: boolean;
   showStats: boolean;
+  showPreviousRoundInfo: boolean;
 };
 
 export const PlayerScoreCard = ({
@@ -28,10 +30,9 @@ export const PlayerScoreCard = ({
   score,
   streak,
   longestStreak,
-  showStats
+  showStats,
+  showPreviousRoundInfo,
 }: PlayerScoreCardProps) => {
-  
-
   function stringAvatar(name: string) {
     return {
       children: `${name.slice(0, 2)}`,
@@ -88,15 +89,18 @@ export const PlayerScoreCard = ({
         );
 
       case "Longest Streak":
+        const tooltiptext = longestStreak ? `Longest Streak! This adds ${statsWeigts.find((weightedStat) => weightedStat.statName === stat.name)?.weight} to your score.` : `${stat.count} is not the longest streak`;
         return (
+          <Tooltip title={tooltiptext} arrow>
           <Chip
             icon={<FaFire size={"14px"} />}
             variant="filled"
             {...(longestStreak && { color: "success" })}
             size="small"
             label={stat.count}
-            sx={{ ml: 1, mr: 1 }}
+            sx={{ ml: 1 }}
           />
+          </Tooltip>
         );
 
       default:
@@ -141,7 +145,7 @@ export const PlayerScoreCard = ({
   };
 
   return (
-    <Card elevation={2} sx={{ width: "100%"}}>
+    <Card elevation={2} sx={{ width: "100%" }}>
       <CardContent>
         <Stack
           justifyContent={"left"}
@@ -153,7 +157,7 @@ export const PlayerScoreCard = ({
         >
           <Avatar
             {...stringAvatar(player.name)}
-            sx={{bgcolor: player.color}}
+            sx={{ bgcolor: player.color }}
             key={player.id}
             variant="rounded"
           />
@@ -208,21 +212,43 @@ export const PlayerScoreCard = ({
           <>
             <Divider variant="middle" sx={{ mt: 2, mb: 2 }} />
 
+            {/* <Stack direction={"row"} alignItems={"center"}>
+              {showPreviousRoundInfo && (
+                <Stack direction={"row"} spacing={1}>
+                  <Chip
+                    label="+15"
+                    size="small"
+                    variant="filled"
+                    color={badgecolor}
+                  />
+                  
+                  <Chip
+                    label="+3"
+                    size="small"
+                    variant="filled"
+                    color="primary"
+                  />
+                  </Stack>
+              )} */}
             {statistics.stats.map((stat) => (
+              
               <React.Fragment key={stat.name}>
                 {stat.name !== "Longest Streak" ? (
-                  <Badge
-                    badgeContent={stat.count}
-                    color={getStatBadgeColor(stat.name)}
-                    sx={{ margin: 1 }}
-                  >
-                    {renderStat(stat)}
-                  </Badge>
+                  <Tooltip title={`Score: ${stat.count} * ${stat.name} (${statsWeigts.find((weightedStat) => weightedStat.statName === stat.name)?.weight})`} arrow>
+                    <Badge
+                      badgeContent={stat.count}
+                      color={getStatBadgeColor(stat.name)}
+                      sx={{ margin: 1 }}
+                    >
+                      {renderStat(stat)}
+                    </Badge>
+                  </Tooltip>
                 ) : (
                   renderStat(stat)
                 )}
               </React.Fragment>
             ))}
+            {/* </Stack> */}
           </>
         )}
       </CardContent>
