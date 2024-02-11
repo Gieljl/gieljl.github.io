@@ -36,6 +36,9 @@ import RefreshIcon from "@mui/icons-material/Refresh";
 import { useSelector } from "react-redux";
 import { RootState } from "../../app/store";
 import { setGameType } from "../game/gameSlice";
+import { on } from "events";
+import { onCLS } from "web-vitals";
+import { closeSnackbar, enqueueSnackbar } from "notistack";
 
 type Anchor = "top" | "left" | "bottom" | "right";
 
@@ -71,6 +74,40 @@ export default function Menu({
     window.location.reload();
   };
 
+  const onClickNewGame = () => {
+    enqueueSnackbar(
+      `This will delete all data of the game in progress. Are you sure you want to proceed?`,
+      {
+        variant: "warning",
+        persist: true,
+        action: (key) => (
+          <>
+            <Button
+              color="inherit"
+              onClick={() => {
+                dispatch(startNewGame());
+                dispatch(resetPlayers());
+                dispatch(resetScores());
+                dispatch(ActionCreators.clearHistory());
+                closeSnackbar(key);
+              }}
+            >
+              Yes
+            </Button>
+            <Button
+              color="inherit"
+              onClick={() => {
+                closeSnackbar(key);
+                handleClose();
+              }}
+            >
+              No
+            </Button>
+          </>
+        ),
+      }
+    );
+  };
 
   const list = (anchor: Anchor) => (
     <Box
@@ -83,15 +120,7 @@ export default function Menu({
           <ListItemIcon>
             <AddCircleIcon />
           </ListItemIcon>
-          <ListItemText
-            primary="New Game"
-            onClick={() =>
-              dispatch(startNewGame()) &&
-              dispatch(resetPlayers()) &&
-              dispatch(resetScores()) &&
-              dispatch(ActionCreators.clearHistory())
-            }
-          />
+          <ListItemText primary="New Game" onClick={onClickNewGame} />
         </ListItemButton>
         <ListItemButton key="settings" onClick={handleClickOpenSettings}>
           <ListItemIcon>
@@ -137,8 +166,7 @@ export default function Menu({
   React.useEffect(() => {
     dispatch(setGameType(gameTypeState as "classic" | "ranked"));
   }, [gameTypeState, dispatch]);
-  
-  
+
   const handleChange = (event: SelectChangeEvent) => {
     setGameTypeState(event.target.value as "classic" | "ranked");
   };
@@ -158,7 +186,6 @@ export default function Menu({
   const handleClose = () => {
     setOpen(false);
   };
-
 
   return (
     <div>

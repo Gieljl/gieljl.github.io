@@ -371,6 +371,8 @@ export function ScoreEntryDialog() {
 
     // Close the dialog
     handleClose();
+
+    enqueueSnackbar("Scores updated!", { variant: "success" });
   };
 
   // add the scores entered in text fields to the roundScores state

@@ -24,6 +24,7 @@ import Wheel from "@uiw/react-color-wheel";
 import { hsvaToHex } from "@uiw/color-convert";
 import { PlayerList } from "./Players";
 import { selectPlayers } from "./playersSlice";
+import { enqueueSnackbar } from "notistack";
 
 const Transition = React.forwardRef(function Transition(
   props: TransitionProps & {
@@ -61,6 +62,21 @@ export function AddPlayerDialog() {
     setHsva(color.hsva);
     setHex(hsvaToHex(color.hsva));
   }
+
+  const handleAdd = () => () => {
+    // check if player name or color already exists
+    if (players.some((player) => player.name === playerName)) {
+      enqueueSnackbar("Name has to be unique. Please enter a different name.", { variant: "error" });
+      return;
+    }
+    if (players.some((player) => player.color === hex)) {
+      enqueueSnackbar("Color has to be unique! Use another color.", { variant: "error" });
+      return;
+    }
+    
+    dispatch(addPlayer(playerName, hex)) 
+    handleClose()
+  };
 
   return (
     <div>
@@ -192,9 +208,7 @@ export function AddPlayerDialog() {
           <Button
             sx={{ margin: 1 }}
             disabled={hex === "" || playerName.length === 0}
-            onClick={() =>
-              dispatch(addPlayer(playerName, hex)) && handleClose()
-            }
+            onClick={handleAdd()}
             variant="contained"
           >
             Add

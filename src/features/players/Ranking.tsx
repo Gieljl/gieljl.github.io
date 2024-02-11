@@ -248,9 +248,9 @@ export function PlayerRanking() {
         const bCurrentScore = currentScores.find(
           (score) => score.id === b.playerInfo.id
         )!.score;
-        return Number(bCurrentScore) - Number(aCurrentScore);
+        return bCurrentScore - aCurrentScore;
       } else {
-        return Number(b.weightedScore) - Number(a.weightedScore);
+        return b.weightedScore - a.weightedScore;
       }
     } else {
       // Sorting based solely on current score
@@ -299,6 +299,8 @@ export function PlayerRanking() {
             onClick={onStatChipClick}
             disabled={scoreHistory.length < 2}
           />
+
+          {showStats && (          
           <Chip
             label={showLastRoundInfo ? "Round" : "Game"}
             variant="filled"
@@ -309,6 +311,7 @@ export function PlayerRanking() {
             onClick={() => setShowLastRoundInfo(!showLastRoundInfo)}
             disabled={scoreHistory.length < 2}
           />
+          )}
           <Chip
             icon={<SwapVertIcon />}
             label={sortingMethod === "ranked" ? "Rank" : "Points"}
