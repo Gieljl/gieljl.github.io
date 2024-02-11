@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Alert, Button, Chip, Stack, styled, useTheme } from "@mui/material";
+import { Button, Chip, Stack, styled, useTheme } from "@mui/material";
 import { PlayerScoreCard } from "./PlayerScoreCard";
 import { useAppSelector } from "../../app/hooks";
 import { RootState } from "../../app/store";
@@ -18,8 +18,9 @@ import { SnackbarKey, closeSnackbar, enqueueSnackbar } from "notistack";
 
 export type PlayerStats = {
   stats: Stat[];
-  weightedScore: number;
 };
+
+export type WeightedScore = number;
 
 export type Stat = {
   name: string;
@@ -34,15 +35,19 @@ export function PlayerRanking() {
   const currentScores = useAppSelector(selectScores);
   const scoreHistory = useAppSelector((state: RootState) => state.scores.past);
   const [showStats, setShowStats] = useState(false);
-  const [showPreviousRoundInfo, setShowPreviousRoundInfo] = useState(false);
+  const [showLastRoundInfo, setShowLastRoundInfo] = useState(false);
 
   const newScoreState: ScoreState = {
     playerscores: [...currentScores],
   };
   const totalScores = [...scoreHistory, newScoreState];
 
-  const getTotalStatCount = (playerId: number, statName: string) => {
-    return totalScores.reduce((total, round) => {
+  const getGameStatCount = (
+    playerId: number,
+    statName: string,
+    scores: ScoreState[]
+  ) => {
+    return scores.reduce((total, round) => {
       const playerRound = round.playerscores.find(
         (player) => player.id === playerId
       );
@@ -54,6 +59,47 @@ export function PlayerRanking() {
       );
     }, 0);
   };
+
+  const getRoundStatCount = (
+    playerId: number,
+    statName: string,
+    scores: ScoreState
+  ) => {
+    const playerRound = scores.playerscores.find(
+      (player) => player.id === playerId
+    );
+    return (
+      playerRound
+        ? playerRound.stats.filter((stat) => stat.name === statName).length
+        : 0
+    );
+  }
+
+  const calculateRoundScoreChange = (playerId: number) => {
+    const previousRound = scoreHistory[scoreHistory.length - 1];
+    const currentRound = newScoreState;
+    //calculate the difference between the current round and the previous round
+    const previousRoundPlayer = previousRound.playerscores.find(
+      (player) => player.id === playerId
+    );
+    const currentRoundPlayer = currentRound.playerscores.find(
+      (player) => player.id === playerId
+    );
+    const previousScore = previousRoundPlayer ? previousRoundPlayer.score : 0;
+    const currentScore = currentRoundPlayer ? currentRoundPlayer.score : 0;
+    return currentScore - previousScore;
+  }
+
+  const getPlayerWeightedScoreChange = (playerId: number, currentWeightedScore: number) => {
+
+    // Get the score state for previous round (excluding the current round)
+    const LastRoundScoreState = [...scoreHistory];
+    const totalStatsDuringLastRound = getPlayersGameStats(playerId, LastRoundScoreState); 
+    const weightedScoreDuringLastRound = getWeightedScore(totalStatsDuringLastRound, LastRoundScoreState);
+    const weightedScoreChange = currentWeightedScore - weightedScoreDuringLastRound;
+    return weightedScoreChange;
+  }
+
 
   const onStatChipClick = () => {
     setShowStats(!showStats);
@@ -76,8 +122,9 @@ export function PlayerRanking() {
     }
   };
 
-  const getLongestYasatStreakPlayer = (playerId: number) => {
-    return totalScores.reduce((longestStreak, round) => {
+  // Calulate the longest yasat streak of a player
+  const getLongestYasatStreakOfPlayer = (playerId: number, scoreState: ScoreState[]) => {
+    return scoreState.reduce((longestStreak, round) => {
       const playerRound = round.playerscores.find(
         (player) => player.id === playerId
       );
@@ -87,9 +134,9 @@ export function PlayerRanking() {
     }, 0);
   };
 
-  // get player with longest yasat streak of the game
-  const getLongestYasatStreak = () => {
-    return totalScores.reduce((longestStreak, round) => {
+  // get the longest yasat of the game
+  const getLongestYasatStreakOfGame = (scoreState: ScoreState[]) => {
+    return scoreState.reduce((longestStreak, round) => {
       return Math.max(
         longestStreak,
         Math.max(...round.playerscores.map((player) => player.yasatStreak))
@@ -97,72 +144,73 @@ export function PlayerRanking() {
     }, 0);
   };
 
+  // get the current streak of a player
   const getCurrentYasatStreak = (playerId: number) => {
     const currentRound = currentScores.find((player) => player.id === playerId);
     return currentRound ? currentRound.yasatStreak : 0;
   };
 
-  const getPlayerStats = (playerId: number) => {
-    const playerStatistics: PlayerStats = { stats: [], weightedScore: 0 };
+  const getWeightedScore = (playerStats: PlayerStats, scoreState: ScoreState[]) => {
+    let weightedScore = 0;
+    playerStats.stats.forEach((stat) => {
+      const statWeight = statsWeigts.find(
+        (weightedStat) => weightedStat.statName === stat.name
+      );
 
-    const longestStreak = getLongestYasatStreakPlayer(playerId);
+      if (statWeight) {
+        if (stat.name === "Longest Streak") {
+          // check if its the longest streak of the game
+          if (stat.count === getLongestYasatStreakOfGame(scoreState) && stat.count > 1) {
+            weightedScore += 1 * statWeight.weight;
+          }
+        } else {
+          weightedScore += stat.count * statWeight.weight;
+        }
+      }
+    });
+    return weightedScore;
+  };
+
+  const getPlayersGameStats = (playerId: number, scoreState: ScoreState[]) => {
+    const playerStatistics: PlayerStats = { stats: [] };
+
+    const longestStreak = getLongestYasatStreakOfPlayer(playerId, scoreState);
     if (longestStreak > 1) {
       playerStatistics.stats.push({
         name: "Longest Streak",
         count: longestStreak,
       });
-
-      // const statWeight = statsWeigts.find((stat) => stat.statName === "Longest Streak")!;
-      // playerStatistics.weightedScore += longestStreak * statWeight.weight;
     }
-
-    // if player is equal to the longest streak of the game player add "Longest Streak" stat to playerStatistics.weightedScore
-    if (longestStreak === getLongestYasatStreak() && longestStreak > 1) {
-      const statWeight = statsWeigts.find(
-        (stat) => stat.statName === "Longest Streak"
-      )!;
-      playerStatistics.weightedScore += 1 * statWeight.weight;
-    }
-
-    const statNames = [
-      "Yasat",
-      "Death",
-      "Kill",
-      "Own",
-      "Owned",
-      "Multi-owned",
-      "Lullify",
-      "Enable 69",
-      "Contra-own 50",
-      "Contra-own 100",
-      "Nullify 50",
-      "Nullify 100",
-      "Enable 50",
-      "Enable 100",
-      "Double Kill",
-      "Multi Kill",
-      "Mega Kill",
-      "Monster Kill",
-    ];
-
-    statNames.forEach((statName) => {
-      const count = getTotalStatCount(playerId, statName);
-      const statWeight = statsWeigts.find(
-        (stat) => stat.statName === statName
-      ) || { weight: 0 };
-
+    //check all stats in statweights definition, get the totals for that stat and add to playerStatistics.stats
+    statsWeigts.forEach((stat) => {
+      if (stat.statName === "Longest Streak") return; // Not for longest streak
+      const count = getGameStatCount(playerId, stat.statName, scoreState);
       if (count > 0) {
         playerStatistics.stats.push({
-          name: statName,
+          name: stat.statName,
           count,
         });
-
-        playerStatistics.weightedScore += count * statWeight.weight;
       }
     });
 
     return playerStatistics;
   };
+
+  const getPlayersRoundStats = (playerId: number) => {
+    const playerStatistics: PlayerStats = { stats: [] };
+    //check all stats in statweights definition, get the totals for that stat and add to playerStatistics.stats
+    statsWeigts.forEach((stat) => {
+      const count = getRoundStatCount(playerId, stat.statName, newScoreState);
+      if (count > 0) {
+        playerStatistics.stats.push({
+          name: stat.statName,
+          count,
+        });
+      }
+    });
+
+    return playerStatistics;
+  }
 
   const [sortingMethod, setSortingMethod] = useState<"ranked" | "points">(
     "ranked"
@@ -175,17 +223,22 @@ export function PlayerRanking() {
   };
 
   // create an array of players with their stats and weighted score
-  // sort the array by weighted score
-  const sortedPlayers = players.map((player) => {
-    const playerStats = getPlayerStats(player.id);
+  const playersForRanking = players.map((player) => {
+    const playerStats = getPlayersGameStats(player.id, totalScores);
+    const calculatedWeightedScore = getWeightedScore(playerStats, totalScores);
+    const roundStats = getPlayersRoundStats(player.id);
+    const roundWeigtedScore = getPlayerWeightedScoreChange(player.id, calculatedWeightedScore);
     return {
       playerInfo: player,
       stats: playerStats,
-      weightedScore: playerStats.weightedScore,
+      weightedScore: calculatedWeightedScore,
+      roundStats: roundStats,
+      roundWeigtedScore: roundWeigtedScore,
     };
   });
+
   // Sort players based on the chosen method
-  sortedPlayers.sort((a, b) => {
+  playersForRanking.sort((a, b) => {
     if (sortingMethod === "ranked") {
       // Sorting based on weighted score and then current score
       if (a.weightedScore === b.weightedScore) {
@@ -195,9 +248,9 @@ export function PlayerRanking() {
         const bCurrentScore = currentScores.find(
           (score) => score.id === b.playerInfo.id
         )!.score;
-        return aCurrentScore - bCurrentScore;
+        return Number(bCurrentScore) - Number(aCurrentScore);
       } else {
-        return b.weightedScore - a.weightedScore;
+        return Number(b.weightedScore) - Number(a.weightedScore);
       }
     } else {
       // Sorting based solely on current score
@@ -246,15 +299,16 @@ export function PlayerRanking() {
             onClick={onStatChipClick}
             disabled={scoreHistory.length < 2}
           />
-          {/* <Chip
-            label={showPreviousRoundInfo ? "Round results" : "Totals"}
+          <Chip
+            label={showLastRoundInfo ? "Round" : "Game"}
             variant="filled"
             color="primary"
             sx={{ ml: 1 }}
             deleteIcon={<ArrowDropDownIcon />}
-            onDelete={() => setShowPreviousRoundInfo(!showPreviousRoundInfo)}
-            onClick={() => setShowPreviousRoundInfo(!showPreviousRoundInfo)}
-          /> */}
+            onDelete={() => setShowLastRoundInfo(!showLastRoundInfo)}
+            onClick={() => setShowLastRoundInfo(!showLastRoundInfo)}
+            disabled={scoreHistory.length < 2}
+          />
           <Chip
             icon={<SwapVertIcon />}
             label={sortingMethod === "ranked" ? "Rank" : "Points"}
@@ -269,7 +323,7 @@ export function PlayerRanking() {
       </Stack>
 
       <Stack direction="column" spacing={3} mt={"70px"} width={"85%"}>
-        {sortedPlayers.map((player) => (
+        {playersForRanking.map((player) => (
           <PlayerScoreCard
             player={player.playerInfo}
             score={
@@ -277,15 +331,19 @@ export function PlayerRanking() {
                 .score || 0
             }
             statistics={player.stats}
+            weightedScore={player.weightedScore}
             key={player.playerInfo.id}
-            streak={getCurrentYasatStreak(player.playerInfo.id)}
-            longestStreak={
-              getLongestYasatStreak() ===
+            streakLength={getCurrentYasatStreak(player.playerInfo.id)}
+            hasLongestStreak={
+              getLongestYasatStreakOfGame(totalScores) ===
               player.stats.stats.find((stat) => stat.name === "Longest Streak")
                 ?.count
             }
             showStats={showStats}
-            showPreviousRoundInfo={showPreviousRoundInfo}
+            roundStats={player.roundStats}
+            roundWeigtedScore={player.roundWeigtedScore}
+            roundScoreChange={calculateRoundScoreChange(player.playerInfo.id)}
+            showLastRoundInfo={showLastRoundInfo}
           />
         ))}
         <Offset />

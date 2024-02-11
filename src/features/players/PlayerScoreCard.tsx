@@ -17,21 +17,29 @@ import TrendingFlatIcon from "@mui/icons-material/TrendingFlat";
 export type PlayerScoreCardProps = {
   player: player;
   statistics: PlayerStats;
+  weightedScore: number;
   score: number;
-  streak?: number;
-  longestStreak: boolean;
+  streakLength?: number;
+  hasLongestStreak: boolean;
   showStats: boolean;
-  showPreviousRoundInfo: boolean;
+  roundStats: PlayerStats;
+  roundWeigtedScore: number;
+  roundScoreChange: number;
+  showLastRoundInfo: boolean;
 };
 
 export const PlayerScoreCard = ({
   player,
   statistics,
+  weightedScore,
   score,
-  streak,
-  longestStreak,
+  streakLength,
+  hasLongestStreak,
   showStats,
-  showPreviousRoundInfo,
+  roundStats,
+  roundWeigtedScore,
+  roundScoreChange,
+  showLastRoundInfo,
 }: PlayerScoreCardProps) => {
   function stringAvatar(name: string) {
     return {
@@ -89,17 +97,23 @@ export const PlayerScoreCard = ({
         );
 
       case "Longest Streak":
-        const tooltiptext = longestStreak ? `Longest Streak! This adds ${statsWeigts.find((weightedStat) => weightedStat.statName === stat.name)?.weight} to your score.` : `${stat.count} is not the longest streak`;
+        const tooltiptext = hasLongestStreak
+          ? `Longest Streak! This adds ${
+              statsWeigts.find(
+                (weightedStat) => weightedStat.statName === stat.name
+              )?.weight
+            } to your score.`
+          : `${stat.count} is not the longest streak`;
         return (
           <Tooltip title={tooltiptext} arrow>
-          <Chip
-            icon={<FaFire size={"14px"} />}
-            variant="filled"
-            {...(longestStreak && { color: "success" })}
-            size="small"
-            label={stat.count}
-            sx={{ ml: 1 }}
-          />
+            <Chip
+              icon={<FaFire size={"14px"} />}
+              variant="filled"
+              {...(hasLongestStreak && { color: "success" })}
+              size="small"
+              label={stat.count}
+              sx={{ ml: 1 }}
+            />
           </Tooltip>
         );
 
@@ -115,22 +129,25 @@ export const PlayerScoreCard = ({
     }
   };
 
-  let badgecolor:
-    | "default"
-    | "primary"
-    | "secondary"
-    | "error"
-    | "success"
-    | "warning"
-    | "info" = "primary";
+  const getPointsColor = (score: number) => {
+    let badgecolor:
+      | "default"
+      | "primary"
+      | "secondary"
+      | "error"
+      | "success"
+      | "warning"
+      | "info" = "primary";
+    if (score === 15 || score === 65 || score === 69 || score === 0) {
+      badgecolor = "success";
+    } else if (score > 60) {
+      badgecolor = "secondary";
+    } else {
+      badgecolor = "default";
+    }
+    return badgecolor;
+  };
 
-  if (score === 15 || score === 65 || score === 69 || score === 0) {
-    badgecolor = "success";
-  } else if (score > 60) {
-    badgecolor = "secondary";
-  } else {
-    badgecolor = "default";
-  }
   const statsWeigts = useAppSelector(selectStatsWeight);
 
   const getStatBadgeColor = (statName: string) => {
@@ -153,88 +170,93 @@ export const PlayerScoreCard = ({
           alignContent={"end"}
           spacing={2}
           direction="row"
-          divider={<Divider orientation="vertical" flexItem />}
+          divider={
+            <Divider orientation="vertical" variant="fullWidth" flexItem />
+          }
         >
           <Avatar
             {...stringAvatar(player.name)}
-            sx={{ bgcolor: player.color }}
+            sx={{ bgcolor: player.color, alignSelf: "center" }}
             key={player.id}
             variant="rounded"
           />
 
           <Stack alignItems={"center"} spacing={1} direction="column">
             <Typography
-              sx={{ fontSize: 11 }}
+              sx={{ fontSize: 12 }}
               color="text.secondary"
               gutterBottom
             >
               Points
             </Typography>
-            <Chip label={score} variant="filled" color={badgecolor} />
+            <Chip
+              label={score}
+              variant="filled"
+              color={getPointsColor(score)}
+            />
           </Stack>
 
           <Stack alignItems={"center"} spacing={1} direction="column">
             <Typography
-              sx={{ fontSize: 11 }}
+              sx={{ fontSize: 12 }}
               color="text.secondary"
               gutterBottom
             >
               Score
             </Typography>
-            <Chip
-              label={statistics.weightedScore}
-              variant="filled"
-              color="primary"
-            />
+            <Chip label={weightedScore} variant="filled" color="primary" />
           </Stack>
-          {streak && (
+          {streakLength && (
             <Stack alignItems={"center"} spacing={1} direction="column">
               <Typography
-                sx={{ fontSize: 11 }}
+                sx={{ fontSize: 12 }}
                 color="text.secondary"
                 gutterBottom
               >
                 Streak
               </Typography>
-              {streak === 1 ? (
-                <Chip label={streak} variant="filled" />
+              {streakLength === 1 ? (
+                <Chip label={streakLength} variant="filled" />
               ) : (
                 <Chip
                   icon={<FaFire size={"17px"} />}
-                  label={streak}
+                  label={streakLength}
                   variant="filled"
                 />
               )}
             </Stack>
           )}
         </Stack>
-        {showStats && statistics.stats.length > 0 && (
+        {showLastRoundInfo && showStats && (
           <>
-            <Divider variant="middle" sx={{ mt: 2, mb: 2 }} />
+            <Divider variant="fullWidth" sx={{ mt: 2, mb: 1 }}>
+              <Typography sx={{ fontSize: 10 }} color="text.secondary">
+                Round breakdown
+              </Typography>
+            </Divider>
 
-            {/* <Stack direction={"row"} alignItems={"center"}>
-              {showPreviousRoundInfo && (
-                <Stack direction={"row"} spacing={1}>
-                  <Chip
-                    label="+15"
-                    size="small"
-                    variant="filled"
-                    color={badgecolor}
-                  />
-                  
-                  <Chip
-                    label="+3"
-                    size="small"
-                    variant="filled"
-                    color="primary"
-                  />
-                  </Stack>
-              )} */}
-            {statistics.stats.map((stat) => (
-              
+            <Chip label={roundScoreChange > 0 ? `+${roundScoreChange}` : roundScoreChange} variant="filled" size="small" />
+            
+            <Chip
+              label={roundWeigtedScore > 0 ? `+${roundWeigtedScore}` : roundWeigtedScore} 
+              variant="filled"
+              size="small"
+              color="primary"
+              sx={{ ml: 1}}
+            />
+            
+
+            {roundStats.stats.map((stat) => (
               <React.Fragment key={stat.name}>
                 {stat.name !== "Longest Streak" ? (
-                  <Tooltip title={`Score: ${stat.count} * ${stat.name} (${statsWeigts.find((weightedStat) => weightedStat.statName === stat.name)?.weight})`} arrow>
+                  <Tooltip
+                    title={`Score: ${stat.count} * ${stat.name} (${
+                      statsWeigts.find(
+                        (weightedStat) => weightedStat.statName === stat.name
+                      )?.weight
+                    })`}
+                    arrow
+                  >
                     <Badge
                       badgeContent={stat.count}
                       color={getStatBadgeColor(stat.name)}
@@ -248,7 +270,40 @@ export const PlayerScoreCard = ({
                 )}
               </React.Fragment>
             ))}
-            {/* </Stack> */}
+          </>
+        )}
+
+        {!showLastRoundInfo && showStats && statistics.stats.length > 0 && (
+          <>
+            <Divider variant="fullWidth" sx={{ mt: 2, mb: 1 }}>
+              <Typography sx={{ fontSize: 10 }} color="text.secondary">
+                Game stats
+              </Typography>
+            </Divider>
+            {statistics.stats.map((stat) => (
+              <React.Fragment key={stat.name}>
+                {stat.name !== "Longest Streak" ? (
+                  <Tooltip
+                    title={`Score: ${stat.count} * ${stat.name} (${
+                      statsWeigts.find(
+                        (weightedStat) => weightedStat.statName === stat.name
+                      )?.weight
+                    })`}
+                    arrow
+                  >
+                    <Badge
+                      badgeContent={stat.count}
+                      color={getStatBadgeColor(stat.name)}
+                      sx={{ margin: 1 }}
+                    >
+                      {renderStat(stat)}
+                    </Badge>
+                  </Tooltip>
+                ) : (
+                  renderStat(stat)
+                )}
+              </React.Fragment>
+            ))}
           </>
         )}
       </CardContent>
