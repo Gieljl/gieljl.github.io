@@ -15,6 +15,7 @@ import TextField from "@mui/material/TextField";
 import { styled } from "@mui/material/styles";
 import Fab from "@mui/material/Fab";
 import AddIcon from "@mui/icons-material/Add";
+import kill from "../../assets/audio/kill.mp3";
 import doublekill from "../../assets/audio/doublekill.mp3";
 import multikill from "../../assets/audio/multikill.mp3";
 import megakill from "../../assets/audio/megakill.mp3";
@@ -251,6 +252,9 @@ export function ScoreEntryDialog() {
         player.stats.push({ name: "Death" });
         player.score = 0;
         newScores[yasatPlayerIndex].stats.push({ name: "Kill" });
+        const killAudio = new Audio(kill);
+        killAudio.play();
+        
       }
     });
 
