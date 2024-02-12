@@ -252,9 +252,6 @@ export function ScoreEntryDialog() {
         player.stats.push({ name: "Death" });
         player.score = 0;
         newScores[yasatPlayerIndex].stats.push({ name: "Kill" });
-        const killAudio = new Audio(kill);
-        killAudio.play();
-        
       }
     });
 
@@ -263,7 +260,10 @@ export function ScoreEntryDialog() {
       const killCount = player.stats.filter(
         (stat) => stat.name === "Kill"
       ).length;
-      // if the killCount is greater than 1 add a multi stat to the player
+      if (killCount === 1) {
+        const killAudio = new Audio(kill);
+        killAudio.play();
+      }
       if (killCount === 2) {
         player.stats.push({ name: "Double Kill" });
         const dkAudio = new Audio(doublekill);
