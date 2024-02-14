@@ -81,6 +81,7 @@ export function ScoreEntryDialog() {
     setErrorStates({});
     setManualYasat(false);
     setAutoYasat(true);
+    setIsSmallExploding(false);
   };
 
   const handleClickOpen = () => {
@@ -106,11 +107,10 @@ export function ScoreEntryDialog() {
 
   const [isSmallExploding, setIsSmallExploding] = React.useState(false);
   const smallProps: ConfettiProps = {
-    force: 0.3,
-    particleSize: 8,
+    force: 0.5,
     duration: 3000,
-    particleCount: 100,
-    width: 400,
+    particleCount: 40,
+    width: 300,
     zIndex: 2000,
     colors: ["#7df3e1", "#f50057", "#FFC700"],
   };
@@ -134,6 +134,7 @@ export function ScoreEntryDialog() {
       setAutoYasat(false);
     } else if (allScoresEntered && lowScorePlayers.length === 1) {
       // Set the yasatPlayer state to the ID of the player with a score of 7 or less
+      setIsSmallExploding(true);
       setYasatPlayer(lowScorePlayers[0].id);
       setAutoYasat(true);
     } else if (allScoresEntered && lowScorePlayers.length > 1) {
@@ -156,6 +157,7 @@ export function ScoreEntryDialog() {
       setYasatPlayer(null);
       setManualYasat(false);
       setAutoYasat(true);
+      setIsSmallExploding(false)
       return;
     }
 
@@ -165,6 +167,26 @@ export function ScoreEntryDialog() {
         variant: "error",
       });
       return;
+    }
+
+    //check for own so no confetti is shown
+    const lowScorePlayers = newScores.filter((player) => player.score <= 7);
+    const yasatPlayerIndex = newScores.findIndex(
+      (player) => player.id === id
+    );
+
+    if (lowScorePlayers.length > 1) {
+      // check if other players have a lower score than the selected player
+      if (lowScorePlayers.some((player) => player.score < newScores[yasatPlayerIndex].score)) {
+        setIsSmallExploding(false);
+      } else {
+        setIsSmallExploding(true);
+      }
+    }
+
+    // if no scores are entered yet and yasaty is selected show confetti
+    if (newScores.length === 0) {
+      setIsSmallExploding(true);
     }
 
     // set the yasatPlayer state to the id of the player who called Yasat
@@ -229,6 +251,8 @@ export function ScoreEntryDialog() {
         player.stats.push({ name: "Own" });
         player.score = 0;
         newScores[yasatPlayerIndex].stats.push({ name: "Owned" });
+        const killAudio = new Audio(kill);
+        killAudio.play();
       }
     });
 
@@ -380,6 +404,24 @@ export function ScoreEntryDialog() {
       return;
     }
 
+    //check for own so no confetti is shown
+    const lowScorePlayers = newScores.filter((player) => player.score <= 7);
+
+    if (lowScorePlayers.length > 1) {
+      // check if other players have a lower score than the selected player
+      if (lowScorePlayers.some((player) => player.score < newScores[yasatPlayerIndex].score)) {
+        setIsSmallExploding(false);
+      } else {
+        setIsSmallExploding(true);
+      }
+    }
+
+    // if no scores are entered yet and yasaty is selected show confetti
+    if (newScores.length === 0) {
+      setIsSmallExploding(true);
+    }
+
+
     // Add the new score to state
     dispatch(addScores(newScores));
 
@@ -482,7 +524,7 @@ export function ScoreEntryDialog() {
                   yasatPlayer === player.id ? (
                     <>
                       <Avatar sx={{ mr: 2 }} src="../../logo192.png" />
-                      <ConfettiExplosion {...smallProps} />
+                      {isSmallExploding && <ConfettiExplosion {...smallProps} />}
                     </>
                   ) : (
                     <></>
@@ -493,7 +535,6 @@ export function ScoreEntryDialog() {
                   <Button
                     onClick={() => {
                       handleYasat(player.id);
-                      setIsSmallExploding(!isSmallExploding);
                     }}
                   >
                     <ListItemAvatar>
