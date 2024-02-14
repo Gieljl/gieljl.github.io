@@ -181,7 +181,6 @@ export function PlayerRanking() {
         count: longestStreak,
       });
     }
-    //check all stats in statweights definition, get the totals for that stat and add to playerStatistics.stats
     statsWeigts.forEach((stat) => {
       if (stat.statName === "Longest Streak") return; // Not for longest streak
       const count = getGameStatCount(playerId, stat.statName, scoreState);
@@ -198,7 +197,6 @@ export function PlayerRanking() {
 
   const getPlayersRoundStats = (playerId: number) => {
     const playerStatistics: PlayerStats = { stats: [] };
-    //check all stats in statweights definition, get the totals for that stat and add to playerStatistics.stats
     statsWeigts.forEach((stat) => {
       const count = getRoundStatCount(playerId, stat.statName, newScoreState);
       if (count > 0) {

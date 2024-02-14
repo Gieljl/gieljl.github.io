@@ -3,7 +3,15 @@ import Card from "@mui/material/Card";
 import CardContent from "@mui/material/CardContent";
 import Typography from "@mui/material/Typography";
 import { player } from "./playersSlice";
-import { Chip, Stack, Badge, Divider, Avatar, Tooltip } from "@mui/material";
+import {
+  Chip,
+  Stack,
+  Badge,
+  Divider,
+  Avatar,
+  Tooltip,
+  makeStyles,
+} from "@mui/material";
 import { PlayerStats, Stat } from "./Ranking";
 import { GiDeathSkull } from "react-icons/gi";
 import { GiPistolGun } from "react-icons/gi";
@@ -13,6 +21,8 @@ import { FaFire } from "react-icons/fa";
 import { useAppSelector } from "../../app/hooks";
 import { selectStatsWeight } from "../stats/statsSlice";
 import TrendingFlatIcon from "@mui/icons-material/TrendingFlat";
+import { selectScores } from "../game/scoreSlice";
+import { RootState } from "../../app/store";
 
 export type PlayerScoreCardProps = {
   player: player;
@@ -161,6 +171,54 @@ export const PlayerScoreCard = ({
     }
   };
 
+  // const getRoundBreakdownPointsColor = () => {
+  //   let badgecolor:
+  //     | "default"
+  //     | "primary"
+  //     | "secondary"
+  //     | "error"
+  //     | "success"
+  //     | "warning"
+  //     | "info" = "primary";
+
+  //   if (roundStats.stats.some((stat) => stat.name === "Death")) {
+  //     badgecolor = "error";
+  //   } else if (
+  //     roundStats.stats.some(
+  //       (stat) =>
+  //         stat.name === "Nullify 50" ||
+  //         stat.name === "Nullify 100" ||
+  //         stat.name === "Lullify"
+  //     )
+  //   ) {
+  //     badgecolor = "success";
+  //   } else if (roundScoreChange > 0) {
+  //     badgecolor = "error";
+  //   } else if (roundScoreChange === 0) {
+  //     badgecolor = "success";
+  //   }
+
+  //   return badgecolor;
+  // };
+
+  const scoreHistory = useAppSelector((state: RootState) => state.scores.past);
+  const previousRound = scoreHistory[scoreHistory.length - 1];
+
+  const getRoundBreakdownStreakinfo = () => {
+    const previousStreak =
+      previousRound?.playerscores.find((score) => score.id === player.id)
+        ?.yasatStreak ?? 0; 
+    const currentStreak = streakLength ?? 0; 
+
+    // check if streak is ended this round
+    if (previousStreak > 0 && currentStreak === 0) {
+      return "Ended";
+    }
+    if (currentStreak > previousStreak) {
+      return "+1";
+    }
+  };
+
   return (
     <Card elevation={2} sx={{ width: "100%" }}>
       <CardContent>
@@ -235,16 +293,35 @@ export const PlayerScoreCard = ({
               </Typography>
             </Divider>
 
-            <Chip label={roundScoreChange > 0 ? `+${roundScoreChange}` : roundScoreChange} variant="filled" size="small" />
-            
             <Chip
-              label={roundWeigtedScore > 0 ? `+${roundWeigtedScore}` : roundWeigtedScore} 
+              label={
+                roundScoreChange > 0 ? `+${roundScoreChange}` : roundScoreChange
+              }
+              variant="filled"
+              size="small"
+            />
+
+            <Chip
+              label={
+                roundWeigtedScore > 0
+                  ? `+${roundWeigtedScore}`
+                  : roundWeigtedScore
+              }
               variant="filled"
               size="small"
               color="primary"
-              sx={{ ml: 1}}
+              sx={{ ml: 1 }}
             />
-            
+
+            {getRoundBreakdownStreakinfo() !== undefined && (
+              <Chip
+                icon={<FaFire size={"14px"} />}
+                variant="filled"
+                size="small"
+                label={getRoundBreakdownStreakinfo()}
+                sx={{ ml: 1 }}
+              />
+            )}
 
             {roundStats.stats.map((stat) => (
               <React.Fragment key={stat.name}>

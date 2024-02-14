@@ -31,6 +31,7 @@ import {
   Stack,
   useTheme,
 } from "@mui/material";
+import ConfettiExplosion, { ConfettiProps } from "react-confetti-explosion";
 
 import { useSelector } from "react-redux";
 import { RootState } from "../../app/store";
@@ -103,9 +104,18 @@ export function ScoreEntryDialog() {
   const [autoYasat, setAutoYasat] = useState<boolean>(true);
   const [manualYasat, setManualYasat] = useState<boolean>(false);
 
+  const [isSmallExploding, setIsSmallExploding] = React.useState(false);
+  const smallProps: ConfettiProps = {
+    force: 0.3,
+    particleSize: 8,
+    duration: 3000,
+    particleCount: 100,
+    width: 400,
+    zIndex: 2000,
+    colors: ["#7df3e1", "#f50057", "#FFC700"],
+  };
 
   useEffect(() => {
-
     if (manualYasat) {
       setAutoYasat(false);
       return;
@@ -470,14 +480,22 @@ export function ScoreEntryDialog() {
               <ListItem
                 secondaryAction={
                   yasatPlayer === player.id ? (
-                    <Avatar sx={{ mr: 2 }} src="../../logo192.png" />
+                    <>
+                      <Avatar sx={{ mr: 2 }} src="../../logo192.png" />
+                      <ConfettiExplosion {...smallProps} />
+                    </>
                   ) : (
                     <></>
                   )
                 }
               >
                 <Stack direction={"row"} maxWidth={"80px"}>
-                  <Button onClick={() => handleYasat(player.id)}>
+                  <Button
+                    onClick={() => {
+                      handleYasat(player.id);
+                      setIsSmallExploding(!isSmallExploding);
+                    }}
+                  >
                     <ListItemAvatar>
                       {gameType === "ranked" ? (
                         <Avatar
@@ -550,7 +568,12 @@ export function ScoreEntryDialog() {
             </Box>
           ))}
         </List>
-        <Stack direction={"row"} spacing={1} alignItems={"center"} alignSelf={"center"}>
+        <Stack
+          direction={"row"}
+          spacing={1}
+          alignItems={"center"}
+          alignSelf={"center"}
+        >
           <Typography sx={{ fontSize: 14 }} color="text.secondary" gutterBottom>
             Auto Yasat
           </Typography>
