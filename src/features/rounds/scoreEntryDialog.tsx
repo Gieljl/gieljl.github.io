@@ -16,6 +16,7 @@ import { styled } from "@mui/material/styles";
 import Fab from "@mui/material/Fab";
 import AddIcon from "@mui/icons-material/Add";
 import kill from "../../assets/audio/kill.mp3";
+import kill2 from "../../assets/audio/kill2.mp3";
 import doublekill from "../../assets/audio/doublekill.mp3";
 import multikill from "../../assets/audio/multikill.mp3";
 import megakill from "../../assets/audio/megakill.mp3";
@@ -170,22 +171,26 @@ export function ScoreEntryDialog() {
     }
 
     //check for own so no confetti is shown
-    const lowScorePlayers = newScores.filter((player) => player.score <= 7);
+    const lowScorePlayers = newScores.filter((player) => player.score <= 7 && player.score > 0);
     const yasatPlayerIndex = newScores.findIndex(
       (player) => player.id === id
     );
 
     if (lowScorePlayers.length > 1) {
       // check if other players have a lower score than the selected player
-      if (lowScorePlayers.some((player) => player.score < newScores[yasatPlayerIndex].score)) {
+      if (lowScorePlayers.some((player) => player.score < newScores[yasatPlayerIndex].score) ){
         setIsSmallExploding(false);
+        const killAudio = new Audio(kill);
+        killAudio.play();
       } else {
         setIsSmallExploding(true);
       }
     }
 
+    const allScoresEntered = newScores.length === players.length;
+
     // if no scores are entered yet and yasaty is selected show confetti
-    if (newScores.length === 0) {
+    if (newScores.length === 0 || !allScoresEntered) {
       setIsSmallExploding(true);
     }
 
@@ -295,7 +300,7 @@ export function ScoreEntryDialog() {
         (stat) => stat.name === "Kill"
       ).length;
       if (killCount === 1) {
-        const killAudio = new Audio(kill);
+        const killAudio = new Audio(kill2);
         killAudio.play();
       }
       if (killCount === 2) {
