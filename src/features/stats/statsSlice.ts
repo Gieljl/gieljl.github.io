@@ -29,7 +29,7 @@ const initialState: statsState = {
       {statName: 'Nullify 100', weight: 2},
       {statName: 'Enable 50', weight: -1},
       {statName: 'Enable 100', weight: -1},
-      {statName: 'Double kill', weight: 1},
+      {statName: 'Double Kill', weight: 1},
       {statName: 'Multi Kill', weight: 2},
       {statName: 'Mega Kill', weight: 3},
       {statName: 'Monster Kill', weight: 4}

@@ -10,7 +10,6 @@ import {
   Divider,
   Avatar,
   Tooltip,
-  makeStyles,
 } from "@mui/material";
 import { PlayerStats, Stat } from "./Ranking";
 import { GiDeathSkull } from "react-icons/gi";
@@ -20,8 +19,6 @@ import { FaSadCry } from "react-icons/fa";
 import { FaFire } from "react-icons/fa";
 import { useAppSelector } from "../../app/hooks";
 import { selectStatsWeight } from "../stats/statsSlice";
-import TrendingFlatIcon from "@mui/icons-material/TrendingFlat";
-import { selectScores } from "../game/scoreSlice";
 import { RootState } from "../../app/store";
 
 export type PlayerScoreCardProps = {

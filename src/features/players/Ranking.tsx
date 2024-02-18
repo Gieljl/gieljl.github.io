@@ -68,12 +68,10 @@ export function PlayerRanking() {
     const playerRound = scores.playerscores.find(
       (player) => player.id === playerId
     );
-    return (
-      playerRound
-        ? playerRound.stats.filter((stat) => stat.name === statName).length
-        : 0
-    );
-  }
+    return playerRound
+      ? playerRound.stats.filter((stat) => stat.name === statName).length
+      : 0;
+  };
 
   const calculateRoundScoreChange = (playerId: number) => {
     const previousRound = scoreHistory[scoreHistory.length - 1];
@@ -88,18 +86,26 @@ export function PlayerRanking() {
     const previousScore = previousRoundPlayer ? previousRoundPlayer.score : 0;
     const currentScore = currentRoundPlayer ? currentRoundPlayer.score : 0;
     return currentScore - previousScore;
-  }
+  };
 
-  const getPlayerWeightedScoreChange = (playerId: number, currentWeightedScore: number) => {
-
+  const getPlayerWeightedScoreChange = (
+    playerId: number,
+    currentWeightedScore: number
+  ) => {
     // Get the score state for previous round (excluding the current round)
     const LastRoundScoreState = [...scoreHistory];
-    const totalStatsDuringLastRound = getPlayersGameStats(playerId, LastRoundScoreState); 
-    const weightedScoreDuringLastRound = getWeightedScore(totalStatsDuringLastRound, LastRoundScoreState);
-    const weightedScoreChange = currentWeightedScore - weightedScoreDuringLastRound;
+    const totalStatsDuringLastRound = getPlayersGameStats(
+      playerId,
+      LastRoundScoreState
+    );
+    const weightedScoreDuringLastRound = getWeightedScore(
+      totalStatsDuringLastRound,
+      LastRoundScoreState
+    );
+    const weightedScoreChange =
+      currentWeightedScore - weightedScoreDuringLastRound;
     return weightedScoreChange;
-  }
-
+  };
 
   const onStatChipClick = () => {
     setShowStats(!showStats);
@@ -123,7 +129,10 @@ export function PlayerRanking() {
   };
 
   // Calulate the longest yasat streak of a player
-  const getLongestYasatStreakOfPlayer = (playerId: number, scoreState: ScoreState[]) => {
+  const getLongestYasatStreakOfPlayer = (
+    playerId: number,
+    scoreState: ScoreState[]
+  ) => {
     return scoreState.reduce((longestStreak, round) => {
       const playerRound = round.playerscores.find(
         (player) => player.id === playerId
@@ -150,7 +159,10 @@ export function PlayerRanking() {
     return currentRound ? currentRound.yasatStreak : 0;
   };
 
-  const getWeightedScore = (playerStats: PlayerStats, scoreState: ScoreState[]) => {
+  const getWeightedScore = (
+    playerStats: PlayerStats,
+    scoreState: ScoreState[]
+  ) => {
     let weightedScore = 0;
     playerStats.stats.forEach((stat) => {
       const statWeight = statsWeigts.find(
@@ -160,7 +172,10 @@ export function PlayerRanking() {
       if (statWeight) {
         if (stat.name === "Longest Streak") {
           // check if its the longest streak of the game
-          if (stat.count === getLongestYasatStreakOfGame(scoreState) && stat.count > 1) {
+          if (
+            stat.count === getLongestYasatStreakOfGame(scoreState) &&
+            stat.count > 1
+          ) {
             weightedScore += 1 * statWeight.weight;
           }
         } else {
@@ -208,16 +223,6 @@ export function PlayerRanking() {
     });
 
     return playerStatistics;
-  }
-
-  const [sortingMethod, setSortingMethod] = useState<"ranked" | "points">(
-    "ranked"
-  );
-
-  const handleSortChipClick = () => {
-    setSortingMethod((prevMethod) =>
-      prevMethod === "ranked" ? "points" : "ranked"
-    );
   };
 
   // create an array of players with their stats and weighted score
@@ -225,7 +230,10 @@ export function PlayerRanking() {
     const playerStats = getPlayersGameStats(player.id, totalScores);
     const calculatedWeightedScore = getWeightedScore(playerStats, totalScores);
     const roundStats = getPlayersRoundStats(player.id);
-    const roundWeigtedScore = getPlayerWeightedScoreChange(player.id, calculatedWeightedScore);
+    const roundWeigtedScore = getPlayerWeightedScoreChange(
+      player.id,
+      calculatedWeightedScore
+    );
     return {
       playerInfo: player,
       stats: playerStats,
@@ -235,23 +243,10 @@ export function PlayerRanking() {
     };
   });
 
-  // Sort players based on the chosen method
+  // Sorting based on weighted score and then current score
+  //sort by weighted score and if equal sort by the lowest currentScores
   playersForRanking.sort((a, b) => {
-    if (sortingMethod === "ranked") {
-      // Sorting based on weighted score and then current score
-      if (a.weightedScore === b.weightedScore) {
-        const aCurrentScore = currentScores.find(
-          (score) => score.id === a.playerInfo.id
-        )!.score;
-        const bCurrentScore = currentScores.find(
-          (score) => score.id === b.playerInfo.id
-        )!.score;
-        return bCurrentScore - aCurrentScore;
-      } else {
-        return b.weightedScore - a.weightedScore;
-      }
-    } else {
-      // Sorting based solely on current score
+    if (a.weightedScore === b.weightedScore) {
       const aCurrentScore = currentScores.find(
         (score) => score.id === a.playerInfo.id
       )!.score;
@@ -259,8 +254,11 @@ export function PlayerRanking() {
         (score) => score.id === b.playerInfo.id
       )!.score;
       return aCurrentScore - bCurrentScore;
+    } else {
+      return b.weightedScore - a.weightedScore;
     }
   });
+
   return (
     <>
       <Stack
@@ -298,28 +296,18 @@ export function PlayerRanking() {
             disabled={scoreHistory.length < 2}
           />
 
-          {showStats && (          
-          <Chip
-            label={showLastRoundInfo ? "Round" : "Game"}
-            variant="filled"
-            color="primary"
-            sx={{ ml: 1 }}
-            deleteIcon={<ArrowDropDownIcon />}
-            onDelete={() => setShowLastRoundInfo(!showLastRoundInfo)}
-            onClick={() => setShowLastRoundInfo(!showLastRoundInfo)}
-            disabled={scoreHistory.length < 2}
-          />
+          {showStats && (
+            <Chip
+              label={showLastRoundInfo ? "Round" : "Game"}
+              variant="filled"
+              color="primary"
+              sx={{ ml: 1 }}
+              deleteIcon={<ArrowDropDownIcon />}
+              onDelete={() => setShowLastRoundInfo(!showLastRoundInfo)}
+              onClick={() => setShowLastRoundInfo(!showLastRoundInfo)}
+              disabled={scoreHistory.length < 2}
+            />
           )}
-          <Chip
-            icon={<SwapVertIcon />}
-            label={sortingMethod === "ranked" ? "Rank" : "Points"}
-            onClick={handleSortChipClick}
-            variant="filled"
-            color="primary"
-            sx={{ ml: 1, mr: 1 }}
-            deleteIcon={<ArrowDropDownIcon />}
-            onDelete={handleSortChipClick}
-          />
         </Stack>
       </Stack>
 
