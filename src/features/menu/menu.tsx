@@ -39,6 +39,7 @@ import { setGameType } from "../game/gameSlice";
 import { on } from "events";
 import { onCLS } from "web-vitals";
 import { closeSnackbar, enqueueSnackbar } from "notistack";
+import { resetStats } from "../stats/statsSlice";
 
 type Anchor = "top" | "left" | "bottom" | "right";
 
@@ -88,6 +89,7 @@ export default function Menu({
                 dispatch(startNewGame());
                 dispatch(resetPlayers());
                 dispatch(resetScores());
+                dispatch(resetStats());
                 dispatch(ActionCreators.clearHistory());
                 closeSnackbar(key);
               }}
