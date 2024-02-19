@@ -10,6 +10,7 @@ import {
   Divider,
   Avatar,
   Tooltip,
+  Zoom,
 } from "@mui/material";
 import { PlayerStats, Stat } from "./Ranking";
 import { GiDeathSkull } from "react-icons/gi";
@@ -112,7 +113,13 @@ export const PlayerScoreCard = ({
             } to your score.`
           : `${stat.count} is not the longest streak`;
         return (
-          <Tooltip title={tooltiptext} arrow>
+          <Tooltip
+            title={tooltiptext}
+            arrow
+            enterTouchDelay={50}
+            TransitionComponent={Zoom}
+            leaveDelay={5000}
+          >
             <Chip
               icon={<FaFire size={"14px"} />}
               variant="filled"
@@ -204,8 +211,8 @@ export const PlayerScoreCard = ({
   const getRoundBreakdownStreakinfo = () => {
     const previousStreak =
       previousRound?.playerscores.find((score) => score.id === player.id)
-        ?.yasatStreak ?? 0; 
-    const currentStreak = streakLength ?? 0; 
+        ?.yasatStreak ?? 0;
+    const currentStreak = streakLength ?? 0;
 
     // check if streak is ended this round
     if (previousStreak > 0 && currentStreak === 0) {
@@ -330,6 +337,9 @@ export const PlayerScoreCard = ({
                       )?.weight
                     })`}
                     arrow
+                    enterTouchDelay={50}
+                    TransitionComponent={Zoom}
+                    leaveDelay={5000}
                   >
                     <Badge
                       badgeContent={stat.count}
@@ -358,12 +368,19 @@ export const PlayerScoreCard = ({
               <React.Fragment key={stat.name}>
                 {stat.name !== "Longest Streak" ? (
                   <Tooltip
-                    title={`Score: ${stat.count} * ${stat.name} (${
+                    title={`count (${stat.count}) * weight (${
                       statsWeigts.find(
                         (weightedStat) => weightedStat.statName === stat.name
-                      )?.weight
-                    })`}
+                      )?.weight ?? 0
+                    }) = ${
+                      (statsWeigts.find(
+                        (weightedStat) => weightedStat.statName === stat.name
+                      )?.weight ?? 0) * stat.count
+                    }`}
                     arrow
+                    enterTouchDelay={50}
+                    TransitionComponent={Zoom}
+                    leaveDelay={5000}
                   >
                     <Badge
                       badgeContent={stat.count}

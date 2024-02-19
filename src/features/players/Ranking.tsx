@@ -14,6 +14,7 @@ import ArrowDropDownIcon from "@mui/icons-material/ArrowDropDown";
 import logo from "../../yasa7.png";
 import logolight from "../../yasa7_light.png";
 import { SnackbarKey, closeSnackbar, enqueueSnackbar } from "notistack";
+import { start } from "repl";
 
 export type PlayerStats = {
   stats: Stat[];
@@ -120,7 +121,7 @@ export function PlayerRanking() {
           close
         </Button>
       );
-      enqueueSnackbar("Tap and hold statistic for score breakdown.", {
+      enqueueSnackbar("Tap statistics to show weight and score.", {
         variant: "info",
         action,
       });
@@ -262,8 +263,9 @@ export function PlayerRanking() {
     <>
       <Stack
         direction="row"
-        alignItems={"center"}
+
         sx={{
+          minWidth: "100%",
           zIndex: 2,
           maxWidth: "100%",
           position: "fixed",
@@ -275,7 +277,11 @@ export function PlayerRanking() {
           },
         }}
       >
-        <Stack direction="row" mt={1} alignItems={"center"}>
+        <Stack
+          direction="row"
+          mt={1}
+          alignItems={"center"}
+        >
           <img
             src={theme.palette.mode === "light" ? logolight : logo}
             className="App-logo-small"
@@ -300,7 +306,7 @@ export function PlayerRanking() {
               label={showLastRoundInfo ? "Round" : "Game"}
               variant="filled"
               color="primary"
-              sx={{ ml: 1 }}
+              sx={{ ml: 1, mr: 1 }}
               deleteIcon={<ArrowDropDownIcon />}
               onDelete={() => setShowLastRoundInfo(!showLastRoundInfo)}
               onClick={() => setShowLastRoundInfo(!showLastRoundInfo)}

@@ -9,7 +9,7 @@ import { selectPlayers } from "../players/playersSlice";
 import { PlayerAvatar } from "../players/PlayerAvatarScore";
 import { RootState } from "../../app/store";
 import { selectScores } from "../game/scoreSlice";
-import { Avatar, Chip, Paper } from "@mui/material";
+import { Avatar, Chip } from "@mui/material";
 
 
 export default function BasicTable() {
@@ -18,8 +18,7 @@ export default function BasicTable() {
   const scoreHistory = useAppSelector((state: RootState) => state.scores.past);
 
   return (
-    <TableContainer  >
-      <Paper>
+    <TableContainer>
       <Table stickyHeader>
         <TableHead>
           <TableRow>
@@ -145,7 +144,6 @@ export default function BasicTable() {
           </TableRow>
         </TableBody>
       </Table>
-    </Paper>
     </TableContainer>
   );
 }
