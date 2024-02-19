@@ -232,11 +232,6 @@ export function ScoreEntryDialog() {
       return;
     }
 
-    // Find the player id of the player in newScores with the lowest score
-    const lowestScorePlayerId = newScores.reduce((prev, current) =>
-      prev.score < current.score ? prev : current
-    ).id;
-
     // Update yasat player stats
     const yasatPlayerIndex = newScores.findIndex(
       (player) => player.id === yasatPlayer
@@ -256,8 +251,6 @@ export function ScoreEntryDialog() {
         player.stats.push({ name: "Own" });
         player.score = 0;
         newScores[yasatPlayerIndex].stats.push({ name: "Owned" });
-        const killAudio = new Audio(kill);
-        killAudio.play();
       }
     });
 
@@ -332,21 +325,15 @@ export function ScoreEntryDialog() {
       if (player.score === 50) {
         player.stats.push({ name: "Nullify 50" });
         player.score = 0;
-        newScores
-          .find((player) => player.id === lowestScorePlayerId)!
-          .stats.push({ name: "Enable 50" });
+        newScores[yasatPlayerIndex].stats.push({ name: "Enable 50" });
       } else if (currentScore === 69 && player.score === 100) {
         player.stats.push({ name: "Lullify" });
         player.score = 0;
-        newScores
-          .find((player) => player.id === lowestScorePlayerId)!
-          .stats.push({ name: "Enable 69" });
+        newScores[yasatPlayerIndex].stats.push({ name: "Enable 69" });
       } else if (player.score === 100) {
         player.stats.push({ name: "Nullify 100" });
         player.score = 0;
-        newScores
-          .find((player) => player.id === lowestScorePlayerId)!
-          .stats.push({ name: "Enable 100" });
+        newScores[yasatPlayerIndex].stats.push({ name: "Enable 100" });
       }
     });
 

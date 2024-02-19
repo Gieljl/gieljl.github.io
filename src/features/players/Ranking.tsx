@@ -10,7 +10,6 @@ import { StatsFullScreenDialog } from "../stats/StatsDialog";
 import CheckIcon from "@mui/icons-material/Check";
 import { RoundHistoryDialog } from "../rounds/RoundHistoryDialog";
 import { selectStatsWeight } from "../stats/statsSlice";
-import SwapVertIcon from "@mui/icons-material/SwapVert";
 import ArrowDropDownIcon from "@mui/icons-material/ArrowDropDown";
 import logo from "../../yasa7.png";
 import logolight from "../../yasa7_light.png";
