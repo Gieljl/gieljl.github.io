@@ -607,14 +607,16 @@ export function ScoreEntryDialog() {
           alignItems={"center"}
           alignSelf={"center"}
         >
-          <Typography sx={{ fontSize: 14 }} color="text.secondary" gutterBottom>
-            Auto Yasat
-          </Typography>
+          
 
           {autoYasat ? (
-            <CheckCircleOutlineIcon sx={{ fontSize: 25 }} color="success" />
+            <><Typography sx={{ fontSize: 14 }} color="text.secondary" gutterBottom>
+              Auto Yasat
+            </Typography><CheckCircleOutlineIcon sx={{ fontSize: 25 }} color="success" /></>
           ) : (
-            <ErrorOutlineIcon sx={{ fontSize: 25 }} color="warning" />
+            <Typography sx={{ fontSize: 14 }} color="text.secondary" gutterBottom>
+              Select Yasat player 🎉
+            </Typography>
           )}
         </Stack>
         <Button

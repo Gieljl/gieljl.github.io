@@ -130,14 +130,24 @@ export const GameCreator = () => {
         }}
       >
         <PlayerList />
-        <Stack direction={"column"} alignItems={"center"}>
-          <Typography sx={{ fontSize: 15 }} color="text.secondary" gutterBottom>
-            Add at least 2 players
-          </Typography>
-          <Typography sx={{ fontSize: 15 }} color="text.secondary" gutterBottom>
-            to start the game...
-          </Typography>
-        </Stack>
+        {players.length < 2 && (
+          <Stack direction={"column"} alignItems={"center"}>
+            <Typography
+              sx={{ fontSize: 15 }}
+              color="text.secondary"
+              gutterBottom
+            >
+              Add at least 2 players
+            </Typography>
+            <Typography
+              sx={{ fontSize: 15 }}
+              color="text.secondary"
+              gutterBottom
+            >
+              to start the game...
+            </Typography>
+          </Stack>
+        )}
 
         <AddPlayerDialog />
         <FormControl required>
@@ -185,6 +195,7 @@ export const GameCreator = () => {
           color="primary"
           startIcon={<HelpOutlineIcon fontSize="inherit" />}
           sx={{
+            
             position: "absolute",
             zIndex: 5,
             bottom: 100,
