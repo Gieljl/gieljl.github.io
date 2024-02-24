@@ -6,6 +6,7 @@ import ListItemIcon from "@mui/material/ListItemIcon";
 import ListItemText from "@mui/material/ListItemText";
 import SettingsIcon from "@mui/icons-material/Settings";
 import {
+  AppBar,
   Button,
   Dialog,
   DialogActions,
@@ -19,7 +20,10 @@ import {
   MenuItem,
   Select,
   SelectChangeEvent,
+  Slide,
   Stack,
+  Toolbar,
+  Typography,
   useTheme,
 } from "@mui/material";
 import MenuIcon from "@mui/icons-material/Menu";
@@ -36,10 +40,13 @@ import RefreshIcon from "@mui/icons-material/Refresh";
 import { useSelector } from "react-redux";
 import { RootState } from "../../app/store";
 import { setGameType } from "../game/gameSlice";
-import { on } from "events";
-import { onCLS } from "web-vitals";
-import { closeSnackbar, enqueueSnackbar } from "notistack";
+import { TransitionProps, closeSnackbar, enqueueSnackbar } from "notistack";
 import { resetStats } from "../stats/statsSlice";
+import HelpOutlineIcon from "@mui/icons-material/HelpOutline";
+import logo from "../../yasa7.png";
+import logolight from "../../yasa7_light.png";
+import CloseIcon from "@mui/icons-material/Close";
+import RulesPopUp from "../game/RulesText";
 
 type Anchor = "top" | "left" | "bottom" | "right";
 
@@ -149,6 +156,12 @@ export default function Menu({
           </ListItemIcon>
           <ListItemText primary="Refresh" onClick={refreshApp} />
         </ListItemButton>
+        <ListItemButton key="rules">
+          <ListItemIcon>
+            <HelpOutlineIcon />
+          </ListItemIcon>
+          <ListItemText primary="Rules" onClick={handleClickOpenRules} />
+        </ListItemButton>
         <ListItemButton key="about">
           <ListItemIcon>
             <InfoIcon />
@@ -161,6 +174,8 @@ export default function Menu({
 
   const [open, setOpen] = React.useState(false);
   const [openSettings, setOpenSettings] = React.useState(false);
+  const [openRules, setOpenRules] = React.useState(false);
+
   const [gameTypeState, setGameTypeState] = React.useState(
     useSelector((state: RootState) => state.game.type)
   );
@@ -171,6 +186,14 @@ export default function Menu({
 
   const handleChange = (event: SelectChangeEvent) => {
     setGameTypeState(event.target.value as "classic" | "ranked");
+  };
+
+  const handleClickOpenRules = () => {
+    setOpenRules(true);
+  };
+
+  const handleCloseRules = () => {
+    setOpenRules(false);
   };
 
   const handleClickOpenSettings = () => {
@@ -189,6 +212,115 @@ export default function Menu({
     setOpen(false);
   };
 
+  const Transition = React.forwardRef(function Transition(
+    props: TransitionProps & {
+      children: React.ReactElement;
+    },
+    ref: React.Ref<unknown>
+  ) {
+    return <Slide direction="up" ref={ref} {...props} />;
+  });
+
+  const RulesDialogContent: React.FC = () => (
+    <Dialog
+      fullScreen
+      open={openRules}
+      onClose={handleCloseRules}
+      TransitionComponent={Transition}
+    >
+      <AppBar
+        sx={{ background: "#424242", color: "#7df3e1", position: "relative" }}
+      >
+        <Toolbar>
+          <IconButton
+            edge="start"
+            color="primary"
+            onClick={handleCloseRules}
+            aria-label="close"
+          >
+            <CloseIcon />
+          </IconButton>
+          <Typography sx={{ ml: 2, flex: 1 }} variant="h6" component="div">
+            Yasat Rules Explained
+          </Typography>
+        </Toolbar>
+      </AppBar>
+      <DialogContent>
+        <DialogContentText id="alert-dialog-description">
+          <Stack direction={"row"} alignContent={"center"}>
+            <img
+              src={theme.palette.mode === "light" ? logolight : logo}
+              className="App-logo-big"
+              alt="logo"
+            />
+          </Stack>
+          <RulesPopUp/>
+        </DialogContentText>
+      </DialogContent>
+      <DialogActions>
+        <Button
+          sx={{ margin: 1 }}
+          onClick={handleCloseRules}
+          variant="contained"
+        >
+          Close
+        </Button>
+      </DialogActions>
+    </Dialog>
+  );
+
+  const SettingsDialogContent: React.FC = () => (
+    <Dialog open={openSettings} onClose={handleCloseSettings} fullWidth>
+      <DialogTitle id="settings-dialog">{"Game Settings"}</DialogTitle>
+      <DialogContent>
+        <Stack direction="column" alignItems="left" spacing={5} mt={5}>
+          <FormControl required>
+            <InputLabel id="demo-simple-select-required-label">
+              Game Type
+            </InputLabel>
+            <Select
+              labelId="demo-simple-select-required-label"
+              id="demo-simple-select-required"
+              value={gameTypeState}
+              label="Game Type"
+              onChange={handleChange}
+              variant="outlined"
+            >
+              <MenuItem value={"classic"}>Classic</MenuItem>
+              <MenuItem value={"ranked"}>Ranked</MenuItem>
+            </Select>
+          </FormControl>
+        </Stack>
+      </DialogContent>
+      <DialogActions>
+        <Button onClick={handleCloseSettings} autoFocus>
+          Close
+        </Button>
+      </DialogActions>
+    </Dialog>
+  );
+
+  const AboutDialogContent: React.FC = () => (
+    <Dialog
+      open={open}
+      onClose={handleClose}
+      aria-labelledby="alert-dialog-title"
+      aria-describedby="alert-dialog-description"
+    >
+      <DialogTitle id="alert-dialog-title">{"About"}</DialogTitle>
+      <DialogContent>
+        <DialogContentText id="alert-dialog-description">
+          One of the most significant outfits in the card gaming scene!
+        </DialogContentText>
+      </DialogContent>
+      <DialogActions>
+        <Button onClick={handleClose} autoFocus>
+          Agree
+        </Button>
+      </DialogActions>
+    </Dialog>
+  );
+
   return (
     <div>
       {(["bottom"] as const).map((anchor) => (
@@ -196,54 +328,9 @@ export default function Menu({
           <IconButton color="primary" onClick={toggleDrawer(anchor, true)}>
             <MenuIcon />
           </IconButton>
-          <Dialog
-            open={open}
-            onClose={handleClose}
-            aria-labelledby="alert-dialog-title"
-            aria-describedby="alert-dialog-description"
-          >
-            <DialogTitle id="alert-dialog-title">{"About"}</DialogTitle>
-            <DialogContent>
-              <DialogContentText id="alert-dialog-description">
-                One of the most significant outfits in the card gaming scene!
-              </DialogContentText>
-            </DialogContent>
-            <DialogActions>
-              <Button onClick={handleClose} autoFocus>
-                Agree
-              </Button>
-            </DialogActions>
-          </Dialog>
-
-          <Dialog open={openSettings} onClose={handleCloseSettings} fullWidth>
-            <DialogTitle id="settings-dialog">{"Game Settings"}</DialogTitle>
-            <DialogContent>
-              <Stack direction="column" alignItems="left" spacing={5} mt={5}>
-                <FormControl required>
-                  <InputLabel id="demo-simple-select-required-label">
-                    Game Type
-                  </InputLabel>
-                  <Select
-                    labelId="demo-simple-select-required-label"
-                    id="demo-simple-select-required"
-                    value={gameTypeState}
-                    label="Game Type"
-                    onChange={handleChange}
-                    variant="outlined"
-                  >
-                    <MenuItem value={"classic"}>Classic</MenuItem>
-                    <MenuItem value={"ranked"}>Ranked</MenuItem>
-                  </Select>
-                </FormControl>
-              </Stack>
-            </DialogContent>
-            <DialogActions>
-              <Button onClick={handleCloseSettings} autoFocus>
-                Close
-              </Button>
-            </DialogActions>
-          </Dialog>
-
+          <AboutDialogContent />
+          <SettingsDialogContent />
+          <RulesDialogContent />
           <Drawer
             ModalProps={{
               keepMounted: false,
