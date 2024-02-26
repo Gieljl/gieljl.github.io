@@ -331,11 +331,15 @@ export const PlayerScoreCard = ({
               <React.Fragment key={stat.name}>
                 {stat.name !== "Longest Streak" ? (
                   <Tooltip
-                    title={`Score: ${stat.count} * ${stat.name} (${
+                    title={`${stat.count} * ${stat.name} (${
                       statsWeigts.find(
                         (weightedStat) => weightedStat.statName === stat.name
                       )?.weight
-                    })`}
+                    }) = ${
+                      (statsWeigts.find(
+                        (weightedStat) => weightedStat.statName === stat.name
+                      )?.weight ?? 0) * stat.count
+                    }`}
                     arrow
                     enterTouchDelay={50}
                     TransitionComponent={Zoom}
@@ -368,10 +372,10 @@ export const PlayerScoreCard = ({
               <React.Fragment key={stat.name}>
                 {stat.name !== "Longest Streak" ? (
                   <Tooltip
-                    title={`count (${stat.count}) * weight (${
+                    title={`${stat.count} * ${stat.name} (${
                       statsWeigts.find(
                         (weightedStat) => weightedStat.statName === stat.name
-                      )?.weight ?? 0
+                      )?.weight
                     }) = ${
                       (statsWeigts.find(
                         (weightedStat) => weightedStat.statName === stat.name

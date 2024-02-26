@@ -130,7 +130,7 @@ export const GameCreator = () => {
         }}
       >
         <PlayerList />
-        {players.length < 2 && (
+        {players.length < 1 && (
           <Stack direction={"column"} alignItems={"center"}>
             <Typography
               sx={{ fontSize: 15 }}
@@ -195,7 +195,6 @@ export const GameCreator = () => {
           color="primary"
           startIcon={<HelpOutlineIcon fontSize="inherit" />}
           sx={{
-            
             position: "absolute",
             zIndex: 5,
             bottom: 100,
