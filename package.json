@@ -24,6 +24,7 @@
     "@uiw/react-color-wheel": "2.0.6",
     "gh-pages": "6.3.0",
     "notistack": "^3.0.1",
+    "posthog-js": "^1.231.0",
     "react": "^18.2.0",
     "react-confetti-explosion": "2.1.2",
     "react-dom": "^18.2.0",
