@@ -14,7 +14,6 @@ import ArrowDropDownIcon from "@mui/icons-material/ArrowDropDown";
 import logo from "../../yasa7.png";
 import logolight from "../../yasa7_light.png";
 import { SnackbarKey, closeSnackbar, enqueueSnackbar } from "notistack";
-import { start } from "repl";
 
 export type PlayerStats = {
   stats: Stat[];

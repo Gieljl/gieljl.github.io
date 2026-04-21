@@ -8,7 +8,6 @@ import IconButton from "@mui/material/IconButton";
 import Typography from "@mui/material/Typography";
 import CloseIcon from "@mui/icons-material/Close";
 import CheckCircleOutlineIcon from "@mui/icons-material/CheckCircleOutline";
-import ErrorOutlineIcon from "@mui/icons-material/ErrorOutline";
 import Slide from "@mui/material/Slide";
 import { TransitionProps } from "@mui/material/transitions";
 import TextField from "@mui/material/TextField";
@@ -75,6 +74,8 @@ export function ScoreEntryDialog() {
   const [errorStates, setErrorStates] = useState<{ [key: string]: boolean }>(
     {}
   );
+  // String values for controlled text fields (separate from numeric newScores)
+  const [inputValues, setInputValues] = useState<Record<number, string>>({});
 
   const resetState = () => {
     setYasatPlayer(null);
@@ -83,6 +84,7 @@ export function ScoreEntryDialog() {
     setManualYasat(false);
     setAutoYasat(true);
     setIsSmallExploding(false);
+    setInputValues({});
   };
 
   const handleClickOpen = () => {
@@ -577,16 +579,23 @@ export function ScoreEntryDialog() {
                 </Stack>
 
                 <TextField
+                  value={inputValues[player.id] ?? ""}
                   onChange={(e) => {
-                    const value = Number(e.target.value);
-                    handleTextFieldChange(player.id, value);
+                    const raw = e.target.value;
+                    setInputValues((prev) => ({ ...prev, [player.id]: raw }));
+                    const value = Number(raw);
+                    if (raw !== "" && !isNaN(value)) {
+                      handleTextFieldChange(player.id, value);
+                    }
                     setErrorStates((prevStates) => ({
                       ...prevStates,
                       [player.id]:
-                        value > 44 ||
-                        value < 1 ||
-                        isNaN(value) ||
-                        (player.id === yasatPlayer && value > 7),
+                        raw !== "" && (
+                          value > 44 ||
+                          value < 1 ||
+                          isNaN(value) ||
+                          (player.id === yasatPlayer && value > 7)
+                        ),
                     }));
                   }}
                   required

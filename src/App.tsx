@@ -23,6 +23,8 @@ import Toolbar from "@mui/material/Toolbar";
 import Menu from "./features/menu/menu";
 import { PlayerRanking } from "./features/players/Ranking";
 import { GameCreator } from "./features/game/GameCreator";
+import { RankedGameCreator } from "./features/game/RankedGameCreator";
+import { HomePage } from "./features/game/HomePage";
 import { useSelector } from "react-redux";
 import { RootState } from "./app/store";
 import ScoresHistoryNew from "./features/rounds/ScoresHistoryNew";
@@ -49,10 +51,12 @@ function App() {
   const colorMode = React.useContext(ColorModeContext);
   const gameStatus = useSelector((state: RootState) => state.game.status);
   const gameType = useSelector((state: RootState) => state.game.type);
+  const gameMode = useSelector((state: RootState) => state.game.mode);
   const dispatch = useAppDispatch();
   const scoreState = useAppSelector(selectScoreState);
   const theme = useTheme();
   const [openRules, setOpenRules] = React.useState(false);
+
   const handleClickOpenRules = () => {
     setOpenRules(true);
   };
@@ -136,7 +140,10 @@ function App() {
         />
       )}
 
-      {gameStatus === "new" && <GameCreator />}
+      {gameStatus === "home" && <HomePage />}
+
+      {gameStatus === "new" && gameMode === "unranked" && <GameCreator />}
+      {gameStatus === "new" && gameMode === "ranked" && <RankedGameCreator />}
 
       {gameStatus === "started" && gameType === "classic" && (
         <ScoresHistoryNew />
