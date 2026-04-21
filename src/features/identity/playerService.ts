@@ -28,7 +28,6 @@ export interface PlayerProfile {
   username: string;
   displayName: string;
   color: string;
-  city: string;
   securityQuestion: string;
   createdAt: unknown;
   /** True when the player is registered with a security question and can log in. */
@@ -134,7 +133,6 @@ export async function verifyPlayer(
     username: normalized,
     displayName: data.displayName,
     color: data.color || '',
-    city: data.city || '',
     securityQuestion: data.securityQuestion,
     createdAt: data.createdAt,
     registered: Boolean(data.securityAnswerHash),
@@ -155,7 +153,6 @@ export async function getPlayer(username: string): Promise<PlayerProfile | null>
     username: normalized,
     displayName: data.displayName || normalized,
     color: data.color || '',
-    city: data.city || '',
     securityQuestion: data.securityQuestion || '',
     createdAt: data.createdAt,
     registered: Boolean(data.securityAnswerHash),
@@ -189,7 +186,6 @@ export async function getOrCreatePlayer(
     username: normalized,
     displayName: (displayName || username).trim(),
     color,
-    city: '',
     securityQuestion: '',
     createdAt: null,
     registered: false,
@@ -232,7 +228,6 @@ export async function registerPlayer(
     username: normalized,
     displayName,
     color,
-    city: '',
     securityQuestion,
     createdAt: null,
     registered: true,

@@ -1,7 +1,21 @@
 import React from "react";
-import { Box, Button, Divider, Stack, Typography, useTheme } from "@mui/material";
+import {
+  AppBar,
+  Box,
+  Button,
+  Dialog,
+  IconButton,
+  Slide,
+  Stack,
+  Toolbar,
+  Typography,
+  useTheme,
+} from "@mui/material";
 import EmojiEventsIcon from "@mui/icons-material/EmojiEvents";
 import SportsEsportsIcon from "@mui/icons-material/SportsEsports";
+import LeaderboardIcon from "@mui/icons-material/Leaderboard";
+import CloseIcon from "@mui/icons-material/Close";
+import { TransitionProps } from "@mui/material/transitions";
 import { useAppDispatch } from "../../app/hooks";
 import { setGameMode, startNewGame } from "./gameSlice";
 import logo from "../../yasa7.png";
@@ -9,9 +23,17 @@ import logolight from "../../yasa7_light.png";
 import "../../App.css";
 import { Leaderboard } from "./Leaderboard";
 
+const Transition = React.forwardRef(function Transition(
+  props: TransitionProps & { children: React.ReactElement },
+  ref: React.Ref<unknown>
+) {
+  return <Slide direction="up" ref={ref} {...props} />;
+});
+
 export const HomePage: React.FC = () => {
   const theme = useTheme();
   const dispatch = useAppDispatch();
+  const [leaderboardOpen, setLeaderboardOpen] = React.useState(false);
 
   const choose = (mode: "unranked" | "ranked") => {
     dispatch(setGameMode(mode));
@@ -63,11 +85,53 @@ export const HomePage: React.FC = () => {
         <Typography variant="caption" color="text.secondary" sx={{ mt: -2 }}>
           Quick local game, no login needed.
         </Typography>
+
+        <Button
+          variant="text"
+          size="large"
+          startIcon={<LeaderboardIcon />}
+          onClick={() => setLeaderboardOpen(true)}
+          sx={{ width: 260, height: 60, fontSize: 18, mt: 1 }}
+        >
+          Leaderboards
+        </Button>
       </Stack>
 
-      <Divider sx={{ width: "90%", maxWidth: 360, alignSelf: "center" }} />
-
-      <Leaderboard />
+      <Dialog
+        fullScreen
+        open={leaderboardOpen}
+        onClose={() => setLeaderboardOpen(false)}
+        TransitionComponent={Transition}
+      >
+        <AppBar
+          sx={{ background: "#424242", color: "#7df3e1", position: "relative" }}
+        >
+          <Toolbar>
+            <IconButton
+              edge="start"
+              color="primary"
+              onClick={() => setLeaderboardOpen(false)}
+              aria-label="close"
+            >
+              <CloseIcon />
+            </IconButton>
+            <Typography sx={{ ml: 2, flex: 1 }} variant="h6" component="div">
+              Leaderboards
+            </Typography>
+          </Toolbar>
+        </AppBar>
+        <Box
+          sx={{
+            flexGrow: 1,
+            overflowY: "auto",
+            display: "flex",
+            justifyContent: "center",
+            py: 3,
+          }}
+        >
+          <Leaderboard />
+        </Box>
+      </Dialog>
     </Stack>
   );
 };

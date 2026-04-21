@@ -144,7 +144,7 @@ export const RankedGameCreator: React.FC = () => {
           }}
           sx={{ height: 50, width: 180 }}
         >
-          Start ranked game
+          Start game
         </Button>
 
         <IdentityDialog
