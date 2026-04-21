@@ -57,6 +57,27 @@ function App() {
   const theme = useTheme();
   const [openRules, setOpenRules] = React.useState(false);
 
+  // Safety net: if the persisted state somehow lands in a combination that
+  // renders nothing (e.g. after a data-shape change that our migration missed),
+  // clear local storage and reload so the user sees the fresh home screen.
+  const validRender =
+    gameStatus === "home" ||
+    (gameStatus === "new" &&
+      (gameMode === "unranked" || gameMode === "ranked")) ||
+    (gameStatus === "started" &&
+      (gameType === "classic" || gameType === "ranked"));
+
+  React.useEffect(() => {
+    if (!validRender) {
+      try {
+        localStorage.removeItem("persist:root");
+      } catch {
+        /* ignore */
+      }
+      window.location.reload();
+    }
+  }, [validRender]);
+
   const handleClickOpenRules = () => {
     setOpenRules(true);
   };

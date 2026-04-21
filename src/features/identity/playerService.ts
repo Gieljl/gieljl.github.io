@@ -1,19 +1,27 @@
 import {
   doc,
   getDoc,
+  getDocs,
   setDoc,
   updateDoc,
   serverTimestamp,
+  collection,
 } from 'firebase/firestore';
 import { db } from '../../firebase';
 
 export interface PlayerStats {
   totalGamesPlayed: number;
   totalWins: number;
-  totalKills: number;
-  totalOwns: number;
-  totalYasats: number;
+  /** Best yasat streak ever across all games. */
+  longestStreak: number;
+  /** Highest weighted score achieved in a single game. */
   bestWeightedScore: number;
+  /**
+   * Per-stat cumulative counts, keyed by stat name (e.g. "Kill", "Yasat",
+   * "Own", "Owned", "Death", "Lullify", "Mega Kill", ...). Only stats that
+   * ever occurred for this player will appear.
+   */
+  statCounts: Record<string, number>;
 }
 
 export interface PlayerProfile {
@@ -31,11 +39,38 @@ export interface PlayerProfile {
 const emptyStats = (): PlayerStats => ({
   totalGamesPlayed: 0,
   totalWins: 0,
-  totalKills: 0,
-  totalOwns: 0,
-  totalYasats: 0,
+  longestStreak: 0,
   bestWeightedScore: 0,
+  statCounts: {},
 });
+
+/**
+ * Merge a stored stats object from Firestore, which may come from an older
+ * schema (with `totalKills`/`totalOwns`/`totalYasats` as top-level fields),
+ * into the current PlayerStats shape.
+ */
+const normalizeStats = (raw: Record<string, unknown> | undefined): PlayerStats => {
+  const base = emptyStats();
+  if (!raw) return base;
+  const out: PlayerStats = {
+    ...base,
+    ...(raw as Partial<PlayerStats>),
+    statCounts: { ...(raw.statCounts as Record<string, number> | undefined ?? {}) },
+  };
+  // Back-compat: promote legacy total fields into statCounts if present.
+  const legacy: Array<[string, string]> = [
+    ['totalKills', 'Kill'],
+    ['totalOwns', 'Own'],
+    ['totalYasats', 'Yasat'],
+  ];
+  for (const [legacyKey, statName] of legacy) {
+    const v = (raw as Record<string, unknown>)[legacyKey];
+    if (typeof v === 'number' && v > 0 && !out.statCounts[statName]) {
+      out.statCounts[statName] = v;
+    }
+  }
+  return out;
+};
 
 /**
  * Hash a string using SHA-256 (browser-native).
@@ -103,7 +138,7 @@ export async function verifyPlayer(
     securityQuestion: data.securityQuestion,
     createdAt: data.createdAt,
     registered: Boolean(data.securityAnswerHash),
-    stats: { ...emptyStats(), ...(data.stats || {}) },
+    stats: normalizeStats(data.stats),
   };
 }
 
@@ -124,7 +159,7 @@ export async function getPlayer(username: string): Promise<PlayerProfile | null>
     securityQuestion: data.securityQuestion || '',
     createdAt: data.createdAt,
     registered: Boolean(data.securityAnswerHash),
-    stats: { ...emptyStats(), ...(data.stats || {}) },
+    stats: normalizeStats(data.stats),
   };
 }
 
@@ -218,18 +253,20 @@ export async function updatePlayerColor(
 
 export interface GameStatsEntry {
   username: string;
-  /** Absolute totals to add to the player's stats. */
-  kills: number;
-  owns: number;
-  yasats: number;
+  /** Best yasat streak this player achieved in the finished game. */
+  longestStreak: number;
+  /** Weighted score achieved this game. */
   weightedScore: number;
   won: boolean;
+  /** Per-stat counts from this game, keyed by stat name. */
+  statCounts: Record<string, number>;
 }
 
 /**
- * Save the final results of a ranked game: update each player's lifetime stats,
- * increment games played, wins, kills, owns, yasats, and update bestWeightedScore.
- * Silently skips players without a username.
+ * Save the final results of a ranked game: update each player's lifetime
+ * stats. Increments games played, wins, per-stat counts, and updates
+ * `longestStreak` / `bestWeightedScore`. Silently skips players without a
+ * username.
  */
 export async function saveRankedGameResult(entries: GameStatsEntry[]): Promise<void> {
   await Promise.all(
@@ -239,16 +276,21 @@ export async function saveRankedGameResult(entries: GameStatsEntry[]): Promise<v
       const ref = doc(db, 'players', normalized);
       const snap = await getDoc(ref);
       const existing: PlayerStats = snap.exists()
-        ? { ...emptyStats(), ...(snap.data().stats || {}) }
+        ? normalizeStats(snap.data().stats)
         : emptyStats();
+
+      const mergedCounts: Record<string, number> = { ...existing.statCounts };
+      for (const [statName, count] of Object.entries(entry.statCounts)) {
+        if (!count) continue;
+        mergedCounts[statName] = (mergedCounts[statName] ?? 0) + count;
+      }
 
       const updated: PlayerStats = {
         totalGamesPlayed: existing.totalGamesPlayed + 1,
         totalWins: existing.totalWins + (entry.won ? 1 : 0),
-        totalKills: existing.totalKills + entry.kills,
-        totalOwns: existing.totalOwns + entry.owns,
-        totalYasats: existing.totalYasats + entry.yasats,
+        longestStreak: Math.max(existing.longestStreak, entry.longestStreak),
         bestWeightedScore: Math.max(existing.bestWeightedScore, entry.weightedScore),
+        statCounts: mergedCounts,
       };
 
       if (snap.exists()) {
@@ -264,4 +306,30 @@ export async function saveRankedGameResult(entries: GameStatsEntry[]): Promise<v
       }
     })
   );
+}
+
+export interface LeaderboardEntry {
+  username: string;
+  displayName: string;
+  color: string;
+  stats: PlayerStats;
+}
+
+/**
+ * Fetch every player profile (lightweight — one read per player). For the
+ * expected scale of this app (tens to hundreds of players) this is fine.
+ */
+export async function fetchLeaderboard(): Promise<LeaderboardEntry[]> {
+  const snap = await getDocs(collection(db, 'players'));
+  const entries: LeaderboardEntry[] = [];
+  snap.forEach((d) => {
+    const data = d.data();
+    entries.push({
+      username: d.id,
+      displayName: data.displayName || d.id,
+      color: data.color || '',
+      stats: normalizeStats(data.stats),
+    });
+  });
+  return entries;
 }
