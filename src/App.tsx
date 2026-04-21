@@ -43,7 +43,9 @@ import ServiceWorkerWrapper from "./serviceworkerWrapper";
 import { ErrorBoundary } from "react-error-boundary";
 import HelpOutlineIcon from "@mui/icons-material/HelpOutline";
 import CloseIcon from "@mui/icons-material/Close";
+import SportsScoreIcon from "@mui/icons-material/SportsScore";
 import RulesPopUp from "./features/game/RulesText";
+import { useEndRankedGame } from "./features/game/useEndRankedGame";
 
 const ColorModeContext = React.createContext({ toggleColorMode: () => {} });
 
@@ -56,6 +58,7 @@ function App() {
   const scoreState = useAppSelector(selectScoreState);
   const theme = useTheme();
   const [openRules, setOpenRules] = React.useState(false);
+  const endRankedGame = useEndRankedGame();
 
   // Safety net: if the persisted state somehow lands in a combination that
   // renders nothing (e.g. after a data-shape change that our migration missed),
@@ -148,6 +151,7 @@ function App() {
       alignItems="center"
       sx={{
         height: "100vh",
+        overflowY: "auto",
         bgcolor: "background.default",
         color: "text.primary",
       }}
@@ -277,6 +281,23 @@ function App() {
               </IconButton>
 
               {gameType === "classic" && <StatsFullScreenDialog />}
+              {gameType === "ranked" && gameMode === "ranked" && (
+                <IconButton
+                  onClick={endRankedGame}
+                  color="primary"
+                  aria-label="End ranked game"
+                  title="End ranked game"
+                  sx={{
+                    bgcolor: "#585858",
+                    ":hover": { bgcolor: "#6a6a6a" },
+                    width: 40,
+                    height: 40,
+                    ml: 1,
+                  }}
+                >
+                  <SportsScoreIcon />
+                </IconButton>
+              )}
             </>
           )}
         </Toolbar>

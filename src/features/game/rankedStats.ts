@@ -5,9 +5,10 @@ import { GameStatsEntry } from '../identity/playerService';
 
 export interface PlayerGameResult {
   player: player;
-  kills: number;
-  owns: number;
-  yasats: number;
+  /** Per-stat counts for this game, keyed by stat name. */
+  statCounts: Record<string, number>;
+  /** Best yasat streak achieved in this game. */
+  longestStreak: number;
   weightedScore: number;
   won: boolean;
 }
@@ -56,11 +57,9 @@ export function computeRankedGameResults(
   const gameLongestStreak = longestStreakOfGame(rounds);
 
   const results: PlayerGameResult[] = players.map((p) => {
-    const kills = countStat(p.id, 'Kill', rounds);
-    const owns = countStat(p.id, 'Own', rounds);
-    const yasats = countStat(p.id, 'Yasat', rounds);
-
+    const statCounts: Record<string, number> = {};
     let weightedScore = 0;
+
     weights.forEach((w) => {
       if (w.statName === 'Longest Streak') {
         const streak = longestStreak(p.id, rounds);
@@ -69,15 +68,15 @@ export function computeRankedGameResults(
         }
       } else {
         const count = countStat(p.id, w.statName, rounds);
+        if (count > 0) statCounts[w.statName] = count;
         weightedScore += count * w.weight;
       }
     });
 
     return {
       player: p,
-      kills,
-      owns,
-      yasats,
+      statCounts,
+      longestStreak: longestStreak(p.id, rounds),
       weightedScore,
       won: false,
     };
@@ -95,9 +94,8 @@ export function resultsToStatsEntries(
     .filter((r) => r.player.username)
     .map((r) => ({
       username: r.player.username!,
-      kills: r.kills,
-      owns: r.owns,
-      yasats: r.yasats,
+      statCounts: r.statCounts,
+      longestStreak: r.longestStreak,
       weightedScore: r.weightedScore,
       won: r.won,
     }));

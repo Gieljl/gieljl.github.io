@@ -1,5 +1,5 @@
 import React from "react";
-import { Box, Button, Stack, Typography, useTheme } from "@mui/material";
+import { Box, Button, Divider, Stack, Typography, useTheme } from "@mui/material";
 import EmojiEventsIcon from "@mui/icons-material/EmojiEvents";
 import SportsEsportsIcon from "@mui/icons-material/SportsEsports";
 import { useAppDispatch } from "../../app/hooks";
@@ -7,6 +7,7 @@ import { setGameMode, startNewGame } from "./gameSlice";
 import logo from "../../yasa7.png";
 import logolight from "../../yasa7_light.png";
 import "../../App.css";
+import { Leaderboard } from "./Leaderboard";
 
 export const HomePage: React.FC = () => {
   const theme = useTheme();
@@ -22,7 +23,7 @@ export const HomePage: React.FC = () => {
       direction="column"
       alignItems="center"
       spacing={4}
-      sx={{ width: "100%", pt: 5 }}
+      sx={{ width: "100%", pt: 5, pb: 10 }}
     >
       <Box mt={2}>
         <img
@@ -63,6 +64,10 @@ export const HomePage: React.FC = () => {
           Quick local game, no login needed.
         </Typography>
       </Stack>
+
+      <Divider sx={{ width: "90%", maxWidth: 360, alignSelf: "center" }} />
+
+      <Leaderboard />
     </Stack>
   );
 };

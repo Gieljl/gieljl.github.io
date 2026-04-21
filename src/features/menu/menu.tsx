@@ -57,15 +57,8 @@ import Wheel from "@uiw/react-color-wheel";
 import { hsvaToHex, hexToHsva } from "@uiw/color-convert";
 import PaletteIcon from "@mui/icons-material/Palette";
 import ExitToAppIcon from "@mui/icons-material/ExitToApp";
-import EmojiEventsIcon from "@mui/icons-material/EmojiEvents";
-import { selectPlayers } from "../players/playersSlice";
-import { selectScores } from "../game/scoreSlice";
-import { selectStatsWeight } from "../stats/statsSlice";
-import {
-  computeRankedGameResults,
-  resultsToStatsEntries,
-} from "../game/rankedStats";
-import { saveRankedGameResult } from "../identity/playerService";
+import SportsScoreIcon from "@mui/icons-material/SportsScore";
+import { useEndRankedGame } from "../game/useEndRankedGame";
 
 type Anchor = "top" | "left" | "bottom" | "right";
 
@@ -85,12 +78,7 @@ export default function Menu({
   const currentPlayer = useAppSelector(selectCurrentPlayer);
   const gameStatus = useSelector((state: RootState) => state.game.status);
   const gameMode = useSelector((state: RootState) => state.game.mode);
-  const rankedPlayers = useAppSelector(selectPlayers);
-  const rankedCurrentScores = useAppSelector(selectScores);
-  const rankedScoreHistory = useAppSelector(
-    (state: RootState) => state.scores.past
-  );
-  const rankedWeights = useAppSelector(selectStatsWeight);
+  const endRankedGame = useEndRankedGame();
   const [openIdentity, setOpenIdentity] = React.useState(false);
   const [showColorPicker, setShowColorPicker] = React.useState(false);
   const [colorHsva, setColorHsva] = React.useState(() =>
@@ -200,62 +188,6 @@ export default function Menu({
     });
   };
 
-  const finishRankedGame = async () => {
-    const rounds = [
-      ...rankedScoreHistory,
-      { playerscores: [...rankedCurrentScores] },
-    ];
-    const results = computeRankedGameResults(
-      rankedPlayers,
-      rounds,
-      rankedWeights
-    );
-    const winner = results[0];
-    const entries = resultsToStatsEntries(results);
-
-    try {
-      await saveRankedGameResult(entries);
-      enqueueSnackbar(
-        winner
-          ? `Game saved! Winner: ${winner.player.name}`
-          : "Game saved.",
-        { variant: "success" }
-      );
-    } catch {
-      enqueueSnackbar("Could not save game stats. Please try again.", {
-        variant: "error",
-      });
-      return;
-    }
-    clearAllLocalState();
-  };
-
-  const onClickEndRankedGame = () => {
-    enqueueSnackbar(
-      "End this ranked game now? Winner and stats will be saved online.",
-      {
-        variant: "warning",
-        persist: true,
-        action: (key) => (
-          <>
-            <Button
-              color="inherit"
-              onClick={() => {
-                finishRankedGame();
-                closeSnackbar(key);
-              }}
-            >
-              End
-            </Button>
-            <Button color="inherit" onClick={() => closeSnackbar(key)}>
-              Cancel
-            </Button>
-          </>
-        ),
-      }
-    );
-  };
-
   const list = (anchor: Anchor) => (
     <Box
       sx={{ width: anchor === "top" || anchor === "bottom" ? "auto" : 220 }}
@@ -324,9 +256,9 @@ export default function Menu({
           </ListItemButton>
         )}
         {gameStatus === "started" && gameMode === "ranked" && (
-          <ListItemButton key="endRanked" onClick={onClickEndRankedGame}>
+          <ListItemButton key="endRanked" onClick={endRankedGame}>
             <ListItemIcon>
-              <EmojiEventsIcon />
+              <SportsScoreIcon />
             </ListItemIcon>
             <ListItemText primary="End Ranked Game" />
           </ListItemButton>
