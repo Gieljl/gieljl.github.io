@@ -64,8 +64,8 @@ export function AddPlayerDialog() {
   }
 
   const handleAdd = () => () => {
-    // check if player name or color already exists
-    if (players.some((player) => player.name === playerName)) {
+    const trimmedName = playerName.trim();
+    if (players.some((player) => player.name === trimmedName)) {
       enqueueSnackbar("Name has to be unique. Please enter a different name.", { variant: "error" });
       return;
     }
@@ -73,9 +73,8 @@ export function AddPlayerDialog() {
       enqueueSnackbar("Color has to be unique! Use another color.", { variant: "error" });
       return;
     }
-    
-    dispatch(addPlayer(playerName, hex)) 
-    handleClose()
+    dispatch(addPlayer(trimmedName, hex));
+    handleClose();
   };
 
   return (

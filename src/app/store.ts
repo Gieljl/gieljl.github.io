@@ -3,6 +3,7 @@ import scoresReducer from '../features/game/scoreSlice';
 import playersReducer from '../features/players/playersSlice';
 import statsReducer from '../features/stats/statsSlice';
 import gameReducer from '../features/game/gameSlice';
+import identityReducer from '../features/identity/identitySlice';
 import undoable, { ActionCreators } from 'redux-undo';
 import { persistReducer, persistStore } from 'redux-persist';
 import storage from 'redux-persist/lib/storage';
@@ -11,13 +12,14 @@ const reducers = combineReducers({
   scores: undoable(scoresReducer),
   players: playersReducer,
   game: gameReducer,
-  stats: statsReducer
+  stats: statsReducer,
+  identity: identityReducer,
 });
 
 const persistConfig = {
   timeout: 1000, //Set the timeout function to 1 seconds
   key: 'root',
-  storage
+  storage,
 };
 const persistedReducer = persistReducer(persistConfig, reducers);
 

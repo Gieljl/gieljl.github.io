@@ -22,12 +22,12 @@ import logolight from "../../yasa7_light.png";
 import "../../App.css";
 import { AddPlayerDialog } from "../players/AddPlayerDialog";
 
-
 export const GameCreator = () => {
   const theme = useTheme();
   const dispatch = useAppDispatch();
   const players = useAppSelector(selectPlayers);
   const [gameType, setGameTypeState] = useState("ranked");
+
   const handleChange = (event: SelectChangeEvent) => {
     setGameTypeState(event.target.value);
   };
@@ -54,7 +54,7 @@ export const GameCreator = () => {
           color: "text.primary",
         }}
       >
-        <PlayerList />
+        <PlayerList editable />
         {players.length < 1 && (
           <Stack direction={"column"} alignItems={"center"}>
             <Typography
@@ -91,8 +91,8 @@ export const GameCreator = () => {
               width: "150px",
             }}
           >
-            <MenuItem value={"classic"}>Classic</MenuItem>
-            <MenuItem value={"ranked"}>Ranked</MenuItem>
+            <MenuItem value={"classic"}>Classic (Points and stats)</MenuItem>
+            <MenuItem value={"ranked"}>New (Weighted stats score)</MenuItem>
           </Select>
         </FormControl>
 

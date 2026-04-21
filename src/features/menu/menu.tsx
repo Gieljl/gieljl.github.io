@@ -29,8 +29,8 @@ import {
 import MenuIcon from "@mui/icons-material/Menu";
 import AddCircleIcon from "@mui/icons-material/AddCircle";
 import InfoIcon from "@mui/icons-material/Info";
-import { useAppDispatch } from "../../app/hooks";
-import { startNewGame } from "../game/gameSlice";
+import { useAppDispatch, useAppSelector } from "../../app/hooks";
+import { goHome } from "../game/gameSlice";
 import { resetPlayers } from "../players/playersSlice";
 import { resetScores } from "../game/scoreSlice";
 import { ActionCreators } from "redux-undo";
@@ -43,10 +43,29 @@ import { setGameType } from "../game/gameSlice";
 import { TransitionProps, closeSnackbar, enqueueSnackbar } from "notistack";
 import { resetStats } from "../stats/statsSlice";
 import HelpOutlineIcon from "@mui/icons-material/HelpOutline";
+import PersonIcon from "@mui/icons-material/Person";
+import LogoutIcon from "@mui/icons-material/Logout";
 import logo from "../../yasa7.png";
 import logolight from "../../yasa7_light.png";
 import CloseIcon from "@mui/icons-material/Close";
 import RulesPopUp from "../game/RulesText";
+import { IdentityDialog } from "../identity/IdentityDialog";
+import { selectCurrentPlayer, logout, setPlayerColor } from "../identity/identitySlice";
+import { updatePlayerColor } from "../identity/playerService";
+import Circle from "@uiw/react-color-circle";
+import Wheel from "@uiw/react-color-wheel";
+import { hsvaToHex, hexToHsva } from "@uiw/color-convert";
+import PaletteIcon from "@mui/icons-material/Palette";
+import ExitToAppIcon from "@mui/icons-material/ExitToApp";
+import EmojiEventsIcon from "@mui/icons-material/EmojiEvents";
+import { selectPlayers } from "../players/playersSlice";
+import { selectScores } from "../game/scoreSlice";
+import { selectStatsWeight } from "../stats/statsSlice";
+import {
+  computeRankedGameResults,
+  resultsToStatsEntries,
+} from "../game/rankedStats";
+import { saveRankedGameResult } from "../identity/playerService";
 
 type Anchor = "top" | "left" | "bottom" | "right";
 
@@ -63,6 +82,36 @@ export default function Menu({
   });
   const theme = useTheme();
   const dispatch = useAppDispatch();
+  const currentPlayer = useAppSelector(selectCurrentPlayer);
+  const gameStatus = useSelector((state: RootState) => state.game.status);
+  const gameMode = useSelector((state: RootState) => state.game.mode);
+  const rankedPlayers = useAppSelector(selectPlayers);
+  const rankedCurrentScores = useAppSelector(selectScores);
+  const rankedScoreHistory = useAppSelector(
+    (state: RootState) => state.scores.past
+  );
+  const rankedWeights = useAppSelector(selectStatsWeight);
+  const [openIdentity, setOpenIdentity] = React.useState(false);
+  const [showColorPicker, setShowColorPicker] = React.useState(false);
+  const [colorHsva, setColorHsva] = React.useState(() =>
+    hexToHsva(currentPlayer?.color || '#7df3e1')
+  );
+
+  React.useEffect(() => {
+    setColorHsva(hexToHsva(currentPlayer?.color || '#7df3e1'));
+  }, [currentPlayer?.color]);
+
+  const PLAYER_COLORS = [
+    '#7df3e1', '#f47373', '#697689', '#37d67a', '#2ccce4',
+    '#555555', '#dce775', '#ff8a65', '#ba68c8', '#4dd0e1',
+  ];
+
+  const handleColorChange = (hex: string) => {
+    dispatch(setPlayerColor(hex));
+    if (currentPlayer) {
+      updatePlayerColor(currentPlayer.username, hex).catch(() => {});
+    }
+  };
 
   const toggleDrawer =
     (anchor: Anchor, open: boolean) =>
@@ -82,6 +131,15 @@ export default function Menu({
     window.location.reload();
   };
 
+  /** Clear all local game state and return to the home screen. */
+  const clearAllLocalState = () => {
+    dispatch(goHome());
+    dispatch(resetPlayers());
+    dispatch(resetScores());
+    dispatch(resetStats());
+    dispatch(ActionCreators.clearHistory());
+  };
+
   const onClickNewGame = () => {
     enqueueSnackbar(
       `This will delete all data of the game in progress. Are you sure you want to proceed?`,
@@ -93,11 +151,7 @@ export default function Menu({
             <Button
               color="inherit"
               onClick={() => {
-                dispatch(startNewGame());
-                dispatch(resetPlayers());
-                dispatch(resetScores());
-                dispatch(resetStats());
-                dispatch(ActionCreators.clearHistory());
+                clearAllLocalState();
                 closeSnackbar(key);
               }}
             >
@@ -118,6 +172,90 @@ export default function Menu({
     );
   };
 
+  const onClickLeaveGame = () => {
+    enqueueSnackbar(`Leave the current game and return to the start screen?`, {
+      variant: "warning",
+      persist: true,
+      action: (key) => (
+        <>
+          <Button
+            color="inherit"
+            onClick={() => {
+              clearAllLocalState();
+              closeSnackbar(key);
+            }}
+          >
+            Yes
+          </Button>
+          <Button
+            color="inherit"
+            onClick={() => {
+              closeSnackbar(key);
+            }}
+          >
+            No
+          </Button>
+        </>
+      ),
+    });
+  };
+
+  const finishRankedGame = async () => {
+    const rounds = [
+      ...rankedScoreHistory,
+      { playerscores: [...rankedCurrentScores] },
+    ];
+    const results = computeRankedGameResults(
+      rankedPlayers,
+      rounds,
+      rankedWeights
+    );
+    const winner = results[0];
+    const entries = resultsToStatsEntries(results);
+
+    try {
+      await saveRankedGameResult(entries);
+      enqueueSnackbar(
+        winner
+          ? `Game saved! Winner: ${winner.player.name}`
+          : "Game saved.",
+        { variant: "success" }
+      );
+    } catch {
+      enqueueSnackbar("Could not save game stats. Please try again.", {
+        variant: "error",
+      });
+      return;
+    }
+    clearAllLocalState();
+  };
+
+  const onClickEndRankedGame = () => {
+    enqueueSnackbar(
+      "End this ranked game now? Winner and stats will be saved online.",
+      {
+        variant: "warning",
+        persist: true,
+        action: (key) => (
+          <>
+            <Button
+              color="inherit"
+              onClick={() => {
+                finishRankedGame();
+                closeSnackbar(key);
+              }}
+            >
+              End
+            </Button>
+            <Button color="inherit" onClick={() => closeSnackbar(key)}>
+              Cancel
+            </Button>
+          </>
+        ),
+      }
+    );
+  };
+
   const list = (anchor: Anchor) => (
     <Box
       sx={{ width: anchor === "top" || anchor === "bottom" ? "auto" : 220 }}
@@ -125,12 +263,74 @@ export default function Menu({
       onKeyDown={toggleDrawer(anchor, false)}
     >
       <List>
+        {!currentPlayer ? (
+          <ListItemButton key="login" onClick={() => setOpenIdentity(true)}>
+            <ListItemIcon>
+              <PersonIcon />
+            </ListItemIcon>
+            <ListItemText primary="Login / Register (BETA)" />
+          </ListItemButton>
+        ) : (
+          <>
+            <ListItemButton key="logout" onClick={() => dispatch(logout())}>
+              <ListItemIcon>
+                <LogoutIcon />
+              </ListItemIcon>
+              <ListItemText primary={`Logout (${currentPlayer.displayName})`} />
+            </ListItemButton>
+            <ListItemButton key="color" onClick={(e) => { e.stopPropagation(); setShowColorPicker(!showColorPicker); }}>
+              <ListItemIcon>
+                <PaletteIcon sx={{ color: currentPlayer.color || '#7df3e1' }} />
+              </ListItemIcon>
+              <ListItemText primary="Change Color" />
+            </ListItemButton>
+            {showColorPicker && (
+              <Box sx={{ px: 2, py: 1 }} onClick={(e) => e.stopPropagation()}>
+                <Circle
+                  colors={PLAYER_COLORS}
+                  color={currentPlayer.color || '#7df3e1'}
+                  onChange={(c) => {
+                    setColorHsva(hexToHsva(c.hex));
+                    handleColorChange(c.hex);
+                  }}
+                />
+                <Stack direction="row" justifyContent="center" mt={1}>
+                  <Wheel
+                    color={colorHsva}
+                    onChange={(c) => {
+                      setColorHsva(c.hsva);
+                      handleColorChange(hsvaToHex(c.hsva));
+                    }}
+                    width={140}
+                    height={140}
+                  />
+                </Stack>
+              </Box>
+            )}
+          </>
+        )}
         <ListItemButton key="NewGame">
           <ListItemIcon>
             <AddCircleIcon />
           </ListItemIcon>
           <ListItemText primary="New Game" onClick={onClickNewGame} />
         </ListItemButton>
+        {gameStatus === "started" && (
+          <ListItemButton key="leaveGame" onClick={onClickLeaveGame}>
+            <ListItemIcon>
+              <ExitToAppIcon />
+            </ListItemIcon>
+            <ListItemText primary="Leave Game" />
+          </ListItemButton>
+        )}
+        {gameStatus === "started" && gameMode === "ranked" && (
+          <ListItemButton key="endRanked" onClick={onClickEndRankedGame}>
+            <ListItemIcon>
+              <EmojiEventsIcon />
+            </ListItemIcon>
+            <ListItemText primary="End Ranked Game" />
+          </ListItemButton>
+        )}
         <ListItemButton key="settings" onClick={handleClickOpenSettings}>
           <ListItemIcon>
             <SettingsIcon />
@@ -286,8 +486,8 @@ export default function Menu({
               onChange={handleChange}
               variant="outlined"
             >
-              <MenuItem value={"classic"}>Classic</MenuItem>
-              <MenuItem value={"ranked"}>Ranked</MenuItem>
+              <MenuItem value={"classic"}>Classic (Points and stats)</MenuItem>
+              <MenuItem value={"ranked"}>New (Weighted stats score)</MenuItem>
             </Select>
           </FormControl>
         </Stack>
@@ -331,6 +531,7 @@ export default function Menu({
           <AboutDialogContent />
           <SettingsDialogContent />
           <RulesDialogContent />
+          <IdentityDialog open={openIdentity} onClose={() => setOpenIdentity(false)} />
           <Drawer
             ModalProps={{
               keepMounted: false,
