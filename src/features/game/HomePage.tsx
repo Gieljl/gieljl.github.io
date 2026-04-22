@@ -14,14 +14,16 @@ import {
 import EmojiEventsIcon from "@mui/icons-material/EmojiEvents";
 import SportsEsportsIcon from "@mui/icons-material/SportsEsports";
 import LeaderboardIcon from "@mui/icons-material/Leaderboard";
+import CastConnectedIcon from "@mui/icons-material/CastConnected";
 import CloseIcon from "@mui/icons-material/Close";
 import { TransitionProps } from "@mui/material/transitions";
 import { useAppDispatch } from "../../app/hooks";
-import { setGameMode, startNewGame } from "./gameSlice";
+import { setGameType, startNewGame } from "./gameSlice";
 import logo from "../../yasa7.png";
 import logolight from "../../yasa7_light.png";
 import "../../App.css";
 import { Leaderboard } from "./Leaderboard";
+import { JoinGameDialog } from "../session/JoinGameDialog";
 
 const Transition = React.forwardRef(function Transition(
   props: TransitionProps & { children: React.ReactElement },
@@ -34,9 +36,10 @@ export const HomePage: React.FC = () => {
   const theme = useTheme();
   const dispatch = useAppDispatch();
   const [leaderboardOpen, setLeaderboardOpen] = React.useState(false);
+  const [joinOpen, setJoinOpen] = React.useState(false);
 
   const choose = (mode: "unranked" | "ranked") => {
-    dispatch(setGameMode(mode));
+    dispatch(setGameType(mode));
     dispatch(startNewGame());
   };
 
@@ -95,7 +98,19 @@ export const HomePage: React.FC = () => {
         >
           Leaderboards
         </Button>
+
+        <Button
+          variant="text"
+          size="large"
+          startIcon={<CastConnectedIcon />}
+          onClick={() => setJoinOpen(true)}
+          sx={{ width: 260, height: 60, fontSize: 18 }}
+        >
+          Join Online Game
+        </Button>
       </Stack>
+
+      <JoinGameDialog open={joinOpen} onClose={() => setJoinOpen(false)} />
 
       <Dialog
         fullScreen

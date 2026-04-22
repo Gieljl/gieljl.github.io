@@ -46,6 +46,25 @@ const longestStreakOfGame = (rounds: ScoreState[]): number =>
   );
 
 /**
+ * Return the player ID that owns the longest streak of the game.
+ * When two players tie, the first to achieve the streak keeps it.
+ * A later player only takes over with a strictly higher streak.
+ */
+const longestStreakOwnerId = (rounds: ScoreState[]): number | null => {
+  let best = 1; // must be > 1 to count
+  let owner: number | null = null;
+  for (const round of rounds) {
+    for (const ps of round.playerscores) {
+      if (ps.yasatStreak > best) {
+        best = ps.yasatStreak;
+        owner = ps.id;
+      }
+    }
+  }
+  return owner;
+};
+
+/**
  * Compute per-player results and weighted scores for a finished ranked game.
  * Returns the list sorted by weightedScore desc, with `won` set on the leader.
  */
@@ -54,7 +73,7 @@ export function computeRankedGameResults(
   rounds: ScoreState[],
   weights: statWeight[]
 ): PlayerGameResult[] {
-  const gameLongestStreak = longestStreakOfGame(rounds);
+  const streakOwner = longestStreakOwnerId(rounds);
 
   const results: PlayerGameResult[] = players.map((p) => {
     const statCounts: Record<string, number> = {};
@@ -63,7 +82,7 @@ export function computeRankedGameResults(
     weights.forEach((w) => {
       if (w.statName === 'Longest Streak') {
         const streak = longestStreak(p.id, rounds);
-        if (streak > 1 && streak === gameLongestStreak) {
+        if (streak > 1 && streakOwner === p.id) {
           weightedScore += w.weight;
         }
       } else {

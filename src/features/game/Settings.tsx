@@ -12,37 +12,37 @@ import {
 } from "@mui/material";
 import React, { useState } from "react";
 import { useAppDispatch } from "../../app/hooks";
-import { setGameType } from "./gameSlice";
+import { setGameView } from "./gameSlice";
 import { useSelector } from "react-redux";
 import { RootState } from "../../app/store";
 
 export const Settings = () => {
   const dispatch = useAppDispatch();
 
-  const [gameType, setGameTypeState] = useState(
-    useSelector((state: RootState) => state.game.type)
+  const [gameView, setGameViewState] = useState(
+    useSelector((state: RootState) => state.game.view)
   );
   const handleChange = (event: SelectChangeEvent) => {
-    setGameTypeState(event.target.value as "classic" | "ranked" );
-    dispatch(setGameType(gameType as "classic" | "ranked"));
+    setGameViewState(event.target.value as "classic" | "new" );
+    dispatch(setGameView(gameView as "classic" | "new"));
   };
 
   return (
     <Stack direction="column" alignItems="left" spacing={5} mt={5}>
       <FormControl required>
         <InputLabel id="demo-simple-select-required-label">
-          Game Type
+          Game View
         </InputLabel>
         <Select
           labelId="demo-simple-select-required-label"
           id="demo-simple-select-required"
-          value={gameType}
-          label="Game Type"
+          value={gameView}
+          label="Game View"
           onChange={handleChange}
           variant="outlined"
         >
           <MenuItem value={"classic"}>Classic</MenuItem>
-          <MenuItem value={"ranked"}>Ranked</MenuItem>
+          <MenuItem value={"new"}>New (Weighted)</MenuItem>
         </Select>
       </FormControl>
     </Stack>

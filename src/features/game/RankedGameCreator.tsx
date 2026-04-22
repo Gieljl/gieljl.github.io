@@ -13,7 +13,7 @@ import { ActionCreators } from "redux-undo";
 import { setStartScores } from "./scoreSlice";
 import { addPlayer, selectPlayers } from "../players/playersSlice";
 import { PlayerList } from "../players/Players";
-import { startGame, setGameType } from "./gameSlice";
+import { startGame, setGameView } from "./gameSlice";
 import logo from "../../yasa7.png";
 import logolight from "../../yasa7_light.png";
 import "../../App.css";
@@ -138,7 +138,7 @@ export const RankedGameCreator: React.FC = () => {
           variant="contained"
           onClick={() => {
             dispatch(ActionCreators.clearHistory());
-            dispatch(setGameType("ranked"));
+            dispatch(setGameView("new"));
             dispatch(setStartScores(players));
             dispatch(startGame());
           }}

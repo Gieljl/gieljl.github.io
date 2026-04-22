@@ -98,6 +98,7 @@ export function PlayerRanking() {
       LastRoundScoreState
     );
     const weightedScoreDuringLastRound = getWeightedScore(
+      playerId,
       totalStatsDuringLastRound,
       LastRoundScoreState
     );
@@ -152,6 +153,27 @@ export function PlayerRanking() {
     }, 0);
   };
 
+  /**
+   * Return the player ID that "owns" the longest streak of the game.
+   * When two players have the same longest streak value, the one who
+   * achieved it first (earliest round) keeps it. A later player only
+   * takes it over when they have a **strictly higher** streak.
+   */
+  const getLongestStreakOwner = (scoreState: ScoreState[]): number | null => {
+    let bestStreak = 1; // must be > 1 to count
+    let ownerId: number | null = null;
+
+    for (const round of scoreState) {
+      for (const ps of round.playerscores) {
+        if (ps.yasatStreak > bestStreak) {
+          bestStreak = ps.yasatStreak;
+          ownerId = ps.id;
+        }
+      }
+    }
+    return ownerId;
+  };
+
   // get the current streak of a player
   const getCurrentYasatStreak = (playerId: number) => {
     const currentRound = currentScores.find((player) => player.id === playerId);
@@ -159,6 +181,7 @@ export function PlayerRanking() {
   };
 
   const getWeightedScore = (
+    playerId: number,
     playerStats: PlayerStats,
     scoreState: ScoreState[]
   ) => {
@@ -170,11 +193,8 @@ export function PlayerRanking() {
 
       if (statWeight) {
         if (stat.name === "Longest Streak") {
-          // check if its the longest streak of the game
-          if (
-            stat.count === getLongestYasatStreakOfGame(scoreState) &&
-            stat.count > 1
-          ) {
+          // Only the owner of the longest streak gets the bonus
+          if (getLongestStreakOwner(scoreState) === playerId && stat.count > 1) {
             weightedScore += 1 * statWeight.weight;
           }
         } else {
@@ -227,7 +247,7 @@ export function PlayerRanking() {
   // create an array of players with their stats and weighted score
   const playersForRanking = players.map((player) => {
     const playerStats = getPlayersGameStats(player.id, totalScores);
-    const calculatedWeightedScore = getWeightedScore(playerStats, totalScores);
+    const calculatedWeightedScore = getWeightedScore(player.id, playerStats, totalScores);
     const roundStats = getPlayersRoundStats(player.id);
     const roundWeigtedScore = getPlayerWeightedScoreChange(
       player.id,
@@ -328,9 +348,7 @@ export function PlayerRanking() {
             key={player.playerInfo.id}
             streakLength={getCurrentYasatStreak(player.playerInfo.id)}
             hasLongestStreak={
-              getLongestYasatStreakOfGame(totalScores) ===
-              player.stats.stats.find((stat) => stat.name === "Longest Streak")
-                ?.count
+              getLongestStreakOwner(totalScores) === player.playerInfo.id
             }
             showStats={showStats}
             roundStats={player.roundStats}

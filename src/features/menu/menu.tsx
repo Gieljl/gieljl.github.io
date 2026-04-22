@@ -39,7 +39,7 @@ import Brightness7Icon from "@mui/icons-material/Brightness7";
 import RefreshIcon from "@mui/icons-material/Refresh";
 import { useSelector } from "react-redux";
 import { RootState } from "../../app/store";
-import { setGameType } from "../game/gameSlice";
+import { setGameView } from "../game/gameSlice";
 import { TransitionProps, closeSnackbar, enqueueSnackbar } from "notistack";
 import { resetStats } from "../stats/statsSlice";
 import HelpOutlineIcon from "@mui/icons-material/HelpOutline";
@@ -58,7 +58,12 @@ import { hsvaToHex, hexToHsva } from "@uiw/color-convert";
 import PaletteIcon from "@mui/icons-material/Palette";
 import ExitToAppIcon from "@mui/icons-material/ExitToApp";
 import SportsScoreIcon from "@mui/icons-material/SportsScore";
+import CastConnectedIcon from "@mui/icons-material/CastConnected";
 import { useEndRankedGame } from "../game/useEndRankedGame";
+import { selectSessionRole, clearSession } from "../session/sessionSlice";
+import { JoinGameDialog } from "../session/JoinGameDialog";
+import { deleteSession as deleteSessionDoc } from "../session/sessionService";
+import { selectSessionCode, selectIsSharing, setSharing } from "../session/sessionSlice";
 
 type Anchor = "top" | "left" | "bottom" | "right";
 
@@ -77,9 +82,14 @@ export default function Menu({
   const dispatch = useAppDispatch();
   const currentPlayer = useAppSelector(selectCurrentPlayer);
   const gameStatus = useSelector((state: RootState) => state.game.status);
-  const gameMode = useSelector((state: RootState) => state.game.mode);
+  const gameType = useSelector((state: RootState) => state.game.type);
   const endRankedGame = useEndRankedGame();
+  const sessionRole = useAppSelector(selectSessionRole);
+  const sessionCode = useAppSelector(selectSessionCode);
+  const isSharing = useAppSelector(selectIsSharing);
+  const isViewer = sessionRole === "viewer";
   const [openIdentity, setOpenIdentity] = React.useState(false);
+  const [openJoinGame, setOpenJoinGame] = React.useState(false);
   const [showColorPicker, setShowColorPicker] = React.useState(false);
   const [colorHsva, setColorHsva] = React.useState(() =>
     hexToHsva(currentPlayer?.color || '#7df3e1')
@@ -121,6 +131,12 @@ export default function Menu({
 
   /** Clear all local game state and return to the home screen. */
   const clearAllLocalState = () => {
+    // If host was sharing, delete the Firestore session
+    if (isSharing && sessionCode) {
+      deleteSessionDoc(sessionCode).catch(() => {});
+      dispatch(setSharing(false));
+    }
+    dispatch(clearSession());
     dispatch(goHome());
     dispatch(resetPlayers());
     dispatch(resetScores());
@@ -255,7 +271,7 @@ export default function Menu({
             <ListItemText primary="Leave Game" />
           </ListItemButton>
         )}
-        {gameStatus === "started" && gameMode === "ranked" && (
+        {gameStatus === "started" && gameType === "ranked" && !isViewer && (
           <ListItemButton key="endRanked" onClick={endRankedGame}>
             <ListItemIcon>
               <SportsScoreIcon />
@@ -263,11 +279,19 @@ export default function Menu({
             <ListItemText primary="End Ranked Game" />
           </ListItemButton>
         )}
-        <ListItemButton key="settings" onClick={handleClickOpenSettings}>
+        {!isViewer && (
+          <ListItemButton key="settings" onClick={handleClickOpenSettings}>
+            <ListItemIcon>
+              <SettingsIcon />
+            </ListItemIcon>
+            <ListItemText primary="Settings" onClick={handleClickOpenSettings} />
+          </ListItemButton>
+        )}
+        <ListItemButton key="joinOnline" onClick={() => setOpenJoinGame(true)}>
           <ListItemIcon>
-            <SettingsIcon />
+            <CastConnectedIcon />
           </ListItemIcon>
-          <ListItemText primary="Settings" onClick={handleClickOpenSettings} />
+          <ListItemText primary="Join Online Game" />
         </ListItemButton>
         <ListItemButton key="Theme">
           <ListItemIcon onClick={toggleColorMode}>
@@ -308,16 +332,16 @@ export default function Menu({
   const [openSettings, setOpenSettings] = React.useState(false);
   const [openRules, setOpenRules] = React.useState(false);
 
-  const [gameTypeState, setGameTypeState] = React.useState(
-    useSelector((state: RootState) => state.game.type)
+  const [gameViewState, setGameViewState] = React.useState(
+    useSelector((state: RootState) => state.game.view)
   );
 
   React.useEffect(() => {
-    dispatch(setGameType(gameTypeState as "classic" | "ranked"));
-  }, [gameTypeState, dispatch]);
+    dispatch(setGameView(gameViewState as "classic" | "new"));
+  }, [gameViewState, dispatch]);
 
   const handleChange = (event: SelectChangeEvent) => {
-    setGameTypeState(event.target.value as "classic" | "ranked");
+    setGameViewState(event.target.value as "classic" | "new");
   };
 
   const handleClickOpenRules = () => {
@@ -408,18 +432,18 @@ export default function Menu({
         <Stack direction="column" alignItems="left" spacing={5} mt={5}>
           <FormControl required>
             <InputLabel id="demo-simple-select-required-label">
-              Game Type
+              Game View
             </InputLabel>
             <Select
               labelId="demo-simple-select-required-label"
               id="demo-simple-select-required"
-              value={gameTypeState}
-              label="Game Type"
+              value={gameViewState}
+              label="Game View"
               onChange={handleChange}
               variant="outlined"
             >
               <MenuItem value={"classic"}>Classic (Points and stats)</MenuItem>
-              <MenuItem value={"ranked"}>New (Weighted stats score)</MenuItem>
+              <MenuItem value={"new"}>New (Weighted stats score)</MenuItem>
             </Select>
           </FormControl>
         </Stack>
@@ -464,6 +488,7 @@ export default function Menu({
           <SettingsDialogContent />
           <RulesDialogContent />
           <IdentityDialog open={openIdentity} onClose={() => setOpenIdentity(false)} />
+          <JoinGameDialog open={openJoinGame} onClose={() => setOpenJoinGame(false)} />
           <Drawer
             ModalProps={{
               keepMounted: false,

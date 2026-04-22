@@ -16,7 +16,7 @@ import { ActionCreators } from "redux-undo";
 import { setStartScores } from "../game/scoreSlice";
 import { selectPlayers } from "../players/playersSlice";
 import { PlayerList } from "../players/Players";
-import { startGame, setGameType } from "./gameSlice";
+import { startGame, setGameView } from "./gameSlice";
 import logo from "../../yasa7.png";
 import logolight from "../../yasa7_light.png";
 import "../../App.css";
@@ -26,10 +26,10 @@ export const GameCreator = () => {
   const theme = useTheme();
   const dispatch = useAppDispatch();
   const players = useAppSelector(selectPlayers);
-  const [gameType, setGameTypeState] = useState("ranked");
+  const [gameView, setGameViewState] = useState("new");
 
   const handleChange = (event: SelectChangeEvent) => {
-    setGameTypeState(event.target.value);
+    setGameViewState(event.target.value);
   };
 
   return (
@@ -77,13 +77,13 @@ export const GameCreator = () => {
         <AddPlayerDialog />
         <FormControl required>
           <InputLabel id="demo-simple-select-required-label">
-            Game Type
+            Game View
           </InputLabel>
           <Select
             labelId="demo-simple-select-required-label"
             id="demo-simple-select-required"
-            value={gameType}
-            label="Game Type"
+            value={gameView}
+            label="Game View"
             onChange={handleChange}
             variant="outlined"
             sx={{
@@ -92,18 +92,18 @@ export const GameCreator = () => {
             }}
           >
             <MenuItem value={"classic"}>Classic (Points and stats)</MenuItem>
-            <MenuItem value={"ranked"}>New (Weighted stats score)</MenuItem>
+            <MenuItem value={"new"}>New (Weighted stats score)</MenuItem>
           </Select>
         </FormControl>
 
         <Button
-          disabled={players.length < 2 || gameType.length === 0}
+          disabled={players.length < 2 || gameView.length === 0}
           variant="contained"
           onClick={() =>
             dispatch(ActionCreators.clearHistory()) &&
             dispatch(startGame()) &&
             dispatch(setStartScores(players)) &&
-            dispatch(setGameType(gameType as "classic" | "ranked"))
+            dispatch(setGameView(gameView as "classic" | "new"))
           }
           sx={{
             height: "50px",

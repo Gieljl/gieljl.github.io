@@ -97,7 +97,7 @@ export function ScoreEntryDialog() {
   };
 
   const gameStatus = useSelector((state: RootState) => state.game.status);
-  const gameType = useSelector((state: RootState) => state.game.type);
+  const gameView = useSelector((state: RootState) => state.game.view);
 
   const players = useAppSelector(selectPlayers);
   const currentScores = useAppSelector(selectScores);
@@ -532,7 +532,7 @@ export function ScoreEntryDialog() {
                     }}
                   >
                     <ListItemAvatar>
-                      {gameType === "ranked" ? (
+                      {gameView === "new" ? (
                         <Avatar
                           {...stringAvatar(player.name)}
                           sx={{ bgcolor: player.color }}
@@ -554,7 +554,7 @@ export function ScoreEntryDialog() {
                     </ListItemAvatar>
                   </Button>
 
-                  {gameType === "ranked" && (
+                  {gameView === "new" && (
                     <Stack alignItems={"center"} spacing={1} direction="column">
                       <Typography
                         sx={{ fontSize: 11 }}

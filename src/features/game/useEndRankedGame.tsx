@@ -13,6 +13,8 @@ import {
   resultsToStatsEntries,
 } from "./rankedStats";
 import { saveRankedGameResult } from "../identity/playerService";
+import { selectIsSharing, selectSessionCode, clearSession, setSharing } from "../session/sessionSlice";
+import { deleteSession as deleteSessionDoc } from "../session/sessionService";
 
 /**
  * Hook that returns a handler which prompts the user to end the ranked game,
@@ -26,8 +28,16 @@ export function useEndRankedGame() {
     (state: RootState) => state.scores.past
   );
   const weights = useAppSelector(selectStatsWeight);
+  const isSharing = useAppSelector(selectIsSharing);
+  const sessionCode = useAppSelector(selectSessionCode);
 
   const clearLocal = () => {
+    // Clean up Firestore session if host was sharing
+    if (isSharing && sessionCode) {
+      deleteSessionDoc(sessionCode).catch(() => {});
+      dispatch(setSharing(false));
+    }
+    dispatch(clearSession());
     dispatch(goHome());
     dispatch(resetPlayers());
     dispatch(resetScores());
