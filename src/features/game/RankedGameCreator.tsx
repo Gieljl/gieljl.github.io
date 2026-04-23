@@ -13,7 +13,8 @@ import { ActionCreators } from "redux-undo";
 import { setStartScores } from "./scoreSlice";
 import { addPlayer, selectPlayers } from "../players/playersSlice";
 import { PlayerList } from "../players/Players";
-import { startGame, setGameView } from "./gameSlice";
+import { startGame, setGameView, goHome } from "./gameSlice";
+import HomeIcon from "@mui/icons-material/Home";
 import logo from "../../yasa7.png";
 import logolight from "../../yasa7_light.png";
 import "../../App.css";
@@ -145,6 +146,15 @@ export const RankedGameCreator: React.FC = () => {
           sx={{ height: 50, width: 180 }}
         >
           Start game
+        </Button>
+
+        <Button
+          variant="text"
+          startIcon={<HomeIcon />}
+          onClick={() => dispatch(goHome())}
+          sx={{ height: 50, width: 180 }}
+        >
+          Home
         </Button>
 
         <IdentityDialog

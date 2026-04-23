@@ -16,7 +16,8 @@ import { ActionCreators } from "redux-undo";
 import { setStartScores } from "../game/scoreSlice";
 import { selectPlayers } from "../players/playersSlice";
 import { PlayerList } from "../players/Players";
-import { startGame, setGameView } from "./gameSlice";
+import { startGame, setGameView, goHome } from "./gameSlice";
+import HomeIcon from "@mui/icons-material/Home";
 import logo from "../../yasa7.png";
 import logolight from "../../yasa7_light.png";
 import "../../App.css";
@@ -111,6 +112,18 @@ export const GameCreator = () => {
           }}
         >
           Start game
+        </Button>
+
+        <Button
+          variant="text"
+          startIcon={<HomeIcon />}
+          onClick={() => dispatch(goHome())}
+          sx={{
+            height: "50px",
+            width: "150px",
+          }}
+        >
+          Home
         </Button>
       </Stack>
     </>
