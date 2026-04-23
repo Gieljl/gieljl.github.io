@@ -117,9 +117,98 @@ const RulesPopUp: React.FC = () => {
       exactly 50 or 100 points.
       <br />
       <br />
-      <h2>Meta Game and stats</h2>
+      <h2>Meta Game and Stats</h2>
       <br />
-      To be continued...
+      Beyond the basic card game, Yasat features a Meta Game where players
+      collect <i>stats</i> based on in-game events. Each stat has a weighted
+      value, and the player with the highest weighted score is in the lead. In
+      ranked games, these stats are tracked and saved online.
+      <br />
+      <br />
+      <strong>Yasat</strong> (+1)
+      <br />
+      Awarded when you successfully declare Yasat and win the round. Winning
+      consecutive rounds builds your <i>streak</i>.
+      <br />
+      <br />
+      <strong>Longest Streak</strong> (+3)
+      <br />
+      The player who holds the longest consecutive Yasat streak in the game gets
+      this bonus. If another player matches your streak it stays with you — they
+      must beat it to take it over.
+      <br />
+      <br />
+      <strong>Own</strong> (+3)
+      <br />
+      When Yasat is declared and you have a <i>lower</i> score than the Yasat
+      caller, you "own" them. Your round score is reset to 0.
+      <br />
+      <br />
+      <strong>Owned</strong> (−2)
+      <br />
+      You declared Yasat but another player had a lower score — you got owned.
+      Instead of 0 points you receive 35 penalty points.
+      <br />
+      <br />
+      <strong>Multi-owned</strong> (−1)
+      <br />
+      You got owned by more than one player in the same round. An extra penalty
+      on top of each individual "Owned".
+      <br />
+      <br />
+      <strong>Kill</strong> (+2)
+      <br />
+      When you declare Yasat and another player's total score exceeds 100, they
+      "die" (reset to 0) and you earn a Kill.
+      <br />
+      <br />
+      <strong>Double / Multi / Mega / Monster Kill</strong> (+1 / +2 / +3 / +4)
+      <br />
+      Bonus stats for killing 2, 3, 4, or 5 players in a single round.
+      <br />
+      <br />
+      <strong>Death</strong> (−5)
+      <br />
+      Your total score exceeded 100. You're reset to 0 but lose 5 weighted
+      points.
+      <br />
+      <br />
+      <strong>Nullify 50</strong> (+1) / <strong>Nullify 100</strong> (+2)
+      <br />
+      When your total score lands on exactly 50 or 100, it resets to 0 — a
+      Nullify.
+      <br />
+      <br />
+      <strong>Enable 50</strong> (−1) / <strong>Enable 100</strong> (−1)
+      <br />
+      You declared Yasat and caused another player to land on exactly 50 or 100,
+      enabling their Nullify.
+      <br />
+      <br />
+      <strong>Lullify</strong> (+2)
+      <br />
+      A special Nullify: your score was 69 and the round pushed you to exactly
+      100, which resets to 0.
+      <br />
+      <br />
+      <strong>Enable 69</strong> (0)
+      <br />
+      You declared Yasat and caused a Lullify for another player. Tracked but
+      carries no weighted value.
+      <br />
+      <br />
+      <strong>Contra-own 50</strong> (+2) / <strong>Contra-own 100</strong> (+2)
+      <br />
+      A Nullify that originated from an Own. Your score was 15 and the Own pushed
+      you to 50 (Contra-own 50), or your score was 65 and the Own pushed you to
+      100 (Contra-own 100). You get both the Own and the Contra-own bonus.
+      <br />
+      <br />
+      <h3>Weighted Score</h3>
+      The weighted score is calculated by multiplying each stat's count by its
+      weight and summing them up. The Longest Streak bonus is applied only once
+      (not multiplied by streak length). Custom weight configurations can be set
+      in the game settings.
       <br />
     </Typography>
   );
