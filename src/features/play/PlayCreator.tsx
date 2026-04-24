@@ -8,13 +8,19 @@ import {
   Stack,
   TextField,
   Typography,
+  useTheme,
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import RemoveIcon from '@mui/icons-material/Remove';
+import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import { useAppDispatch } from '../../app/hooks';
-import { goHome, startGame } from '../game/gameSlice';
+import { goHome, startGame, setGameLength } from '../game/gameSlice';
+import { GAME_LENGTH_OPTIONS, GAME_LENGTH_DESCRIPTION, type GameLength } from '../game/gameLength';
 import { initGame } from './playSlice';
 import type { Difficulty } from './ai/botPolicy';
+import logo from '../../yasa7.png';
+import logolight from '../../yasa7_light.png';
+import '../../App.css';
 
 const BOT_NAMES = [
   'Sanne',
@@ -51,9 +57,11 @@ function shuffled<T>(arr: readonly T[]): T[] {
 
 export const PlayCreator: React.FC = () => {
   const dispatch = useAppDispatch();
+  const theme = useTheme();
   const [yourName, setYourName] = React.useState('You');
   const [numBots, setNumBots] = React.useState(2);
   const [difficulty, setDifficulty] = React.useState<Difficulty>('normal');
+  const [length, setLength] = React.useState<GameLength>('classic');
 
   const difficultyHint: Record<Difficulty, string> = {
     easy: 'Easy: bots play simpler and declare Yasat earlier.',
@@ -68,18 +76,35 @@ export const PlayCreator: React.FC = () => {
       isBot: true,
     }));
     const players = [{ name: yourName.trim() || 'You', isBot: false }, ...bots];
-    dispatch(initGame({ players, humanIndex: 0, difficulty }));
+    dispatch(initGame({ players, humanIndex: 0, difficulty, length }));
+    dispatch(setGameLength(length));
     dispatch(startGame());
   };
 
   return (
-    <Stack
-      direction="column"
-      alignItems="center"
-      spacing={3}
-      sx={{ width: '100%', pt: 4, pb: 10, maxWidth: 360, mx: 'auto', px: 2 }}
-    >
-      <Typography variant="h5" color="text.primary">
+    <>
+      <IconButton
+        aria-label="Back to home"
+        color="primary"
+        onClick={() => dispatch(goHome())}
+        sx={{ position: 'absolute', top: 8, left: 8 }}
+      >
+        <ArrowBackIcon />
+      </IconButton>
+      <Box sx={{ display: 'flex', justifyContent: 'center', mt: 2.5, mb: -2 }}>
+        <img
+          src={theme.palette.mode === 'light' ? logolight : logo}
+          className="App-logo-small"
+          alt="logo"
+        />
+      </Box>
+      <Stack
+        direction="column"
+        alignItems="center"
+        spacing={3}
+        sx={{ width: '100%', pt: 4, pb: 10, maxWidth: 360, mx: 'auto', px: 2 }}
+      >
+      <Typography variant="h6" color="primary">
         Play vs. Bots
       </Typography>
 
@@ -129,10 +154,26 @@ export const PlayCreator: React.FC = () => {
         {difficultyHint[difficulty]}
       </Typography>
 
+      <Stack direction="row" spacing={2} alignItems="center">
+        <Typography>Length:</Typography>
+        <Select
+          size="small"
+          value={length}
+          onChange={(e) => setLength(e.target.value as GameLength)}
+        >
+          {GAME_LENGTH_OPTIONS.map((opt) => (
+            <MenuItem key={opt.value} value={opt.value}>
+              {opt.label}
+            </MenuItem>
+          ))}
+        </Select>
+      </Stack>
+
+      <Typography variant="caption" color="text.secondary" sx={{ maxWidth: 320, textAlign: 'center', mt: -1 }}>
+        {GAME_LENGTH_DESCRIPTION[length]}
+      </Typography>
+
       <Box sx={{ display: 'flex', gap: 2, mt: 2 }}>
-        <Button variant="outlined" onClick={() => dispatch(goHome())}>
-          Back
-        </Button>
         <Button variant="contained" size="large" onClick={start}>
           Start Game
         </Button>
@@ -143,6 +184,7 @@ export const PlayCreator: React.FC = () => {
         towards any ranking.
       </Typography>
     </Stack>
+    </>
   );
 };
 

@@ -10,6 +10,7 @@ describe('gameSlice', () => {
     status: 'home',
     view: 'new',
     type: 'unranked',
+    length: 'classic',
   };
 
   describe('initial state', () => {

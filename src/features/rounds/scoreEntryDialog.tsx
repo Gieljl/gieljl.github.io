@@ -55,7 +55,7 @@ const Transition = React.forwardRef(function Transition(
   return <Slide direction="up" ref={ref} {...props} />;
 });
 
-export function ScoreEntryDialog() {
+export function ScoreEntryDialog({ disabled = false }: { disabled?: boolean } = {}) {
   const theme = useTheme();
   const fabColor = theme.palette.mode === "light" ? "#4BCDB9" : "#7df3e1";
   const StyledFab = styled(Fab)({
@@ -481,7 +481,7 @@ export function ScoreEntryDialog() {
 
   return (
     <div>
-      {gameStatus === "started" && (
+      {gameStatus === "started" && !disabled && (
         <StyledFab color="primary" aria-label="add" onClick={handleClickOpen}>
           <AddIcon />
         </StyledFab>

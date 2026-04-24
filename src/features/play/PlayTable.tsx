@@ -30,9 +30,12 @@ import {
   submitAction,
 } from './playSlice';
 import { useBotDriver } from './useBotDriver';
+import { usePlayGameEnd } from './usePlayGameEnd';
 import RoundEndDialog from './RoundEndDialog';
 import { selectStatsWeight } from '../stats/statsSlice';
 import { computePlayWeightedScores } from './weightedScore';
+import { selectPlayLength } from './playSlice';
+import { GameProgressIndicator } from '../game/GameProgressIndicator';
 
 export const PlayTable: React.FC = () => {
   const theme = useTheme();
@@ -47,8 +50,10 @@ export const PlayTable: React.FC = () => {
   const thinking = useAppSelector((s) => s.play.thinkingPlayerId);
   const history = useAppSelector((s) => s.play.roundHistory);
   const statsWeights = useAppSelector(selectStatsWeight);
+  const length = useAppSelector(selectPlayLength);
 
   useBotDriver();
+  usePlayGameEnd();
 
   const [selected, setSelected] = React.useState<Set<string>>(new Set());
 
@@ -397,6 +402,11 @@ export const PlayTable: React.FC = () => {
           </Box>
         </Box>
       )}
+
+      <GameProgressIndicator
+        roundsPlayed={history.length}
+        length={length}
+      />
 
       <RoundEndDialog />
     </Box>

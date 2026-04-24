@@ -35,6 +35,12 @@ import RedoIcon from "@mui/icons-material/Redo";
 import ShareIcon from "@mui/icons-material/Share";
 import { useAppDispatch, useAppSelector } from "./app/hooks";
 import { selectScoreState } from "./features/game/scoreSlice";
+import { selectGameLength } from "./features/game/gameSlice";
+import { isGameLengthMet } from "./features/game/gameLength";
+import { selectPlayers } from "./features/players/playersSlice";
+import { selectStatsWeight } from "./features/stats/statsSlice";
+import { computeRankedGameResults } from "./features/game/rankedStats";
+import { enqueueSnackbar } from "notistack";
 import { useTheme } from "@mui/system";
 import ServiceWorkerWrapper from "./serviceworkerWrapper";
 import { ErrorBoundary } from "react-error-boundary";
@@ -66,6 +72,9 @@ function App() {
   const gameType = useSelector((state: RootState) => state.game.type);
   const dispatch = useAppDispatch();
   const scoreState = useAppSelector(selectScoreState);
+  const gameLength = useAppSelector(selectGameLength);
+  const rankedPlayers = useAppSelector(selectPlayers);
+  const statsWeights = useAppSelector(selectStatsWeight);
   const theme = useTheme();
   const endRankedGame = useEndRankedGame();
 
@@ -93,6 +102,54 @@ function App() {
       window.history.replaceState({}, document.title, window.location.pathname);
     }
   }, []);
+
+  // Ranked / unranked game-length end detection. Compute on every change; show
+  // a one-time toast when the threshold transitions from not-met to met.
+  const isRankedOrUnranked =
+    gameStatus === "started" && gameType !== "play" && gameView !== "play";
+  const rankedRoundsPlayed = Math.max(0, scoreState.past.length - 1);
+  const rankedHighestWeighted = React.useMemo(() => {
+    if (!isRankedOrUnranked) return 0;
+    const rounds = [
+      ...scoreState.past,
+      { playerscores: [...scoreState.present.playerscores] },
+    ];
+    const results = computeRankedGameResults(
+      rankedPlayers,
+      rounds,
+      statsWeights,
+    );
+    return results.reduce(
+      (best, r) => Math.max(best, r.weightedScore),
+      0,
+    );
+  }, [
+    isRankedOrUnranked,
+    scoreState.past,
+    scoreState.present,
+    rankedPlayers,
+    statsWeights,
+  ]);
+  const rankedGameOver =
+    isRankedOrUnranked &&
+    isGameLengthMet(gameLength, rankedRoundsPlayed, rankedHighestWeighted);
+  const rankedNotifiedRef = React.useRef(false);
+  React.useEffect(() => {
+    if (!isRankedOrUnranked) {
+      rankedNotifiedRef.current = false;
+      return;
+    }
+    if (rankedGameOver && !rankedNotifiedRef.current) {
+      rankedNotifiedRef.current = true;
+      enqueueSnackbar(
+        "Game length reached. Score entry disabled — review stats.",
+        { variant: "info", autoHideDuration: 6000 },
+      );
+    }
+    if (!rankedGameOver) {
+      rankedNotifiedRef.current = false;
+    }
+  }, [isRankedOrUnranked, rankedGameOver]);
 
   const handleShareGame = async () => {
     if (isSharing && sessionCode) {
@@ -191,7 +248,9 @@ function App() {
         <Toolbar>
           <Menu toggleColorMode={colorMode.toggleColorMode} />
           
-          {!isViewer && gameView !== "play" && gameType !== "play" && <ScoreEntryDialog />}
+          {!isViewer && gameView !== "play" && gameType !== "play" && (
+            <ScoreEntryDialog disabled={rankedGameOver} />
+          )}
           <Box sx={{ flexGrow: 1 }} />
           {gameStatus === "started" && !isViewer && gameView !== "play" && gameType !== "play" && (
             <>

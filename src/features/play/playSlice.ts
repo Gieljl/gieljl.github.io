@@ -11,6 +11,7 @@ import type { RootState } from '../../app/store';
 import { Difficulty } from './ai/botPolicy';
 import { PlayAction, PlayerId, RoundState, applyAction, startRound } from './engine/round';
 import { PerPlayerRoundResult, scoreRound } from './engine/scoring';
+import type { GameLength } from '../game/gameLength';
 
 export interface PlaySetupEntry {
   name: string;
@@ -40,6 +41,10 @@ export interface PlayState {
   humanId: PlayerId | null;
   dealerId: PlayerId | null;
   difficulty: Difficulty;
+  /** Configured length condition for this play game. */
+  length: GameLength;
+  /** True once the configured game-length threshold is met. */
+  gameOver: boolean;
   cumulativeTotals: Record<PlayerId, number>;
   roundHistory: StoredRoundResult[];
   /** Set while the UI is waiting for a bot to move (to render "thinking"). */
@@ -59,6 +64,8 @@ const initialState: PlayState = {
   humanId: null,
   dealerId: null,
   difficulty: 'normal',
+  length: 'classic',
+  gameOver: false,
   cumulativeTotals: {},
   roundHistory: [],
   thinkingPlayerId: null,
@@ -74,9 +81,9 @@ export const playSlice = createSlice({
   reducers: {
     initGame: (
       state,
-      action: PayloadAction<{ players: PlaySetupEntry[]; humanIndex: number; difficulty?: Difficulty; seed?: number }>,
+      action: PayloadAction<{ players: PlaySetupEntry[]; humanIndex: number; difficulty?: Difficulty; length?: GameLength; seed?: number }>,
     ) => {
-      const { players, humanIndex, difficulty = 'normal', seed } = action.payload;
+      const { players, humanIndex, difficulty = 'normal', length = 'classic', seed } = action.payload;
       const seating: PlayerId[] = players.map(() => nanoid(6));
       const playerNames: Record<PlayerId, string> = {};
       const totals: Record<PlayerId, number> = {};
@@ -96,6 +103,8 @@ export const playSlice = createSlice({
       state.humanId = humanId;
       state.dealerId = dealerId;
       state.difficulty = difficulty;
+      state.length = length;
+      state.gameOver = false;
       state.cumulativeTotals = totals;
       state.roundHistory = [];
       state.thinkingPlayerId = null;
@@ -166,6 +175,10 @@ export const playSlice = createSlice({
       state.thinkingPlayerId = action.payload;
     },
 
+    markGameOver: (state) => {
+      state.gameOver = true;
+    },
+
     clearError: (state) => {
       state.lastError = null;
     },
@@ -223,6 +236,7 @@ export const {
   submitAction,
   beginNextRound,
   setThinking,
+  markGameOver,
   clearError,
   clearRoundResult,
   endGame,
@@ -244,3 +258,5 @@ export const selectPlayNames = (s: RootState) => s.play.playerNames;
 export const selectPlayLastError = (s: RootState) => s.play.lastError;
 export const selectPlayLastRoundResult = (s: RootState) => s.play.lastRoundResult;
 export const selectPlayLog = (s: RootState) => s.play.log;
+export const selectPlayLength = (s: RootState) => s.play.length;
+export const selectPlayGameOver = (s: RootState) => s.play.gameOver;

@@ -10,6 +10,8 @@ import { StatsFullScreenDialog } from "../stats/StatsDialog";
 import CheckIcon from "@mui/icons-material/Check";
 import { RoundHistoryDialog } from "../rounds/RoundHistoryDialog";
 import { selectStatsWeight } from "../stats/statsSlice";
+import { selectGameLength } from "../game/gameSlice";
+import { GameProgressIndicator } from "../game/GameProgressIndicator";
 import ArrowDropDownIcon from "@mui/icons-material/ArrowDropDown";
 import logo from "../../yasa7.png";
 import logolight from "../../yasa7_light.png";
@@ -33,6 +35,7 @@ export function PlayerRanking() {
   const players = useAppSelector(selectPlayers);
   const currentScores = useAppSelector(selectScores);
   const scoreHistory = useAppSelector((state: RootState) => state.scores.past);
+  const gameLength = useAppSelector(selectGameLength);
   const [showStats, setShowStats] = useState(false);
   const [showLastRoundInfo, setShowLastRoundInfo] = useState(false);
 
@@ -357,6 +360,10 @@ export function PlayerRanking() {
             showLastRoundInfo={showLastRoundInfo}
           />
         ))}
+        <GameProgressIndicator
+          roundsPlayed={Math.max(0, scoreHistory.length - 1)}
+          length={gameLength}
+        />
         <Offset />
       </Stack>
     </>

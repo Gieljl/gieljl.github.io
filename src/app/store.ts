@@ -74,7 +74,7 @@ const reducers: typeof combinedReducers = (state, action) => {
  * that older clients' storage cannot satisfy. The matching migration should
  * repair the state (or return `undefined` to force a fresh initial state).
  */
-const PERSIST_VERSION = 3;
+const PERSIST_VERSION = 4;
 
 type PersistedRootState = PersistedState &
   Record<string, any>;
@@ -124,6 +124,20 @@ const migrations: Record<number, (state: any) => any> = {
         status: 'home',
         view: allowedViews.includes(g.view) ? g.view : 'new',
         type: allowedTypes.includes(g.type) ? g.type : 'unranked',
+      },
+    } as PersistedRootState;
+  },
+  // v4: introduced game.length (bo10 / firstTo10 / classic). Default to
+  // 'classic' for any persisted state missing it.
+  4: (state: PersistedRootState | undefined): PersistedRootState | undefined => {
+    if (!state) return state;
+    const g = (state.game as any) ?? {};
+    const allowedLengths = ['bo10', 'firstTo10', 'classic'];
+    return {
+      ...state,
+      game: {
+        ...g,
+        length: allowedLengths.includes(g.length) ? g.length : 'classic',
       },
     } as PersistedRootState;
   },

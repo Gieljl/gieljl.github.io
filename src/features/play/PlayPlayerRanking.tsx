@@ -25,21 +25,28 @@ import {
 import CheckIcon from '@mui/icons-material/Check';
 import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown';
 import StyleIcon from '@mui/icons-material/Style';
+import ExitToAppIcon from '@mui/icons-material/ExitToApp';
 import { SnackbarKey, closeSnackbar, enqueueSnackbar } from 'notistack';
 import { useAppDispatch, useAppSelector } from '../../app/hooks';
-import { setGameView } from '../game/gameSlice';
+import { goHome, setGameView } from '../game/gameSlice';
+import { ActionCreators } from 'redux-undo';
 import { PlayerScoreCard } from '../players/PlayerScoreCard';
 import type { PlayerStats } from '../players/Ranking';
 import type { player } from '../players/playersSlice';
 import type { ScoreState, playerScore } from '../game/scoreSlice';
 import { selectStatsWeight } from '../stats/statsSlice';
+import { GameProgressIndicator } from '../game/GameProgressIndicator';
 import {
+  endGame,
+  selectPlayGameOver,
+  selectPlayLength,
   selectPlayNames,
   selectPlayTotals,
 } from './playSlice';
 import type { PlayerId } from './engine/round';
 import type { RootState } from '../../app/store';
 import { EVENT_TO_STAT_NAME } from './eventLabels';
+import { usePlayGameEnd } from './usePlayGameEnd';
 import logo from '../../yasa7.png';
 import logolight from '../../yasa7_light.png';
 
@@ -54,6 +61,8 @@ export function PlayPlayerRanking() {
   const statsWeigts = useAppSelector(selectStatsWeight);
   const names = useAppSelector(selectPlayNames);
   const totals = useAppSelector(selectPlayTotals);
+  const gameOver = useAppSelector(selectPlayGameOver);
+  const length = useAppSelector(selectPlayLength);
   const seating = useAppSelector((s: RootState) => s.play.seating);
   const humanId = useAppSelector((s: RootState) => s.play.humanId);
   const history = useAppSelector((s: RootState) => s.play.roundHistory);
@@ -61,6 +70,15 @@ export function PlayPlayerRanking() {
 
   const [showStats, setShowStats] = useState(false);
   const [showLastRoundInfo, setShowLastRoundInfo] = useState(false);
+
+  // Detect end-of-game (game-length met) and switch to this view.
+  usePlayGameEnd();
+
+  const handleReturnHome = () => {
+    dispatch(endGame());
+    dispatch(goHome());
+    dispatch(ActionCreators.clearHistory());
+  };
 
   // -- Adapter: synthesize playersSlice-compatible list --------------------
   // Numeric ids derived from seating index (stable for this game).
@@ -294,17 +312,19 @@ export function PlayPlayerRanking() {
             alt="logo"
           />
 
-          <Tooltip title="Back to table">
+          <Tooltip title={gameOver ? 'Return to home' : 'Back to table'}>
             <Button
               size="small"
               variant="contained"
               color="primary"
-              startIcon={<StyleIcon />}
-              onClick={() => dispatch(setGameView('play'))}
-              aria-label="Back to table"
+              startIcon={gameOver ? <ExitToAppIcon /> : <StyleIcon />}
+              onClick={() =>
+                gameOver ? handleReturnHome() : dispatch(setGameView('play'))
+              }
+              aria-label={gameOver ? 'Return to home' : 'Back to table'}
               sx={{ ml: 1 }}
             >
-              Table
+              {gameOver ? 'Home' : 'Table'}
             </Button>
           </Tooltip>
 
@@ -363,6 +383,11 @@ export function PlayPlayerRanking() {
             sx={{ alignSelf: 'center' }}
           />
         )}
+
+        <GameProgressIndicator
+          roundsPlayed={history.length}
+          length={length}
+        />
 
         <Offset />
       </Stack>

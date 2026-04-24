@@ -17,8 +17,8 @@ import {
   submitAction,
 } from './playSlice';
 
-const MIN_DELAY_MS = 400;
-const MAX_DELAY_MS = 900;
+const MIN_DELAY_MS = 1200;
+const MAX_DELAY_MS = 1700;
 
 export function useBotDriver(): void {
   const dispatch = useAppDispatch();
