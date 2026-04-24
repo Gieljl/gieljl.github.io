@@ -34,6 +34,12 @@ export type PlayerScoreCardProps = {
   roundWeigtedScore: number;
   roundScoreChange: number;
   showLastRoundInfo: boolean;
+  /**
+   * Optional override for previous-round streak lookup. If provided, the card
+   * uses this value instead of reading `state.scores.past` — useful for
+   * contexts that don't write to scoreSlice (e.g. the Play-vs-Bots feature).
+   */
+  previousStreak?: number;
 };
 
 export const PlayerScoreCard = ({
@@ -48,6 +54,7 @@ export const PlayerScoreCard = ({
   roundWeigtedScore,
   roundScoreChange,
   showLastRoundInfo,
+  previousStreak,
 }: PlayerScoreCardProps) => {
   function stringAvatar(name: string) {
     return {
@@ -209,16 +216,18 @@ export const PlayerScoreCard = ({
   const previousRound = scoreHistory[scoreHistory.length - 1];
 
   const getRoundBreakdownStreakinfo = () => {
-    const previousStreak =
-      previousRound?.playerscores.find((score) => score.id === player.id)
-        ?.yasatStreak ?? 0;
+    const prevStreak =
+      previousStreak !== undefined
+        ? previousStreak
+        : previousRound?.playerscores.find((score) => score.id === player.id)
+            ?.yasatStreak ?? 0;
     const currentStreak = streakLength ?? 0;
 
     // check if streak is ended this round
-    if (previousStreak > 0 && currentStreak === 0) {
+    if (prevStreak > 0 && currentStreak === 0) {
       return "Ended";
     }
-    if (currentStreak > previousStreak) {
+    if (currentStreak > prevStreak) {
       return "+1";
     }
   };

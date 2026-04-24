@@ -8,6 +8,7 @@
 import { useEffect, useRef } from 'react';
 import { useAppDispatch, useAppSelector } from '../../app/hooks';
 import { chooseAction } from './ai/botPolicy';
+import { selectStatsWeight } from '../stats/statsSlice';
 import {
   selectPlayCurrentPlayerId,
   selectPlayHumanId,
@@ -25,6 +26,9 @@ export function useBotDriver(): void {
   const humanId = useAppSelector(selectPlayHumanId);
   const currentId = useAppSelector(selectPlayCurrentPlayerId);
   const difficulty = useAppSelector((s) => s.play.difficulty);
+  const totals = useAppSelector((s) => s.play.cumulativeTotals);
+  const history = useAppSelector((s) => s.play.roundHistory);
+  const statWeights = useAppSelector(selectStatsWeight);
 
   const pendingTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const tokenRef = useRef(0);
@@ -52,7 +56,11 @@ export function useBotDriver(): void {
     pendingTimer.current = setTimeout(() => {
       if (myToken !== tokenRef.current) return; // stale
       try {
-        const action = chooseAction(round, currentId, difficulty);
+        const action = chooseAction(round, currentId, difficulty, {
+          totalsBefore: totals,
+          statWeights,
+          roundHistory: history,
+        });
         dispatch(submitAction(action));
       } catch {
         // Swallow — a fresh effect will re-drive the state.
@@ -67,5 +75,5 @@ export function useBotDriver(): void {
         pendingTimer.current = null;
       }
     };
-  }, [round, currentId, humanId, difficulty, dispatch]);
+  }, [round, currentId, humanId, difficulty, totals, history, statWeights, dispatch]);
 }

@@ -14,9 +14,22 @@ import {
   isThreeOfAKind,
   pickableFromDiscard,
 } from '../engine/combos';
-import { PlayAction, RoundState } from '../engine/round';
+import { scoreRound, type RoundStatEvent } from '../engine/scoring';
+import type { PlayerId, PlayAction, RoundState } from '../engine/round';
+import { EVENT_TO_STAT_NAME } from '../eventLabels';
 
-export type Difficulty = 'easy' | 'normal';
+export type Difficulty = 'easy' | 'normal' | 'godlike';
+
+export interface BotPolicyContext {
+  /** Tournament totals before this action (used for round scoring simulation). */
+  totalsBefore?: Record<PlayerId, number>;
+  /** Dynamic stat weights configured in stats view. */
+  statWeights?: Array<{ statName: string; weight: number }>;
+  /** Past round events for streak-bonus projection. */
+  roundHistory?: Array<{
+    perPlayer: Array<{ playerId: PlayerId; events: RoundStatEvent[] }>;
+  }>;
+}
 
 interface DiscardCandidate {
   cards: Card[];
@@ -29,6 +42,7 @@ export function chooseAction(
   state: RoundState,
   botId: string,
   difficulty: Difficulty = 'normal',
+  context: BotPolicyContext = {},
 ): PlayAction {
   const me = state.players.find((p) => p.id === botId);
   if (!me) throw new Error('Bot not in state');
@@ -38,17 +52,25 @@ export function chooseAction(
 
   // 1. Start-of-turn Yasat check.
   const myPoints = handPoints(me.hand);
-  if (myPoints <= 7 && shouldDeclareYasat(state, botId, difficulty)) {
+  if (myPoints <= 7 && shouldDeclareYasat(state, botId, difficulty, context)) {
     return { type: 'declareYasat' };
+  }
+
+  if (difficulty === 'godlike') {
+    const hard = chooseHardDiscardAndDraw(state, me.hand, context);
+    return {
+      type: 'discardThenDraw',
+      discard: hard.cards,
+      drawFrom: hard.drawFrom,
+    };
   }
 
   // 2. Build candidate discards and pick the highest-value one.
   const candidates = enumerateDiscards(me.hand);
-  // Always fall back to discarding the single highest card.
-  const chosen = pickBestDiscard(candidates, me.hand);
+  const chosen = pickBestDiscard(candidates, me.hand, context);
 
   // 3. Choose draw source.
-  const drawFrom = chooseDraw(state, me.hand, chosen.cards);
+  const drawFrom = chooseDraw(state, me.hand, chosen.cards, context);
 
   return {
     type: 'discardThenDraw',
@@ -57,17 +79,213 @@ export function chooseAction(
   };
 }
 
-function shouldDeclareYasat(state: RoundState, botId: string, difficulty: Difficulty): boolean {
+function shouldDeclareYasat(
+  state: RoundState,
+  botId: string,
+  difficulty: Difficulty,
+  context: BotPolicyContext,
+): boolean {
   const me = state.players.find((p) => p.id === botId)!;
   const myPts = handPoints(me.hand);
+
+  // If we have full context, evaluate this exact declare against weighted stats.
+  const simulated = evaluateDeclareWeightedDelta(state, botId, context);
+  if (simulated !== null) {
+    // Godlike accepts neutral declarations to secure safe outcomes, while normal
+    // requires strictly positive gain.
+    if (difficulty === 'godlike') return simulated >= 0;
+    if (simulated > 0) return true;
+    return false;
+  }
+
   // Opponents' card counts: more cards → higher chance we're ahead.
   const opponents = state.players.filter((p) => p.id !== botId);
   // Rough "safe" thresholds:
   // - easy: call at ≤ 7 whenever possible
   // - normal: call when we have ≤ 4, OR ≤ 7 and at least one opponent holds ≥ 3 cards
+  // - godlike: stricter unless very low, prefers value-building turns
   if (difficulty === 'easy') return true;
+  if (difficulty === 'godlike') {
+    if (myPts <= 3) return true;
+    if (myPts <= 5) return opponents.some((o) => o.hand.length >= 3);
+    return false;
+  }
   if (myPts <= 4) return true;
   return opponents.some((o) => o.hand.length >= 3);
+}
+
+function chooseHardDiscardAndDraw(
+  state: RoundState,
+  hand: readonly Card[],
+  context: BotPolicyContext,
+): {
+  cards: Card[];
+  shape: NonNullable<ReturnType<typeof classifyDiscard>>;
+  drawFrom: 'deck' | { fromDiscardId: string };
+} {
+  const candidates = getAllDiscardCandidates(enumerateDiscards(hand), hand);
+  const shapeWeight: Record<string, number> = {
+    'four-of-a-kind': 2,
+    'three-of-a-kind': 1.5,
+    straight: 1,
+    pair: 0.5,
+    single: 0,
+  };
+
+  let best: {
+    cards: Card[];
+    shape: NonNullable<ReturnType<typeof classifyDiscard>>;
+    drawFrom: 'deck' | { fromDiscardId: string };
+    score: number;
+  } | null = null;
+
+  for (const cand of candidates) {
+    const discardIds = new Set(cand.cards.map((x) => x.id));
+    const remaining = hand.filter((x) => !discardIds.has(x.id));
+    const bestDraw = evaluateBestDrawOption(state, remaining, context);
+    const score = bestDraw.score + cand.value * 0.2 + shapeWeight[cand.shape];
+    if (!best || score > best.score) {
+      best = {
+        cards: cand.cards,
+        shape: cand.shape,
+        drawFrom: bestDraw.drawFrom,
+        score,
+      };
+    }
+  }
+
+  if (!best) {
+    const fallback = [...hand].sort((a, b) => cardValue(b, 1) - cardValue(a, 1))[0];
+    return { cards: [fallback], shape: 'single', drawFrom: 'deck' };
+  }
+
+  return {
+    cards: best.cards,
+    shape: best.shape,
+    drawFrom: best.drawFrom,
+  };
+}
+
+function evaluateBestDrawOption(
+  state: RoundState,
+  remaining: readonly Card[],
+  context: BotPolicyContext,
+): { drawFrom: 'deck' | { fromDiscardId: string }; score: number } {
+  const topPly = state.discardPlies[state.discardPlies.length - 1] ?? [];
+  const pickable = pickableFromDiscard(topPly);
+
+  let best: { drawFrom: 'deck' | { fromDiscardId: string }; score: number } | null = null;
+
+  for (const cand of pickable) {
+    const resulting = [...remaining, cand];
+    const score = evaluateHandForStats(resulting, context) + drawSynergyBonus(remaining, cand);
+    if (!best || score > best.score) {
+      best = { drawFrom: { fromDiscardId: cand.id }, score };
+    }
+  }
+
+  if (state.drawPile.length > 0) {
+    const topDeck = state.drawPile[0];
+    const deckScore =
+      evaluateHandForStats([...remaining, topDeck], context) + drawSynergyBonus(remaining, topDeck);
+    if (!best || deckScore >= best.score) {
+      best = { drawFrom: 'deck', score: deckScore };
+    }
+  } else {
+    const deckScore = estimateDeckDrawScore(remaining, context);
+    if (!best || deckScore >= best.score) {
+      best = { drawFrom: 'deck', score: deckScore };
+    }
+  }
+
+  return best ?? { drawFrom: 'deck', score: -Infinity };
+}
+
+function getAllDiscardCandidates(
+  candidates: DiscardCandidate[],
+  hand: readonly Card[],
+): DiscardCandidate[] {
+  return [
+    ...candidates,
+    ...hand.map((c) => ({ cards: [c], shape: 'single' as const, value: cardValue(c, 1) })),
+  ];
+}
+
+function evaluateDeclareWeightedDelta(
+  state: RoundState,
+  botId: string,
+  context: BotPolicyContext,
+): number | null {
+  if (!context.totalsBefore || !context.statWeights) return null;
+
+  const ended: RoundState = {
+    ...state,
+    phase: 'ended',
+    callerId: botId,
+  };
+
+  let outcome;
+  try {
+    outcome = scoreRound({ state: ended, totalsBefore: context.totalsBefore });
+  } catch {
+    return null;
+  }
+
+  const mine = outcome.perPlayer.find((p) => p.playerId === botId);
+  if (!mine) return null;
+
+  const weightsByStat = new Map(context.statWeights.map((w) => [w.statName, w.weight]));
+  let delta = 0;
+  for (const ev of mine.events) {
+    const statName = EVENT_TO_STAT_NAME[ev];
+    delta += weightsByStat.get(statName) ?? 0;
+  }
+
+  // Project Longest Streak ownership change if this declare contributes a new
+  // Yasat event. The weighted helper grants this bonus once to the first owner.
+  const longestWeight = weightsByStat.get('Longest Streak') ?? 0;
+  if (longestWeight !== 0 && context.roundHistory) {
+    const beforeOwner = getLongestStreakOwnerFromHistory(context.roundHistory);
+    const projectedRound = {
+      perPlayer: outcome.perPlayer.map((p) => ({ playerId: p.playerId, events: p.events })),
+    };
+    const afterOwner = getLongestStreakOwnerFromHistory([...context.roundHistory, projectedRound]);
+    const before = beforeOwner === botId ? longestWeight : 0;
+    const after = afterOwner === botId ? longestWeight : 0;
+    delta += after - before;
+  }
+
+  return delta;
+}
+
+function getLongestStreakOwnerFromHistory(
+  rounds: Array<{ perPlayer: Array<{ playerId: PlayerId; events: RoundStatEvent[] }> }>,
+): PlayerId | null {
+  const allPlayerIds = new Set<PlayerId>();
+  for (const r of rounds) {
+    for (const p of r.perPlayer) allPlayerIds.add(p.playerId);
+  }
+  const playerIds = Array.from(allPlayerIds);
+
+  const streakById: Record<string, number> = {};
+  for (const id of playerIds) streakById[id] = 0;
+
+  let best = 1;
+  let owner: PlayerId | null = null;
+
+  for (const r of rounds) {
+    const byId = new Map(r.perPlayer.map((p) => [p.playerId, p]));
+    for (const id of playerIds) {
+      const hasYasat = byId.get(id)?.events.includes('yasat') ?? false;
+      streakById[id] = hasYasat ? streakById[id] + 1 : 0;
+      if (streakById[id] > best) {
+        best = streakById[id];
+        owner = id;
+      }
+    }
+  }
+
+  return owner;
 }
 
 function enumerateDiscards(hand: readonly Card[]): DiscardCandidate[] {
@@ -148,33 +366,44 @@ function sum(cards: readonly Card[]): number {
 function pickBestDiscard(
   candidates: DiscardCandidate[],
   hand: readonly Card[],
+  context: BotPolicyContext,
 ): { cards: Card[]; shape: NonNullable<ReturnType<typeof classifyDiscard>> } {
-  // Shape preference weights ensure we prefer bigger removals first.
+  const allCandidates: DiscardCandidate[] = getAllDiscardCandidates(candidates, hand);
+
+  // Shape bias is now mild; resulting hand quality drives most of the choice.
   const shapeWeight: Record<string, number> = {
-    'four-of-a-kind': 1000,
-    'three-of-a-kind': 500,
-    straight: 250,
-    pair: 100,
+    'four-of-a-kind': 4,
+    'three-of-a-kind': 3,
+    straight: 2,
+    pair: 1,
     single: 0,
   };
 
   let best: DiscardCandidate | null = null;
-  for (const c of candidates) {
-    const score = shapeWeight[c.shape] + c.value + c.cards.length * 0.1;
-    const bestScore = best ? shapeWeight[best.shape] + best.value + best.cards.length * 0.1 : -Infinity;
-    if (score > bestScore) best = c;
+  let bestScore = -Infinity;
+  for (const c of allCandidates) {
+    const discardIds = new Set(c.cards.map((x) => x.id));
+    const remaining = hand.filter((x) => !discardIds.has(x.id));
+    const handScore = evaluateHandForStats(remaining, context);
+    const score = handScore + c.value * 0.35 + shapeWeight[c.shape];
+    if (score > bestScore) {
+      best = c;
+      bestScore = score;
+    }
   }
-  if (best) return { cards: best.cards, shape: best.shape };
 
-  // Fallback: discard the single highest card.
-  const sorted = [...hand].sort((a, b) => cardValue(b, 1) - cardValue(a, 1));
-  return { cards: [sorted[0]], shape: 'single' };
+  if (!best) {
+    const sorted = [...hand].sort((a, b) => cardValue(b, 1) - cardValue(a, 1));
+    return { cards: [sorted[0]], shape: 'single' };
+  }
+  return { cards: best.cards, shape: best.shape };
 }
 
 function chooseDraw(
   state: RoundState,
   hand: readonly Card[],
   discarding: readonly Card[],
+  context: BotPolicyContext,
 ): 'deck' | { fromDiscardId: string } {
   const topPly = state.discardPlies[state.discardPlies.length - 1] ?? [];
   const pickable = pickableFromDiscard(topPly);
@@ -182,21 +411,97 @@ function chooseDraw(
   const discardIds = new Set(discarding.map((c) => c.id));
   const remaining = hand.filter((c) => !discardIds.has(c.id));
 
+  const deckEstimate = estimateDeckDrawScore(remaining, context);
+
   let bestPick: Card | null = null;
   let bestScore = -Infinity;
   for (const cand of pickable) {
-    const candValue = cardValue(cand, 1);
-    // Good: makes a pair with something in remaining
-    const makesPair = remaining.some((r) => r.rank === cand.rank);
-    // Good: low point card (≤ 3)
-    const isLow = candValue <= 3;
-    if (!makesPair && !isLow) continue;
-    const score = (makesPair ? 50 : 0) + (isLow ? 10 : 0) - candValue;
+    const resulting = [...remaining, cand];
+    const score = evaluateHandForStats(resulting, context) + drawSynergyBonus(remaining, cand);
     if (score > bestScore) {
       bestScore = score;
       bestPick = cand;
     }
   }
-  if (bestPick) return { fromDiscardId: bestPick.id };
+
+  // Only take from discard when it projects at least as good as deck on
+  // weighted-stat hand quality; otherwise keep uncertainty upside via deck.
+  if (bestPick && bestScore >= deckEstimate) return { fromDiscardId: bestPick.id };
   return 'deck';
+}
+
+function evaluateHandForStats(hand: readonly Card[], context: BotPolicyContext): number {
+  const yasatWeight = getWeight(context, 'Yasat', 1);
+  const ownWeight = getWeight(context, 'Own', 3);
+  const ownedWeight = getWeight(context, 'Owned', -2);
+  const deathWeight = getWeight(context, 'Death', -5);
+
+  const pts = handPoints(hand);
+  const lowCount = hand.filter((c) => cardValue(c, 1) <= 3).length;
+  const highCount = hand.filter((c) => cardValue(c, 1) >= 10).length;
+
+  // Yasat pressure combines direct Yasat reward with avoiding Owned/Death.
+  const pointPressure =
+    1 +
+    Math.max(0, yasatWeight) * 0.7 +
+    Math.max(0, -ownedWeight) * 0.5 +
+    Math.max(0, -deathWeight) * 0.15 +
+    Math.max(0, ownWeight) * 0.2;
+
+  let score = -pts * pointPressure;
+  score += lowCount * 2.5;
+  score -= highCount * 1.5;
+
+  if (pts <= 7) score += 8 + Math.max(0, yasatWeight) * 3;
+  if (pts <= 4) score += 6 + Math.max(0, yasatWeight) * 2;
+
+  const futureCombos = enumerateDiscards(hand);
+  const comboPotential = futureCombos.reduce((acc, c) => {
+    switch (c.shape) {
+      case 'four-of-a-kind':
+        return acc + 4;
+      case 'three-of-a-kind':
+        return acc + 3;
+      case 'straight':
+        return acc + 2;
+      case 'pair':
+        return acc + 1;
+      default:
+        return acc;
+    }
+  }, 0);
+  score += comboPotential * 0.25;
+
+  return score;
+}
+
+function estimateDeckDrawScore(remaining: readonly Card[], context: BotPolicyContext): number {
+  // Deterministic sample approximating unknown deck quality.
+  const samples: Card[] = [
+    { id: '__sA', suit: 'spades', rank: 'A' },
+    { id: '__h4', suit: 'hearts', rank: '4' },
+    { id: '__d8', suit: 'diamonds', rank: '8' },
+    { id: '__cK', suit: 'clubs', rank: 'K' },
+  ];
+  const total = samples.reduce((acc, s) => acc + evaluateHandForStats([...remaining, s], context), 0);
+  return total / samples.length;
+}
+
+function getWeight(context: BotPolicyContext, statName: string, fallback: number): number {
+  return context.statWeights?.find((w) => w.statName === statName)?.weight ?? fallback;
+}
+
+function drawSynergyBonus(remaining: readonly Card[], cand: Card): number {
+  const resulting = [...remaining, cand];
+  let bonus = 0;
+
+  if (remaining.some((c) => c.rank === cand.rank)) bonus += 3;
+  if (cardValue(cand, 1) <= 3) bonus += 1.5;
+
+  const formsStraight = enumerateDiscards(resulting).some(
+    (d) => d.shape === 'straight' && d.cards.some((c) => c.id === cand.id),
+  );
+  if (formsStraight) bonus += 4;
+
+  return bonus;
 }

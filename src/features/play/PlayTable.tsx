@@ -3,15 +3,20 @@ import {
   Box,
   Button,
   Chip,
+  IconButton,
   Stack,
   Tooltip,
   Typography,
   useTheme,
 } from '@mui/material';
-import { useSnackbar } from 'notistack';
+import QueryStatsIcon from '@mui/icons-material/QueryStats';
+import ExitToAppIcon from '@mui/icons-material/ExitToApp';
+import { useSnackbar, closeSnackbar } from 'notistack';
 import { useAppDispatch, useAppSelector } from '../../app/hooks';
-import { goHome } from '../game/gameSlice';
+import { goHome, setGameView } from '../game/gameSlice';
 import PlayingCard from './PlayingCard';
+import logo from '../../yasa7.png';
+import logolight from '../../yasa7_light.png';
 import { classifyDiscard, pickableFromDiscard } from './engine/combos';
 import { Card, handPoints } from './engine/cards';
 import {
@@ -26,6 +31,8 @@ import {
 } from './playSlice';
 import { useBotDriver } from './useBotDriver';
 import RoundEndDialog from './RoundEndDialog';
+import { selectStatsWeight } from '../stats/statsSlice';
+import { computePlayWeightedScores } from './weightedScore';
 
 export const PlayTable: React.FC = () => {
   const theme = useTheme();
@@ -38,13 +45,14 @@ export const PlayTable: React.FC = () => {
   const log = useAppSelector(selectPlayLog);
   const totals = useAppSelector((s) => s.play.cumulativeTotals);
   const thinking = useAppSelector((s) => s.play.thinkingPlayerId);
+  const history = useAppSelector((s) => s.play.roundHistory);
+  const statsWeights = useAppSelector(selectStatsWeight);
 
   useBotDriver();
 
   const [selected, setSelected] = React.useState<Set<string>>(new Set());
 
   React.useEffect(() => {
-    // Clear selection whenever turn changes.
     setSelected(new Set());
   }, [currentId, round?.phase]);
 
@@ -117,10 +125,91 @@ export const PlayTable: React.FC = () => {
     dispatch(submitAction({ type: 'declareYasat' }));
   };
 
+  const onClickLeaveGame = () => {
+    enqueueSnackbar('Leave the current game and return to the start screen?', {
+      variant: 'warning',
+      persist: true,
+      action: (key) => (
+        <>
+          <Button
+            color="inherit"
+            onClick={() => {
+              dispatch(endGame());
+              dispatch(goHome());
+              closeSnackbar(key);
+            }}
+          >
+            Yes
+          </Button>
+          <Button color="inherit" onClick={() => closeSnackbar(key)}>
+            No
+          </Button>
+        </>
+      ),
+    });
+  };
+
   const opponents = round.players.filter((p) => p.id !== humanId);
 
+  // Weighted score per player, computed exactly like PlayPlayerRanking /
+  // PlayerRanking so the chip matches the stats view.
+  const weightedById = computePlayWeightedScores(
+    history,
+    round.players.map((p) => p.id),
+    statsWeights,
+  );
+
   return (
-    <Box sx={{ width: '100%', pb: 10, pt: 1, px: 0 }}>
+    <Box sx={{ width: '100%', pb: 10, pt: 0, px: 0 }}>
+      {/* Top bar with logo, stats + quit buttons (matches PlayPlayerRanking) */}
+      <Stack
+        direction="row"
+        sx={{
+          minWidth: '100%',
+          zIndex: 2,
+          maxWidth: '100%',
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          overflowX: 'visible',
+          overflowY: 'hidden',
+          bgcolor: theme.palette.background.paper,
+          '&::-webkit-scrollbar': { display: 'none' },
+        }}
+      >
+        <Stack direction="row" mt={1} alignItems="center" spacing={1} sx={{ pl: 1, pr: 1, flex: 1 }}>
+          <img
+            src={theme.palette.mode === 'light' ? logolight : logo}
+            className="App-logo-small"
+            alt="logo"
+          />
+          <Tooltip title="Show weighted stats view">
+            <Button
+              size="small"
+              variant="contained"
+              color="primary"
+              startIcon={<QueryStatsIcon />}
+              onClick={() => dispatch(setGameView('new'))}
+            >
+              Stats
+            </Button>
+          </Tooltip>
+          <Box sx={{ flex: 1 }} />
+          <Tooltip title="Leave game">
+            <IconButton
+              size="small"
+              sx={{ color: theme.palette.primary.main }}
+              onClick={onClickLeaveGame}
+              aria-label="Leave game"
+            >
+              <ExitToAppIcon />
+            </IconButton>
+          </Tooltip>
+        </Stack>
+      </Stack>
+
+      <Box sx={{ height: 64 }} />
+
       {/* Opponents row */}
       <Stack
         direction="row"
@@ -133,17 +222,26 @@ export const PlayTable: React.FC = () => {
       >
         {opponents.map((p) => (
           <Stack key={p.id} alignItems="center" spacing={0.5} sx={{ minWidth: 0 }}>
-            <Typography
-              variant="body2"
-              sx={{
-                fontWeight: currentId === p.id ? 700 : 400,
-                color: currentId === p.id ? theme.palette.primary.main : 'text.primary',
-                whiteSpace: 'nowrap',
-              }}
-            >
-              {p.name}
-              {thinking === p.id && ' …'}
-            </Typography>
+            <Stack direction="row" spacing={0.5} alignItems="center">
+              <Typography
+                variant="body2"
+                sx={{
+                  fontWeight: currentId === p.id ? 700 : 400,
+                  color: currentId === p.id ? theme.palette.primary.main : 'text.primary',
+                  whiteSpace: 'nowrap',
+                }}
+              >
+                {p.name}
+                {thinking === p.id && ' …'}
+              </Typography>
+              <Chip
+                size="small"
+                label={weightedById[p.id] ?? 0}
+                color="primary"
+                variant="filled"
+                sx={{ height: 18, '& .MuiChip-label': { px: 0.75, fontSize: 11 } }}
+              />
+            </Stack>
             <Stack direction="row" spacing={-1.5}>
               {p.hand.map((c) => (
                 <PlayingCard key={c.id} faceDown size="sm" />
@@ -175,7 +273,7 @@ export const PlayTable: React.FC = () => {
         </Stack>
 
         <Stack alignItems="center">
-          <Stack direction="row" spacing={-1.5}>
+          <Stack direction="row" spacing={pickable.size > 1 ? 0.5 : -1.5}>
             {topPly.length === 0 ? (
               <Box sx={{ width: 62, height: 88 }} />
             ) : (
@@ -204,7 +302,7 @@ export const PlayTable: React.FC = () => {
 
       {/* Your hand */}
       <Box sx={{ px: 1 }}>
-        <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 1 }}>
+        <Stack direction="row" spacing={1} alignItems="center" justifyContent="center" sx={{ mb: 2.5 }}>
           <Typography
             variant="subtitle2"
             sx={{
@@ -212,19 +310,34 @@ export const PlayTable: React.FC = () => {
               color: isMyTurn ? theme.palette.primary.main : 'text.primary',
             }}
           >
-            {human?.name ?? 'You'} — {myPoints} pts
+            {human?.name ?? 'You'}
+          </Typography>
+          {humanId && (
+            <Chip
+              size="small"
+              label={weightedById[humanId] ?? 0}
+              color="primary"
+              variant="filled"
+              sx={{ height: 20, '& .MuiChip-label': { px: 0.75, fontSize: 11 } }}
+            />
+          )}
+          <Typography variant="caption" color="text.secondary">
+            hand {myPoints} · total {totals[humanId ?? ''] ?? 0}
           </Typography>
           {isMyTurn && <Chip size="small" label="Your turn" color="primary" />}
           {discardShape && (
             <Chip size="small" variant="outlined" label={discardShape} />
           )}
-          <Box sx={{ flex: 1 }} />
-          <Typography variant="caption" color="text.secondary">
-            total {totals[humanId ?? ''] ?? 0}
-          </Typography>
         </Stack>
 
-        <Stack direction="row" spacing={1} flexWrap="wrap" justifyContent="center" useFlexGap>
+        <Stack
+          direction="row"
+          spacing={1}
+          flexWrap="wrap"
+          justifyContent="center"
+          useFlexGap
+          sx={{ pt: 1.5 }}
+        >
           {[...humanHand]
             .sort((a, b) => a.suit.localeCompare(b.suit) || a.rank.localeCompare(b.rank))
             .map((c) => (
@@ -284,18 +397,6 @@ export const PlayTable: React.FC = () => {
           </Box>
         </Box>
       )}
-
-      <Stack direction="row" justifyContent="center" sx={{ mt: 2 }}>
-        <Button
-          size="small"
-          onClick={() => {
-            dispatch(endGame());
-            dispatch(goHome());
-          }}
-        >
-          Quit
-        </Button>
-      </Stack>
 
       <RoundEndDialog />
     </Box>

@@ -13,6 +13,7 @@ import {
 } from "@mui/material";
 import EmojiEventsIcon from "@mui/icons-material/EmojiEvents";
 import SportsEsportsIcon from "@mui/icons-material/SportsEsports";
+import StyleIcon from "@mui/icons-material/Style";
 import LeaderboardIcon from "@mui/icons-material/Leaderboard";
 import CastConnectedIcon from "@mui/icons-material/CastConnected";
 import HelpOutlineIcon from "@mui/icons-material/HelpOutline";
@@ -95,7 +96,7 @@ export const HomePage: React.FC = () => {
         <Button
           variant="outlined"
           size="large"
-          startIcon={<SportsEsportsIcon />}
+          startIcon={<StyleIcon />}
           onClick={() => choose("play")}
           sx={{ width: 260, height: 60, fontSize: 18 }}
         >

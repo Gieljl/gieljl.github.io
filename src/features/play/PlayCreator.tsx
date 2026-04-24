@@ -16,7 +16,38 @@ import { goHome, startGame } from '../game/gameSlice';
 import { initGame } from './playSlice';
 import type { Difficulty } from './ai/botPolicy';
 
-const BOT_NAMES = ['Nyx', 'Thistle', 'Marrow', 'Ozymandias', 'Quince'];
+const BOT_NAMES = [
+  'Sanne',
+  'Daan',
+  'Lotte',
+  'Jeroen',
+  'Femke',
+  'Bram',
+  'Fleur',
+  'Thijs',
+  'Anouk',
+  'Sven',
+  'Eva',
+  'Niels',
+  'Marieke',
+  'Joris',
+  'Bas',
+  'Lieke',
+  'Pieter',
+  'Esmee',
+  'Tim',
+  'Noa',
+];
+
+/** Fisher–Yates shuffle returning a new array. */
+function shuffled<T>(arr: readonly T[]): T[] {
+  const out = arr.slice();
+  for (let i = out.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [out[i], out[j]] = [out[j], out[i]];
+  }
+  return out;
+}
 
 export const PlayCreator: React.FC = () => {
   const dispatch = useAppDispatch();
@@ -24,9 +55,16 @@ export const PlayCreator: React.FC = () => {
   const [numBots, setNumBots] = React.useState(2);
   const [difficulty, setDifficulty] = React.useState<Difficulty>('normal');
 
+  const difficultyHint: Record<Difficulty, string> = {
+    easy: 'Easy: bots play simpler and declare Yasat earlier.',
+    normal: 'Normal: bots play for weighted stats and better long-term value.',
+    godlike: 'Godlike: bots use one-turn lookahead and optimize for weighted stats.',
+  };
+
   const start = () => {
+    const picks = shuffled(BOT_NAMES);
     const bots = Array.from({ length: numBots }, (_, i) => ({
-      name: BOT_NAMES[i] ?? `Bot${i + 1}`,
+      name: picks[i] ?? `Bot${i + 1}`,
       isBot: true,
     }));
     const players = [{ name: yourName.trim() || 'You', isBot: false }, ...bots];
@@ -83,8 +121,13 @@ export const PlayCreator: React.FC = () => {
         >
           <MenuItem value="easy">Easy</MenuItem>
           <MenuItem value="normal">Normal</MenuItem>
+          <MenuItem value="godlike">Godlike</MenuItem>
         </Select>
       </Stack>
+
+      <Typography variant="caption" color="text.secondary" sx={{ maxWidth: 320, textAlign: 'center', mt: -1 }}>
+        {difficultyHint[difficulty]}
+      </Typography>
 
       <Box sx={{ display: 'flex', gap: 2, mt: 2 }}>
         <Button variant="outlined" onClick={() => dispatch(goHome())}>

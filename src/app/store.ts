@@ -12,6 +12,12 @@ import {
   persistStore,
   createMigrate,
   PersistedState,
+  FLUSH,
+  REHYDRATE,
+  PAUSE,
+  PERSIST,
+  PURGE,
+  REGISTER,
 } from 'redux-persist';
 import storage from 'redux-persist/lib/storage';
 
@@ -124,7 +130,8 @@ const migrations: Record<number, (state: any) => any> = {
 };
 
 const persistConfig = {
-  timeout: 1000, //Set the timeout function to 1 seconds
+  // Avoid spurious timeout errors during slower startup / StrictMode double init.
+  timeout: 0,
   key: 'root',
   storage,
   version: PERSIST_VERSION,
@@ -136,6 +143,13 @@ const persistedReducer = persistReducer(persistConfig, reducers);
 
 export const store = configureStore({
   reducer: persistedReducer,
+  middleware: (getDefaultMiddleware) =>
+    getDefaultMiddleware({
+      serializableCheck: {
+        ignoredActions: [FLUSH, REHYDRATE, PAUSE, PERSIST, PURGE, REGISTER],
+        ignoredActionPaths: ['err'],
+      },
+    }),
   // devTools: process.env.NODE_ENV !== 'production'
 });
 

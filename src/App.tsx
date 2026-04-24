@@ -21,6 +21,7 @@ import { RankedGameCreator } from "./features/game/RankedGameCreator";
 import { HomePage } from "./features/game/HomePage";
 import { PlayCreator } from "./features/play/PlayCreator";
 import { PlayTable } from "./features/play/PlayTable";
+import { PlayPlayerRanking } from "./features/play/PlayPlayerRanking";
 import { useSelector } from "react-redux";
 import { RootState, store } from "./app/store";
 import ScoresHistoryNew from "./features/rounds/ScoresHistoryNew";
@@ -173,7 +174,8 @@ function App() {
       )}
 
       <ErrorBoundary fallback={<div>Something went wrong</div>}>
-        {gameStatus === "started" && gameView === "new" && <PlayerRanking />}
+        {gameStatus === "started" && gameView === "new" && gameType !== "play" && <PlayerRanking />}
+        {gameStatus === "started" && gameView === "new" && gameType === "play" && <PlayPlayerRanking />}
         {gameStatus === "started" && gameView === "play" && <PlayTable />}
       </ErrorBoundary>
 
@@ -189,9 +191,9 @@ function App() {
         <Toolbar>
           <Menu toggleColorMode={colorMode.toggleColorMode} />
           
-          {!isViewer && gameView !== "play" && <ScoreEntryDialog />}
+          {!isViewer && gameView !== "play" && gameType !== "play" && <ScoreEntryDialog />}
           <Box sx={{ flexGrow: 1 }} />
-          {gameStatus === "started" && !isViewer && gameView !== "play" && (
+          {gameStatus === "started" && !isViewer && gameView !== "play" && gameType !== "play" && (
             <>
               <IconButton
                 disabled={scoreState.past.length < 2}
@@ -275,7 +277,7 @@ function App() {
               )}
             </>
           )}
-          {gameStatus === "started" && !isViewer && gameView !== "play" && (
+          {gameStatus === "started" && !isViewer && gameView !== "play" && gameType !== "play" && (
             <IconButton
               onClick={handleShareGame}
               color="primary"
