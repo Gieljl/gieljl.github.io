@@ -4,10 +4,10 @@ import { RootState } from '../../app/store';
 
 export interface GameState {
   status: 'home' | 'new' | 'started';
-  /** Scoring view: 'classic' (points & stats) or 'new' (weighted stats). */
-  view: 'classic' | 'new';
-  /** Game type: 'ranked' (online stats) or 'unranked' (local). */
-  type: 'unranked' | 'ranked';
+  /** Scoring view: 'classic' (points & stats), 'new' (weighted stats), or 'play' (live card game). */
+  view: 'classic' | 'new' | 'play';
+  /** Game type: 'ranked' (online stats), 'unranked' (local), or 'play' (live NPC game). */
+  type: 'unranked' | 'ranked' | 'play';
 }
 
 const initialState: GameState = {
@@ -30,13 +30,15 @@ export const gameSlice = createSlice({
     goHome: (state) => {
       state.status = 'home';
     },
-    setGameView: (state, action: PayloadAction<'classic' | 'new'>) => {
+    setGameView: (state, action: PayloadAction<'classic' | 'new' | 'play'>) => {
       state.view = action.payload;
     },
-    setGameType: (state, action: PayloadAction<'unranked' | 'ranked'>) => {
+    setGameType: (state, action: PayloadAction<'unranked' | 'ranked' | 'play'>) => {
       state.type = action.payload;
       if (action.payload === 'ranked') {
         state.view = 'new';
+      } else if (action.payload === 'play') {
+        state.view = 'play';
       }
     },
   },

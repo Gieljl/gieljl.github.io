@@ -5,6 +5,7 @@ import statsReducer from '../features/stats/statsSlice';
 import gameReducer from '../features/game/gameSlice';
 import identityReducer from '../features/identity/identitySlice';
 import sessionReducer from '../features/session/sessionSlice';
+import playReducer from '../features/play/playSlice';
 import undoable, { ActionCreators } from 'redux-undo';
 import {
   persistReducer,
@@ -27,6 +28,7 @@ const combinedReducers = combineReducers({
   stats: statsReducer,
   identity: identityReducer,
   session: sessionReducer,
+  play: playReducer,
 });
 
 /**
@@ -66,7 +68,7 @@ const reducers: typeof combinedReducers = (state, action) => {
  * that older clients' storage cannot satisfy. The matching migration should
  * repair the state (or return `undefined` to force a fresh initial state).
  */
-const PERSIST_VERSION = 2;
+const PERSIST_VERSION = 3;
 
 type PersistedRootState = PersistedState &
   Record<string, any>;
@@ -102,6 +104,23 @@ const migrations: Record<number, (state: any) => any> = {
       },
     } as PersistedRootState;
   },
+  // v3: introduced the 'play' game type + view. If a previously-persisted
+  // state somehow carries those values it's fine; otherwise snap invalid
+  // values back to a safe default and always land on home.
+  3: (state: PersistedRootState | undefined): PersistedRootState | undefined => {
+    if (!state) return state;
+    const g = (state.game as any) ?? {};
+    const allowedTypes = ['unranked', 'ranked', 'play'];
+    const allowedViews = ['classic', 'new', 'play'];
+    return {
+      ...state,
+      game: {
+        status: 'home',
+        view: allowedViews.includes(g.view) ? g.view : 'new',
+        type: allowedTypes.includes(g.type) ? g.type : 'unranked',
+      },
+    } as PersistedRootState;
+  },
 };
 
 const persistConfig = {
@@ -110,7 +129,7 @@ const persistConfig = {
   storage,
   version: PERSIST_VERSION,
   migrate: createMigrate(migrations, { debug: false }),
-  blacklist: ['session'], // sessions are transient — don't persist
+  blacklist: ['session', 'play'], // sessions + play games are transient — don't persist
 };
 const persistedReducer = persistReducer(persistConfig, reducers);
 

@@ -19,6 +19,8 @@ import { PlayerRanking } from "./features/players/Ranking";
 import { GameCreator } from "./features/game/GameCreator";
 import { RankedGameCreator } from "./features/game/RankedGameCreator";
 import { HomePage } from "./features/game/HomePage";
+import { PlayCreator } from "./features/play/PlayCreator";
+import { PlayTable } from "./features/play/PlayTable";
 import { useSelector } from "react-redux";
 import { RootState, store } from "./app/store";
 import ScoresHistoryNew from "./features/rounds/ScoresHistoryNew";
@@ -125,9 +127,9 @@ function App() {
   const validRender =
     gameStatus === "home" ||
     (gameStatus === "new" &&
-      (gameType === "unranked" || gameType === "ranked")) ||
+      (gameType === "unranked" || gameType === "ranked" || gameType === "play")) ||
     (gameStatus === "started" &&
-      (gameView === "classic" || gameView === "new"));
+      (gameView === "classic" || gameView === "new" || gameView === "play"));
 
   React.useEffect(() => {
     if (!validRender) {
@@ -164,6 +166,7 @@ function App() {
 
       {gameStatus === "new" && gameType === "unranked" && <GameCreator />}
       {gameStatus === "new" && gameType === "ranked" && <RankedGameCreator />}
+      {gameStatus === "new" && gameType === "play" && <PlayCreator />}
 
       {gameStatus === "started" && gameView === "classic" && (
         <ScoresHistoryNew />
@@ -171,6 +174,7 @@ function App() {
 
       <ErrorBoundary fallback={<div>Something went wrong</div>}>
         {gameStatus === "started" && gameView === "new" && <PlayerRanking />}
+        {gameStatus === "started" && gameView === "play" && <PlayTable />}
       </ErrorBoundary>
 
       <AppBar
@@ -185,9 +189,9 @@ function App() {
         <Toolbar>
           <Menu toggleColorMode={colorMode.toggleColorMode} />
           
-          {!isViewer && <ScoreEntryDialog />}
+          {!isViewer && gameView !== "play" && <ScoreEntryDialog />}
           <Box sx={{ flexGrow: 1 }} />
-          {gameStatus === "started" && !isViewer && (
+          {gameStatus === "started" && !isViewer && gameView !== "play" && (
             <>
               <IconButton
                 disabled={scoreState.past.length < 2}
@@ -271,7 +275,7 @@ function App() {
               )}
             </>
           )}
-          {gameStatus === "started" && !isViewer && (
+          {gameStatus === "started" && !isViewer && gameView !== "play" && (
             <IconButton
               onClick={handleShareGame}
               color="primary"

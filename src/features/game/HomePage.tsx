@@ -41,7 +41,7 @@ export const HomePage: React.FC = () => {
   const [joinOpen, setJoinOpen] = React.useState(false);
   const [rulesOpen, setRulesOpen] = React.useState(false);
 
-  const choose = (mode: "unranked" | "ranked") => {
+  const choose = (mode: "unranked" | "ranked" | "play") => {
     dispatch(setGameType(mode));
     dispatch(startNewGame());
   };
@@ -90,6 +90,19 @@ export const HomePage: React.FC = () => {
         </Button>
         <Typography variant="caption" color="text.secondary" sx={{ mt: -2 }}>
           Quick local game, no login needed.
+        </Typography>
+
+        <Button
+          variant="outlined"
+          size="large"
+          startIcon={<SportsEsportsIcon />}
+          onClick={() => choose("play")}
+          sx={{ width: 260, height: 60, fontSize: 18 }}
+        >
+          Play vs. Bots
+        </Button>
+        <Typography variant="caption" color="text.secondary" sx={{ mt: -2 }}>
+          Live card game against NPCs. Nothing saved.
         </Typography>
 
         <Button
