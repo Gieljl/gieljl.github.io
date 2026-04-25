@@ -95,40 +95,10 @@ export function isValidDiscard(cards: readonly Card[]): boolean {
  * Rules:
  * - Single card: that one card.
  * - Of-a-kind (pair / 3 / 4): any one of the cards.
- * - Straight: only the two edge cards (lowest-ordinal and highest-ordinal,
- *   accounting for ace wrap).
+ * - Straight: any of the cards.
  */
 export function pickableFromDiscard(lastDiscard: readonly Card[]): Card[] {
   const shape = classifyDiscard(lastDiscard);
   if (!shape) return [];
-  if (shape === 'single' || shape === 'pair' || shape === 'three-of-a-kind' || shape === 'four-of-a-kind') {
-    return lastDiscard.slice();
-  }
-  // straight — pick edge cards
-  return straightEdges(lastDiscard);
-}
-
-function straightEdges(cards: readonly Card[]): Card[] {
-  if (cards.length < 2) return cards.slice();
-  const hasAce = cards.some((c) => c.rank === 'A');
-  const nonAces = cards.filter((c) => c.rank !== 'A');
-  const sortedNonAce = [...nonAces].sort((a, b) => rankOrdinal(a.rank) - rankOrdinal(b.rank));
-  if (!hasAce) {
-    return [sortedNonAce[0], sortedNonAce[sortedNonAce.length - 1]];
-  }
-  const ace = cards.find((c) => c.rank === 'A')!;
-  if (sortedNonAce.length === 0) return [ace];
-  const lowOrd = rankOrdinal(sortedNonAce[0].rank);
-  const highOrd = rankOrdinal(sortedNonAce[sortedNonAce.length - 1].rank);
-  // Ace is low if the sequence starts at 2 (i.e. low end is 2), else high.
-  if (lowOrd === 2) {
-    // ace-low: edges are ace and highest
-    return [ace, sortedNonAce[sortedNonAce.length - 1]];
-  }
-  if (highOrd === 13) {
-    // ace-high: edges are lowest and ace
-    return [sortedNonAce[0], ace];
-  }
-  // fallback (shouldn't happen for valid straights)
-  return [sortedNonAce[0], sortedNonAce[sortedNonAce.length - 1]];
+  return lastDiscard.slice();
 }

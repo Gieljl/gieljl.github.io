@@ -130,28 +130,29 @@ describe('combos', () => {
     expect(isValidDiscard([c('1', 'spades', '5'), c('2', 'hearts', '8')])).toBe(false);
   });
 
-  test('pickableFromDiscard: single → itself, set → any, straight → edges', () => {
+  test('pickableFromDiscard: any card of the last discard is pickable', () => {
     const single = [c('1', 'hearts', '9')];
     expect(pickableFromDiscard(single).map((x) => x.id)).toEqual(['1']);
 
     const pair = [c('1', 'spades', '7'), c('2', 'hearts', '7')];
     expect(pickableFromDiscard(pair).map((x) => x.id).sort()).toEqual(['1', '2']);
 
-    const straight = [
+    // 3-card straight: all three are pickable
+    const straight3 = [
       c('a', 'hearts', '5'),
       c('b', 'diamonds', '6'),
       c('c', 'hearts', '7'),
     ];
-    const edges = pickableFromDiscard(straight).map((x) => x.id).sort();
-    expect(edges).toEqual(['a', 'c']);
+    expect(pickableFromDiscard(straight3).map((x) => x.id).sort()).toEqual(['a', 'b', 'c']);
 
-    // ace-low straight edges
-    const aceLow = [
-      c('a', 'hearts', 'A'),
-      c('b', 'diamonds', '2'),
-      c('c', 'hearts', '3'),
+    // 4-card straight: all four are pickable
+    const straight4 = [
+      c('a', 'hearts', '5'),
+      c('b', 'diamonds', '6'),
+      c('c', 'hearts', '7'),
+      c('d', 'diamonds', '8'),
     ];
-    expect(pickableFromDiscard(aceLow).map((x) => x.id).sort()).toEqual(['a', 'c']);
+    expect(pickableFromDiscard(straight4).map((x) => x.id).sort()).toEqual(['a', 'b', 'c', 'd']);
   });
 });
 
@@ -245,19 +246,21 @@ describe('round.startRound / applyAction', () => {
   });
 
   test('drawing from discard is limited to pickable cards', () => {
-    // Craft a straight on the discard pile, then try to pick a middle card.
+    // Pickable cards are the cards of the last discard. Asking for an id that
+    // wasn't part of it must fail.
     let s = setup();
     const straight = [
       c('s1', 'hearts', '5'),
       c('s2', 'diamonds', '6'),
       c('s3', 'hearts', '7'),
+      c('s4', 'diamonds', '8'),
     ];
     s = { ...s, discardPlies: [straight] };
     const actor = s.players[s.currentPlayerIndex];
     const r = applyAction(s, {
       type: 'discardThenDraw',
       discard: [actor.hand[0]],
-      drawFrom: { fromDiscardId: 's2' }, // middle card — illegal
+      drawFrom: { fromDiscardId: 'not-in-discard' },
     });
     expect(r.error).toMatch(/not available/);
   });
