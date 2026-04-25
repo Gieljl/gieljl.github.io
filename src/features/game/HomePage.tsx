@@ -12,10 +12,12 @@ import {
   useTheme,
 } from "@mui/material";
 import EmojiEventsIcon from "@mui/icons-material/EmojiEvents";
+import SmartToyIcon from "@mui/icons-material/SmartToy";
 import SportsEsportsIcon from "@mui/icons-material/SportsEsports";
 import StyleIcon from "@mui/icons-material/Style";
 import LeaderboardIcon from "@mui/icons-material/Leaderboard";
 import CastConnectedIcon from "@mui/icons-material/CastConnected";
+import GroupIcon from "@mui/icons-material/Group";
 import HelpOutlineIcon from "@mui/icons-material/HelpOutline";
 import CloseIcon from "@mui/icons-material/Close";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
@@ -196,7 +198,7 @@ export const HomePage: React.FC = () => {
           <Button
             variant="contained"
             size="large"
-            startIcon={<StyleIcon />}
+            startIcon={<SmartToyIcon />}
             onClick={() => choose("play")}
             sx={{ width: 260, height: 60, fontSize: 18 }}
           >
@@ -209,7 +211,7 @@ export const HomePage: React.FC = () => {
           <Button
             variant="outlined"
             size="large"
-            startIcon={<CastConnectedIcon />}
+            startIcon={<GroupIcon />}
             onClick={() => choose("play-friends")}
             sx={{ width: 260, height: 60, fontSize: 18 }}
           >
