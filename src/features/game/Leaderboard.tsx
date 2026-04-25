@@ -20,7 +20,7 @@ import {
 import { selectStatsWeight } from "../stats/statsSlice";
 import { useAppSelector } from "../../app/hooks";
 
-type Mode = "ranked" | "play";
+type Mode = "ranked" | "play" | "friends";
 type PlayTab = "games" | "stats";
 type DifficultyFilter = "all" | "easy" | "normal" | "godlike";
 
@@ -71,6 +71,17 @@ const playDiffGames = (
 const aggregatePlayStat = (e: LeaderboardEntry, statName: string): number =>
   (e.playStats?.bo10?.statCounts[statName] ?? 0) +
   (e.playStats?.firstTo10?.statCounts[statName] ?? 0);
+
+/** Sum of wins / games across the two tracked Friends lengths (bo10 + firstTo10). */
+const friendsTotalWins = (e: LeaderboardEntry): number =>
+  (e.friendsPlayStats?.bo10?.totalWins ?? 0) +
+  (e.friendsPlayStats?.firstTo10?.totalWins ?? 0);
+const friendsTotalGames = (e: LeaderboardEntry): number =>
+  (e.friendsPlayStats?.bo10?.totalGamesPlayed ?? 0) +
+  (e.friendsPlayStats?.firstTo10?.totalGamesPlayed ?? 0);
+const aggregateFriendsStat = (e: LeaderboardEntry, statName: string): number =>
+  (e.friendsPlayStats?.bo10?.statCounts[statName] ?? 0) +
+  (e.friendsPlayStats?.firstTo10?.statCounts[statName] ?? 0);
 
 const buildRankedMetrics = (weights: { statName: string }[]): Metric[] => {
   const base: Metric[] = [
@@ -246,6 +257,99 @@ const buildPlayStatsMetrics = (weights: { statName: string }[]): Metric[] => {
   return [...base, ...dynamic];
 };
 
+/** Friends — Games tab. */
+const buildFriendsGamesMetrics = (): Metric[] => [
+  {
+    key: "friends-games-wins",
+    label: "Total wins",
+    get: (e) => friendsTotalWins(e),
+  },
+  {
+    key: "friends-games-winrate",
+    label: `Win rate (min ${WINRATE_MIN_GAMES})`,
+    get: (e) => winRate(friendsTotalWins(e), friendsTotalGames(e)),
+    format: "percent",
+  },
+  {
+    key: "friends-games-played",
+    label: "Games played",
+    get: (e) => friendsTotalGames(e),
+  },
+  {
+    key: "friends-games-wins-bo10",
+    label: "Wins — Best of 10",
+    get: (e) => e.friendsPlayStats?.bo10?.totalWins ?? 0,
+  },
+  {
+    key: "friends-games-wins-firstTo10",
+    label: "Wins — First to 10",
+    get: (e) => e.friendsPlayStats?.firstTo10?.totalWins ?? 0,
+  },
+  {
+    key: "friends-games-played-bo10",
+    label: "Games played — Best of 10",
+    get: (e) => e.friendsPlayStats?.bo10?.totalGamesPlayed ?? 0,
+  },
+  {
+    key: "friends-games-played-firstTo10",
+    label: "Games played — First to 10",
+    get: (e) => e.friendsPlayStats?.firstTo10?.totalGamesPlayed ?? 0,
+  },
+];
+
+/** Friends — Overall stats tab. */
+const buildFriendsStatsMetrics = (
+  weights: { statName: string }[],
+): Metric[] => {
+  const base: Metric[] = [
+    {
+      key: "friends-stats-streak",
+      label: "Longest streak",
+      get: (e) =>
+        Math.max(
+          e.friendsPlayStats?.bo10?.longestStreak ?? 0,
+          e.friendsPlayStats?.firstTo10?.longestStreak ?? 0,
+        ),
+    },
+    {
+      key: "friends-stats-yasats",
+      label: "Yasats",
+      get: (e) => aggregateFriendsStat(e, "Yasat"),
+    },
+    {
+      key: "friends-stats-owns",
+      label: "Owns",
+      get: (e) => aggregateFriendsStat(e, "Own"),
+    },
+    {
+      key: "friends-stats-owned",
+      label: "Owned",
+      get: (e) => aggregateFriendsStat(e, "Owned"),
+    },
+    {
+      key: "friends-stats-kills",
+      label: "Kills",
+      get: (e) => aggregateFriendsStat(e, "Kill"),
+    },
+    {
+      key: "friends-stats-deaths",
+      label: "Deaths",
+      get: (e) => aggregateFriendsStat(e, "Death"),
+    },
+  ];
+  const dynamic: Metric[] = weights
+    .filter(
+      (w) =>
+        w.statName !== "Longest Streak" && !COVERED_STAT_NAMES.has(w.statName),
+    )
+    .map((w) => ({
+      key: `friends-stats-stat:${w.statName}`,
+      label: w.statName,
+      get: (e: LeaderboardEntry) => aggregateFriendsStat(e, w.statName),
+    }));
+  return [...base, ...dynamic];
+};
+
 const formatValue = (value: number, format: MetricFormat = "int"): string => {
   if (format === "percent") return `${value.toFixed(1)}%`;
   return String(value);
@@ -276,6 +380,11 @@ export const Leaderboard: React.FC = () => {
 
   const metrics = useMemo<Metric[]>(() => {
     if (mode === "ranked") return buildRankedMetrics(weights);
+    if (mode === "friends") {
+      return playTab === "games"
+        ? buildFriendsGamesMetrics()
+        : buildFriendsStatsMetrics(weights);
+    }
     return playTab === "games"
       ? buildPlayGamesMetrics(difficulty)
       : buildPlayStatsMetrics(weights);
@@ -331,10 +440,16 @@ export const Leaderboard: React.FC = () => {
         >
           Play vs. AI
         </Button>
+        <Button
+          variant={mode === "friends" ? "contained" : "outlined"}
+          onClick={() => setMode("friends")}
+        >
+          Friends
+        </Button>
       </ButtonGroup>
 
-      {mode === "play" && (
-        <ButtonGroup fullWidth size="small" aria-label="Play vs. AI tab">
+      {(mode === "play" || mode === "friends") && (
+        <ButtonGroup fullWidth size="small" aria-label="Stats tab">
           <Button
             variant={playTab === "games" ? "contained" : "outlined"}
             onClick={() => setPlayTab("games")}
@@ -410,6 +525,8 @@ export const Leaderboard: React.FC = () => {
           <Typography variant="body2" color="text.secondary" align="center">
             {mode === "ranked"
               ? "No data yet. Play some ranked games!"
+              : mode === "friends"
+              ? "No data yet. Finish a Play vs. Friends game to appear here."
               : "No data yet. Log in and finish a Play game to appear here."}
           </Typography>
         )}
@@ -464,6 +581,16 @@ export const Leaderboard: React.FC = () => {
           sx={{ textAlign: "center" }}
         >
           Play stats are saved only when logged in. Classic games are not tracked.
+        </Typography>
+      )}
+      {mode === "friends" && (
+        <Typography
+          variant="caption"
+          color="text.secondary"
+          sx={{ textAlign: "center" }}
+        >
+          Friends stats are saved by the host once the game ends, for every
+          logged-in participant.
         </Typography>
       )}
     </Stack>

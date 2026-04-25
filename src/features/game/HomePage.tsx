@@ -43,11 +43,11 @@ export const HomePage: React.FC = () => {
   const [leaderboardOpen, setLeaderboardOpen] = React.useState(false);
   const [joinOpen, setJoinOpen] = React.useState(false);
   const [rulesOpen, setRulesOpen] = React.useState(false);
-  const [homeView, setHomeView] = React.useState<"main" | "score-tracker">(
-    "main",
-  );
+  const [homeView, setHomeView] = React.useState<
+    "main" | "score-tracker" | "play-online"
+  >("main");
 
-  const choose = (mode: "unranked" | "ranked" | "play") => {
+  const choose = (mode: "unranked" | "ranked" | "play" | "play-friends") => {
     dispatch(setGameType(mode));
     dispatch(startNewGame());
   };
@@ -68,10 +68,14 @@ export const HomePage: React.FC = () => {
       </Box>
 
       <Typography variant="h5" sx={{ color: "#7df3e1" }}>
-        {homeView === "main" ? "Choose a game mode" : "Score tracker"}
+        {homeView === "main"
+          ? "Choose a game mode"
+          : homeView === "score-tracker"
+          ? "Score tracker"
+          : "Play online"}
       </Typography>
 
-      {homeView === "score-tracker" && (
+      {homeView !== "main" && (
         <IconButton
           aria-label="Back to home"
           color="primary"
@@ -101,13 +105,13 @@ export const HomePage: React.FC = () => {
             variant="outlined"
             size="large"
             startIcon={<StyleIcon />}
-            onClick={() => choose("play")}
+            onClick={() => setHomeView("play-online")}
             sx={{ width: 260, height: 60, fontSize: 18 }}
           >
-            Play vs. AI
+            Play Online
           </Button>
           <Typography variant="caption" color="text.secondary" sx={{ mt: -2, mb: -2 }}>
-            Live card game vs. AI. Log in to enter leaderboards.
+            Live card game vs. AI or friends.
           </Typography>
 
           <Button
@@ -143,7 +147,7 @@ export const HomePage: React.FC = () => {
             Rules
           </Button>
         </Stack>
-      ) : (
+      ) : homeView === "score-tracker" ? (
         <Stack direction="column" spacing={3} alignItems="center">
           <Typography
             variant="caption"
@@ -179,6 +183,44 @@ export const HomePage: React.FC = () => {
             Quick local game. No login, nothing saved.
           </Typography>
         </Stack>
+      ) : homeView === "play-online" ? (
+        <Stack direction="column" spacing={3} alignItems="center">
+          <Typography
+            variant="caption"
+            color="text.secondary"
+            sx={{ maxWidth: 280, textAlign: "center" }}
+          >
+            Live card game online.
+          </Typography>
+
+          <Button
+            variant="contained"
+            size="large"
+            startIcon={<StyleIcon />}
+            onClick={() => choose("play")}
+            sx={{ width: 260, height: 60, fontSize: 18 }}
+          >
+            Play vs. AI
+          </Button>
+          <Typography variant="caption" color="text.secondary" sx={{ mt: -2, mb: -2, maxWidth: 280, textAlign: "center" }}>
+            Play against bots. Log in to save stats.
+          </Typography>
+
+          <Button
+            variant="outlined"
+            size="large"
+            startIcon={<CastConnectedIcon />}
+            onClick={() => choose("play-friends")}
+            sx={{ width: 260, height: 60, fontSize: 18 }}
+          >
+            Play vs. Friends
+          </Button>
+          <Typography variant="caption" color="text.secondary" sx={{ mt: -2, mb: -2, maxWidth: 280, textAlign: "center" }}>
+            Invite logged-in friends to a real-time game.
+          </Typography>
+        </Stack>
+      ) : (
+        <Stack direction="column" spacing={3} alignItems="center" />
       )}
 
       <JoinGameDialog open={joinOpen} onClose={() => setJoinOpen(false)} />

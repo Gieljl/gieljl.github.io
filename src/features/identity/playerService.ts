@@ -34,6 +34,7 @@ export type PlayStats = PlayerStats;
 export type PlayStatsLength = 'bo10' | 'firstTo10';
 
 export type PlayStatsByLength = Partial<Record<PlayStatsLength, PlayStats>>;
+export type FriendsPlayStatsByLength = Partial<Record<PlayStatsLength, PlayStats>>;
 
 /** Lightweight per-length counters for Ranked-mode games. */
 export interface RankedLengthStats {
@@ -408,6 +409,51 @@ export async function savePlayGameResult(
   });
 }
 
+/**
+ * Save the final results of a Play vs Friends (multiplayer human) game. The
+ * host calls this once for every participant. Aggregates into
+ * `players/{username}.friendsPlayStats[length]`. Skips participants whose
+ * profile doc is missing.
+ */
+export async function saveFriendsPlayGameResult(
+  entries: GameStatsEntry[],
+  length: PlayStatsLength,
+): Promise<void> {
+  await Promise.all(
+    entries.map(async (entry) => {
+      if (!entry.username) return;
+      const normalized = entry.username.trim().toLowerCase();
+      const ref = doc(db, 'players', normalized);
+      const snap = await getDoc(ref);
+      if (!snap.exists()) return;
+      const data = snap.data();
+      const allByLength: Record<string, unknown> =
+        (data.friendsPlayStats as Record<string, unknown> | undefined) ?? {};
+      const existing: PlayStats = normalizeStats(
+        allByLength[length] as Record<string, unknown> | undefined,
+      );
+      const mergedCounts: Record<string, number> = { ...existing.statCounts };
+      for (const [statName, count] of Object.entries(entry.statCounts)) {
+        if (!count) continue;
+        mergedCounts[statName] = (mergedCounts[statName] ?? 0) + count;
+      }
+      const updated: PlayStats = {
+        totalGamesPlayed: existing.totalGamesPlayed + 1,
+        totalWins: existing.totalWins + (entry.won ? 1 : 0),
+        longestStreak: Math.max(existing.longestStreak, entry.longestStreak),
+        bestWeightedScore: Math.max(
+          existing.bestWeightedScore,
+          entry.weightedScore,
+        ),
+        statCounts: mergedCounts,
+      };
+      await updateDoc(ref, {
+        [`friendsPlayStats.${length}`]: updated,
+      });
+    }),
+  );
+}
+
 export interface LeaderboardEntry {
   username: string;
   displayName: string;
@@ -415,6 +461,8 @@ export interface LeaderboardEntry {
   stats: PlayerStats;
   /** Optional per-length Play-mode stats (only present when player has any). */
   playStats?: PlayStatsByLength;
+  /** Optional per-length Friends-mode (vs humans) Play stats. */
+  friendsPlayStats?: FriendsPlayStatsByLength;
   /** Optional per-length Ranked-mode wins/games counters. */
   rankedByLength?: RankedByLength;
   /** Optional per-difficulty Play-mode wins/games counters. */
@@ -445,12 +493,32 @@ export async function fetchLeaderboard(): Promise<LeaderboardEntry[]> {
             : {}),
         }
       : undefined;
+    const rawFriends = data.friendsPlayStats as
+      | Record<string, unknown>
+      | undefined;
+    const friendsPlayStats: FriendsPlayStatsByLength | undefined = rawFriends
+      ? {
+          ...(rawFriends.bo10
+            ? { bo10: normalizeStats(rawFriends.bo10 as Record<string, unknown>) }
+            : {}),
+          ...(rawFriends.firstTo10
+            ? {
+                firstTo10: normalizeStats(
+                  rawFriends.firstTo10 as Record<string, unknown>,
+                ),
+              }
+            : {}),
+        }
+      : undefined;
     entries.push({
       username: d.id,
       displayName: data.displayName || d.id,
       color: data.color || '',
       stats: normalizeStats(data.stats),
       ...(playStats && Object.keys(playStats).length > 0 ? { playStats } : {}),
+      ...(friendsPlayStats && Object.keys(friendsPlayStats).length > 0
+        ? { friendsPlayStats }
+        : {}),
       ...(data.rankedByLength &&
       typeof data.rankedByLength === 'object' &&
       Object.keys(data.rankedByLength as object).length > 0

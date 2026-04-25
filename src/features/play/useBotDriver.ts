@@ -12,6 +12,7 @@ import { selectStatsWeight } from '../stats/statsSlice';
 import {
   selectPlayCurrentPlayerId,
   selectPlayHumanId,
+  selectPlayMode,
   selectPlayRound,
   setThinking,
   submitAction,
@@ -25,6 +26,7 @@ export function useBotDriver(): void {
   const round = useAppSelector(selectPlayRound);
   const humanId = useAppSelector(selectPlayHumanId);
   const currentId = useAppSelector(selectPlayCurrentPlayerId);
+  const mode = useAppSelector(selectPlayMode);
   const difficulty = useAppSelector((s) => s.play.difficulty);
   const totals = useAppSelector((s) => s.play.cumulativeTotals);
   const history = useAppSelector((s) => s.play.roundHistory);
@@ -42,6 +44,10 @@ export function useBotDriver(): void {
     tokenRef.current += 1;
 
     if (!round || round.phase !== 'in-progress') {
+      dispatch(setThinking(null));
+      return;
+    }
+    if (mode !== 'ai') {
       dispatch(setThinking(null));
       return;
     }
@@ -75,5 +81,5 @@ export function useBotDriver(): void {
         pendingTimer.current = null;
       }
     };
-  }, [round, currentId, humanId, difficulty, totals, history, statWeights, dispatch]);
+  }, [round, currentId, humanId, mode, difficulty, totals, history, statWeights, dispatch]);
 }

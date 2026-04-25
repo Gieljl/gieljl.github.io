@@ -6,6 +6,7 @@ import gameReducer from '../features/game/gameSlice';
 import identityReducer from '../features/identity/identitySlice';
 import sessionReducer from '../features/session/sessionSlice';
 import playReducer from '../features/play/playSlice';
+import playFriendsReducer from '../features/playFriends/playFriendsSlice';
 import undoable, { ActionCreators } from 'redux-undo';
 import {
   persistReducer,
@@ -27,6 +28,13 @@ import storage from 'redux-persist/lib/storage';
  */
 export const HYDRATE_FROM_SESSION = 'session/hydrateFromSession';
 
+/**
+ * Action type dispatched by guests in a Play vs Friends session to replace
+ * play-slice state from the host's Firestore session document.
+ */
+export const HYDRATE_PLAY_FROM_FRIENDS_SESSION =
+  'playFriends/hydratePlayFromSession';
+
 const combinedReducers = combineReducers({
   scores: undoable(scoresReducer),
   players: playersReducer,
@@ -35,6 +43,7 @@ const combinedReducers = combineReducers({
   identity: identityReducer,
   session: sessionReducer,
   play: playReducer,
+  playFriends: playFriendsReducer,
 });
 
 /**
@@ -66,6 +75,44 @@ const reducers: typeof combinedReducers = (state, action) => {
       game: payload.game,
     };
   }
+  if (action.type === HYDRATE_PLAY_FROM_FRIENDS_SESSION) {
+    const payload = action.payload as {
+      round: any;
+      seating: string[];
+      playerNames: Record<string, string>;
+      usernameByPlayerId: Record<string, string>;
+      humanId: string | null;
+      humanUsername: string | null;
+      cumulativeTotals: Record<string, number>;
+      roundHistory: any[];
+      log: any[];
+      lastEvents: any[];
+      gameOver: boolean;
+      length: 'bo10' | 'firstTo10';
+      dealerId: string | null;
+    };
+    const next = combinedReducers(state, action);
+    return {
+      ...next,
+      play: {
+        ...next.play,
+        round: payload.round,
+        seating: payload.seating,
+        playerNames: payload.playerNames,
+        usernameByPlayerId: payload.usernameByPlayerId,
+        humanId: payload.humanId,
+        humanUsername: payload.humanUsername,
+        dealerId: payload.dealerId,
+        length: payload.length,
+        mode: 'friends',
+        cumulativeTotals: payload.cumulativeTotals,
+        roundHistory: payload.roundHistory,
+        log: payload.log,
+        lastEvents: payload.lastEvents,
+        gameOver: payload.gameOver,
+      },
+    };
+  }
   return combinedReducers(state, action);
 };
 
@@ -74,7 +121,7 @@ const reducers: typeof combinedReducers = (state, action) => {
  * that older clients' storage cannot satisfy. The matching migration should
  * repair the state (or return `undefined` to force a fresh initial state).
  */
-const PERSIST_VERSION = 4;
+const PERSIST_VERSION = 5;
 
 type PersistedRootState = PersistedState &
   Record<string, any>;
@@ -141,6 +188,21 @@ const migrations: Record<number, (state: any) => any> = {
       },
     } as PersistedRootState;
   },
+  // v5: introduced 'play-friends' game.type. Reset to home so any in-progress
+  // friends game from a partial persisted shape doesn't render an empty view.
+  5: (state: PersistedRootState | undefined): PersistedRootState | undefined => {
+    if (!state) return state;
+    const g = (state.game as any) ?? {};
+    const allowedTypes = ['unranked', 'ranked', 'play', 'play-friends'];
+    return {
+      ...state,
+      game: {
+        ...g,
+        status: 'home',
+        type: allowedTypes.includes(g.type) ? g.type : 'unranked',
+      },
+    } as PersistedRootState;
+  },
 };
 
 const persistConfig = {
@@ -150,7 +212,7 @@ const persistConfig = {
   storage,
   version: PERSIST_VERSION,
   migrate: createMigrate(migrations, { debug: false }),
-  blacklist: ['session', 'play'], // sessions + play games are transient — don't persist
+  blacklist: ['session', 'play', 'playFriends'], // sessions, play, and friends sessions are transient — don't persist
 };
 const persistedReducer = persistReducer(persistConfig, reducers);
 

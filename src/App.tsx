@@ -22,6 +22,15 @@ import { HomePage } from "./features/game/HomePage";
 import { PlayCreator } from "./features/play/PlayCreator";
 import { PlayTable } from "./features/play/PlayTable";
 import { PlayPlayerRanking } from "./features/play/PlayPlayerRanking";
+import { FriendsLobby } from "./features/playFriends/FriendsLobby";
+import { usePlayFriendsHostSync } from "./features/playFriends/usePlayFriendsHostSync";
+import { useActionRequestProcessor } from "./features/playFriends/useActionRequestProcessor";
+import { usePlayFriendsSession } from "./features/playFriends/usePlayFriendsSession";
+import {
+  clearFriendsSession,
+  selectPlayFriendsCode,
+} from "./features/playFriends/playFriendsSlice";
+import { setGameType } from "./features/game/gameSlice";
 import { useSelector } from "react-redux";
 import { RootState, store } from "./app/store";
 import ScoresHistoryNew from "./features/rounds/ScoresHistoryNew";
@@ -90,23 +99,50 @@ function App() {
   // Mount session hooks
   useSessionSync();
   useSessionSubscription();
+  // Mount Play vs Friends sync hooks (no-op when role is null).
+  usePlayFriendsSession();
+  usePlayFriendsHostSync();
+  useActionRequestProcessor();
+
+  const [friendsInitialJoinCode, setFriendsInitialJoinCode] =
+    React.useState<string | null>(null);
+  const friendsCode = useAppSelector(selectPlayFriendsCode);
+
+  // Auto-clear stale friends session when we go fully home with no code-relevant
+  // status. (Does nothing for active sessions because the slice has been
+  // explicitly cleared by the leave/cancel flows.)
+  React.useEffect(() => {
+    if (gameStatus === "home" && friendsCode === null) {
+      // already clean
+      return;
+    }
+    if (gameStatus === "home" && gameType !== "play-friends") {
+      dispatch(clearFriendsSession());
+    }
+  }, [gameStatus, gameType, friendsCode, dispatch]);
 
   // Handle ?join=XXXXXX URL parameter
   React.useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const joinCode = params.get("join");
+    const playCode = params.get("play");
     if (joinCode && joinCode.length === 6) {
       setJoinInitialCode(joinCode.toUpperCase());
       setJoinDialogOpen(true);
-      // Clean up URL
+      window.history.replaceState({}, document.title, window.location.pathname);
+    } else if (playCode && playCode.length === 6) {
+      setFriendsInitialJoinCode(playCode.toUpperCase());
+      dispatch(setGameType("play-friends"));
+      dispatch({ type: "game/startNewGame" });
       window.history.replaceState({}, document.title, window.location.pathname);
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Ranked / unranked game-length end detection. Compute on every change; show
   // a one-time toast when the threshold transitions from not-met to met.
   const isRankedOrUnranked =
-    gameStatus === "started" && gameType !== "play" && gameView !== "play";
+    gameStatus === "started" && gameType !== "play" && gameType !== "play-friends" && gameView !== "play";
   const rankedRoundsPlayed = Math.max(0, scoreState.past.length - 1);
   const rankedHighestWeighted = React.useMemo(() => {
     if (!isRankedOrUnranked) return 0;
@@ -185,7 +221,7 @@ function App() {
   const validRender =
     gameStatus === "home" ||
     (gameStatus === "new" &&
-      (gameType === "unranked" || gameType === "ranked" || gameType === "play")) ||
+      (gameType === "unranked" || gameType === "ranked" || gameType === "play" || gameType === "play-friends")) ||
     (gameStatus === "started" &&
       (gameView === "classic" || gameView === "new" || gameView === "play"));
 
@@ -225,6 +261,11 @@ function App() {
       {gameStatus === "new" && gameType === "unranked" && <GameCreator />}
       {gameStatus === "new" && gameType === "ranked" && <RankedGameCreator />}
       {gameStatus === "new" && gameType === "play" && <PlayCreator />}
+      {gameStatus === "new" && gameType === "play-friends" && (
+        <FriendsLobby
+          initialJoinCode={friendsInitialJoinCode ?? undefined}
+        />
+      )}
 
       {gameStatus === "started" && gameView === "classic" && (
         <ScoresHistoryNew />
@@ -248,11 +289,11 @@ function App() {
         <Toolbar>
           <Menu toggleColorMode={colorMode.toggleColorMode} />
           
-          {!isViewer && gameView !== "play" && gameType !== "play" && (
+          {!isViewer && gameView !== "play" && gameType !== "play" && gameType !== "play-friends" && (
             <ScoreEntryDialog disabled={rankedGameOver} />
           )}
           <Box sx={{ flexGrow: 1 }} />
-          {gameStatus === "started" && !isViewer && gameView !== "play" && gameType !== "play" && (
+          {gameStatus === "started" && !isViewer && gameView !== "play" && gameType !== "play" && gameType !== "play-friends" && (
             <>
               <IconButton
                 disabled={scoreState.past.length < 2}
@@ -336,7 +377,7 @@ function App() {
               )}
             </>
           )}
-          {gameStatus === "started" && !isViewer && gameView !== "play" && gameType !== "play" && (
+          {gameStatus === "started" && !isViewer && gameView !== "play" && gameType !== "play" && gameType !== "play-friends" && (
             <IconButton
               onClick={handleShareGame}
               color="primary"

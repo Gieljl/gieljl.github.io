@@ -36,6 +36,11 @@ export interface PlayState {
   round: RoundState | null;
   /** Stable id → display name, set at game init. */
   playerNames: Record<PlayerId, string>;
+  /**
+   * Friends-mode only: stable id → username (lowercased) used to write
+   * per-participant stats at game-end. Empty for vs-AI games.
+   */
+  usernameByPlayerId: Record<PlayerId, string>;
   /** Ids in seating order. */
   seating: PlayerId[];
   humanId: PlayerId | null;
@@ -45,6 +50,12 @@ export interface PlayState {
    */
   humanUsername: string | null;
   dealerId: PlayerId | null;
+  /**
+   * Distinguishes the two Play sub-modes:
+   *   'ai'     — single human + bots (existing).
+   *   'friends' — 2–4 humans, no bots.
+   */
+  mode: 'ai' | 'friends';
   difficulty: Difficulty;
   /** Configured length condition for this play game. */
   length: GameLength;
@@ -67,10 +78,12 @@ export interface PlayState {
 const initialState: PlayState = {
   round: null,
   playerNames: {},
+  usernameByPlayerId: {},
   seating: [],
   humanId: null,
   humanUsername: null,
   dealerId: null,
+  mode: 'ai',
   difficulty: 'normal',
   length: 'classic',
   gameOver: false,
@@ -108,11 +121,77 @@ export const playSlice = createSlice({
         seed,
       });
       state.playerNames = playerNames;
+      state.usernameByPlayerId = {};
       state.seating = seating;
       state.humanId = humanId;
       state.humanUsername = humanUsername;
       state.dealerId = dealerId;
+      state.mode = 'ai';
       state.difficulty = difficulty;
+      state.length = length;
+      state.gameOver = false;
+      state.cumulativeTotals = totals;
+      state.roundHistory = [];
+      state.thinkingPlayerId = null;
+      state.log = [];
+      state.lastError = null;
+      state.lastRoundResult = null;
+      state.lastEvents = [];
+      state.nextLogId = 1;
+    },
+
+    /**
+     * Initialise a Play vs Friends game. All participants are humans; seating
+     * is provided externally by the host so every device computes the same
+     * order. The local device's `humanId` is the entry whose username matches
+     * `humanUsername`.
+     */
+    initFriendsGame: (
+      state,
+      action: PayloadAction<{
+        seating: PlayerId[];
+        playerNames: Record<PlayerId, string>;
+        usernameByPlayerId: Record<PlayerId, string>;
+        humanUsername: string;
+        length: GameLength;
+        seed?: number;
+      }>,
+    ) => {
+      const {
+        seating,
+        playerNames,
+        usernameByPlayerId,
+        humanUsername,
+        length,
+        seed,
+      } = action.payload;
+      const totals: Record<PlayerId, number> = {};
+      seating.forEach((id) => {
+        totals[id] = 0;
+      });
+      const dealerId = seating[0] ?? null;
+      const humanId =
+        seating.find((id) => usernameByPlayerId[id] === humanUsername) ?? null;
+      state.round = dealerId
+        ? startRound({
+            players: seating.map((id) => ({
+              id,
+              name: playerNames[id] ?? id,
+              isBot: false,
+            })),
+            dealerId,
+            seed,
+          })
+        : null;
+      state.playerNames = { ...playerNames };
+      state.seating = [...seating];
+      state.humanId = humanId;
+      state.humanUsername = humanUsername;
+      state.dealerId = dealerId;
+      state.mode = 'friends';
+      state.usernameByPlayerId = { ...usernameByPlayerId };
+      // 'normal' is unused for vs-friends but required by the slice shape.
+      state.difficulty = 'normal';
       state.length = length;
       state.gameOver = false;
       state.cumulativeTotals = totals;
@@ -173,7 +252,7 @@ export const playSlice = createSlice({
         players: state.seating.map((id) => ({
           id,
           name: state.playerNames[id],
-          isBot: id !== state.humanId,
+          isBot: state.mode === 'ai' ? id !== state.humanId : false,
         })),
         dealerId: state.dealerId,
         seed: action.payload?.seed,
@@ -250,6 +329,7 @@ function suitSymbol(s: string): string {
 
 export const {
   initGame,
+  initFriendsGame,
   submitAction,
   beginNextRound,
   setThinking,
@@ -273,10 +353,13 @@ export const selectPlayCurrentPlayerId = (s: RootState): PlayerId | null => {
 export const selectPlayHumanId = (s: RootState) => s.play.humanId;
 export const selectPlayHumanUsername = (s: RootState) => s.play.humanUsername;
 export const selectPlayTotals = (s: RootState) => s.play.cumulativeTotals;
+export const selectPlayCumulativeTotals = (s: RootState) =>
+  s.play.cumulativeTotals;
 export const selectPlayNames = (s: RootState) => s.play.playerNames;
 export const selectPlayLastError = (s: RootState) => s.play.lastError;
 export const selectPlayLastRoundResult = (s: RootState) => s.play.lastRoundResult;
 export const selectPlayLog = (s: RootState) => s.play.log;
 export const selectPlayLastEvents = (s: RootState) => s.play.lastEvents;
 export const selectPlayLength = (s: RootState) => s.play.length;
+export const selectPlayMode = (s: RootState) => s.play.mode;
 export const selectPlayGameOver = (s: RootState) => s.play.gameOver;

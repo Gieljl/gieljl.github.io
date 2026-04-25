@@ -14,6 +14,16 @@ import ExitToAppIcon from '@mui/icons-material/ExitToApp';
 import { useSnackbar, closeSnackbar } from 'notistack';
 import { useAppDispatch, useAppSelector } from '../../app/hooks';
 import { goHome, setGameView } from '../game/gameSlice';
+import {
+  selectPlayFriendsCode,
+  selectPlayFriendsRole,
+  clearFriendsSession,
+} from '../playFriends/playFriendsSlice';
+import {
+  endPlaySession,
+  setParticipantConnected,
+} from '../playFriends/playSessionService';
+import { selectCurrentPlayer } from '../identity/identitySlice';
 import PlayingCard from './PlayingCard';
 import logo from '../../yasa7.png';
 import logolight from '../../yasa7_light.png';
@@ -29,8 +39,8 @@ import {
   selectPlayLastEvents,
   selectPlayLog,
   selectPlayRound,
-  submitAction,
 } from './playSlice';
+import { submitFriendsAction } from '../playFriends/submitFriendsAction';
 import { useBotDriver } from './useBotDriver';
 import { usePlayGameEnd } from './usePlayGameEnd';
 import RoundEndDialog from './RoundEndDialog';
@@ -54,6 +64,11 @@ export const PlayTable: React.FC = () => {
   const history = useAppSelector((s) => s.play.roundHistory);
   const statsWeights = useAppSelector(selectStatsWeight);
   const length = useAppSelector(selectPlayLength);
+  const friendsRole = useAppSelector(selectPlayFriendsRole);
+  const friendsCode = useAppSelector(selectPlayFriendsCode);
+  const currentPlayer = useAppSelector(selectCurrentPlayer);
+  const shouldDelayEventClear =
+    friendsRole === 'host' && Boolean(friendsCode);
 
   useBotDriver();
   usePlayGameEnd();
@@ -85,9 +100,15 @@ export const PlayTable: React.FC = () => {
 
   React.useLayoutEffect(() => {
     if (!lastEvents.length) return;
+    const clearEvents = () => dispatch(clearLastEvents());
+    const clearDelayMs = shouldDelayEventClear ? 350 : 0;
     const containerRect = containerRef.current?.getBoundingClientRect();
     if (!containerRect) {
-      dispatch(clearLastEvents());
+      if (clearDelayMs > 0) {
+        const timer = window.setTimeout(clearEvents, clearDelayMs);
+        return () => window.clearTimeout(timer);
+      }
+      clearEvents();
       return;
     }
     const centerOf = (el: HTMLElement | null) => {
@@ -160,11 +181,22 @@ export const PlayTable: React.FC = () => {
         () => setFlyers((prev) => prev.filter((f) => !ids.has(f.id))),
         700 + maxDelay,
       );
-      dispatch(clearLastEvents());
+      if (clearDelayMs > 0) {
+        const clearTimer = window.setTimeout(clearEvents, clearDelayMs);
+        return () => {
+          window.clearTimeout(cleanup);
+          window.clearTimeout(clearTimer);
+        };
+      }
+      clearEvents();
       return () => window.clearTimeout(cleanup);
     }
-    dispatch(clearLastEvents());
-  }, [lastEvents, dispatch, humanId]);
+    if (clearDelayMs > 0) {
+      const timer = window.setTimeout(clearEvents, clearDelayMs);
+      return () => window.clearTimeout(timer);
+    }
+    clearEvents();
+  }, [lastEvents, dispatch, humanId, shouldDelayEventClear]);
 
   React.useEffect(() => {
     setSelected(new Set());
@@ -213,7 +245,7 @@ export const PlayTable: React.FC = () => {
   const drawFromDeck = () => {
     if (!canDiscard) return;
     dispatch(
-      submitAction({
+      submitFriendsAction({
         type: 'discardThenDraw',
         discard: selectedCards,
         drawFrom: 'deck',
@@ -227,7 +259,7 @@ export const PlayTable: React.FC = () => {
       return;
     }
     dispatch(
-      submitAction({
+      submitFriendsAction({
         type: 'discardThenDraw',
         discard: selectedCards,
         drawFrom: { fromDiscardId: cardId },
@@ -236,10 +268,50 @@ export const PlayTable: React.FC = () => {
   };
 
   const declareYasat = () => {
-    dispatch(submitAction({ type: 'declareYasat' }));
+    dispatch(submitFriendsAction({ type: 'declareYasat' }));
   };
 
   const onClickLeaveGame = () => {
+    if (friendsRole !== null && friendsCode) {
+      enqueueSnackbar(
+        friendsRole === 'host'
+          ? 'Leave and end the game for everyone?'
+          : 'Leave this online game?',
+        {
+          variant: 'warning',
+          persist: true,
+          action: (key) => (
+            <>
+              <Button
+                color="inherit"
+                onClick={() => {
+                  if (friendsRole === 'host') {
+                    endPlaySession(friendsCode, null).catch(() => undefined);
+                  } else if (currentPlayer?.username) {
+                    endPlaySession(friendsCode, null).catch(() => undefined);
+                    setParticipantConnected(
+                      friendsCode,
+                      currentPlayer.username,
+                      false,
+                    ).catch(() => undefined);
+                  }
+                  dispatch(clearFriendsSession());
+                  dispatch(endGame());
+                  dispatch(goHome());
+                  closeSnackbar(key);
+                }}
+              >
+                Yes
+              </Button>
+              <Button color="inherit" onClick={() => closeSnackbar(key)}>
+                No
+              </Button>
+            </>
+          ),
+        },
+      );
+      return;
+    }
     enqueueSnackbar('Leave the current game and return to the start screen?', {
       variant: 'warning',
       persist: true,

@@ -27,7 +27,17 @@ import {
 } from './playSlice';
 import { computePlayWeightedScores } from './weightedScore';
 import { computePlayGameResult } from './playGameResults';
-import { savePlayGameResult } from '../identity/playerService';
+import {
+  savePlayGameResult,
+  saveFriendsPlayGameResult,
+  type GameStatsEntry,
+} from '../identity/playerService';
+import {
+  selectPlayFriendsCode,
+  selectPlayFriendsRole,
+  clearFriendsSession,
+} from '../playFriends/playFriendsSlice';
+import { endPlaySession } from '../playFriends/playSessionService';
 import type { RootState } from '../../app/store';
 import { enqueueSnackbar } from 'notistack';
 
@@ -44,6 +54,11 @@ export function usePlayGameEnd(): void {
   const history = useAppSelector((s: RootState) => s.play.roundHistory);
   const round = useAppSelector((s: RootState) => s.play.round);
   const weights = useAppSelector(selectStatsWeight);
+  const friendsRole = useAppSelector(selectPlayFriendsRole);
+  const friendsCode = useAppSelector(selectPlayFriendsCode);
+  const usernameByPlayerId = useAppSelector(
+    (s: RootState) => s.play.usernameByPlayerId,
+  );
   const triggeredRef = useRef(false);
 
   useEffect(() => {
@@ -96,6 +111,7 @@ export function usePlayGameEnd(): void {
 
     // Persist Play stats for the logged-in human (bo10 / firstTo10 only).
     if (
+      friendsRole === null &&
       humanUsername &&
       humanId &&
       (length === 'bo10' || length === 'firstTo10')
@@ -124,6 +140,67 @@ export function usePlayGameEnd(): void {
           });
         });
     }
+
+    // Friends mode: host writes friends-stats for every participant once.
+    if (
+      friendsRole === 'host' &&
+      friendsCode &&
+      (length === 'bo10' || length === 'firstTo10')
+    ) {
+      const entries: GameStatsEntry[] = seating
+        .map((id) => {
+          const username = usernameByPlayerId?.[id];
+          if (!username) return null;
+          const result = computePlayGameResult({
+            username,
+            humanId: id,
+            history,
+            seating,
+            weights,
+            winnerId,
+          });
+          return result;
+        })
+        .filter((e): e is GameStatsEntry => e !== null);
+      const lengthLabel =
+        GAME_LENGTH_OPTIONS.find((o) => o.value === length)?.label ?? length;
+      saveFriendsPlayGameResult(entries, length)
+        .then(() => {
+          enqueueSnackbar(
+            `Friends stats saved (${lengthLabel}).`,
+            { variant: 'info', autoHideDuration: 4000 },
+          );
+        })
+        .catch(() => {
+          enqueueSnackbar('Could not save Friends stats.', {
+            variant: 'warning',
+            autoHideDuration: 4000,
+          });
+        })
+        .finally(() => {
+          const winnerUsername = usernameByPlayerId?.[winnerId] ?? null;
+          const winnerEntry = entries.find(
+            (e) => e.username === winnerUsername,
+          );
+          endPlaySession(
+            friendsCode,
+            winnerUsername
+              ? {
+                  playerId: winnerId,
+                  username: winnerUsername,
+                  score: winnerEntry?.weightedScore ?? 0,
+                }
+              : null,
+          ).catch(() => undefined);
+        });
+    }
+
+    // Guests do nothing: the host writes stats and ends the session.
+    if (friendsRole === 'guest') {
+      // No-op; stats persistence happens on the host. We keep the play slice
+      // around so the player can browse stats until they leave.
+      void clearFriendsSession; // (kept for explicit future Leave handler)
+    }
   }, [
     gameOver,
     length,
@@ -137,6 +214,9 @@ export function usePlayGameEnd(): void {
     difficulty,
     dispatch,
     round,
+    friendsRole,
+    friendsCode,
+    usernameByPlayerId,
   ]);
 }
 
