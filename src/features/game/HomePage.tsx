@@ -192,7 +192,7 @@ export const HomePage: React.FC = () => {
             color="text.secondary"
             sx={{ maxWidth: 280, textAlign: "center" }}
           >
-            Live card game online.
+            Login required for all online play modes.
           </Typography>
 
           <Button
@@ -205,7 +205,7 @@ export const HomePage: React.FC = () => {
             Play vs. AI
           </Button>
           <Typography variant="caption" color="text.secondary" sx={{ mt: -2, mb: -2, maxWidth: 280, textAlign: "center" }}>
-            Play against bots. Log in to save stats.
+            Play against bots. Stats saved to leaderboards.
           </Typography>
 
           <Button

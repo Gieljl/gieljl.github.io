@@ -157,17 +157,17 @@ export const PlayCreator: React.FC = () => {
           </IconButton>
         </Stack>
       ) : (
-        <Stack direction="row" spacing={1} alignItems="center">
-          <Typography variant="caption" color="text.secondary">
-            Log in to save your Play stats
+        <Stack direction="column" spacing={1} alignItems="center">
+          <Typography variant="body2" color="warning.main" sx={{ textAlign: 'center' }}>
+            You must be logged in to play.
           </Typography>
           <Button
             size="small"
-            variant="outlined"
+            variant="contained"
             startIcon={<PersonIcon />}
             onClick={() => setOpenIdentity(true)}
           >
-            Log in
+            Log in / register
           </Button>
         </Stack>
       )}
@@ -230,7 +230,7 @@ export const PlayCreator: React.FC = () => {
       </Typography>
 
       <Box sx={{ display: 'flex', gap: 2, mt: 2 }}>
-        <Button variant="contained" size="large" onClick={start}>
+        <Button variant="contained" size="large" onClick={start} disabled={!isLoggedIn}>
           Start Game
         </Button>
       </Box>
