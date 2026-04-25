@@ -59,6 +59,8 @@ export interface PlayState {
   lastError: string | null;
   /** Present when the round has just ended and the dialog should show. */
   lastRoundResult: StoredRoundResult | null;
+  /** Structured events emitted by the most recent submitAction, for UI animations. */
+  lastEvents: import('./engine/round').RoundEvent[];
   nextLogId: number;
 }
 
@@ -78,6 +80,7 @@ const initialState: PlayState = {
   log: [],
   lastError: null,
   lastRoundResult: null,
+  lastEvents: [],
   nextLogId: 1,
 };
 
@@ -118,6 +121,7 @@ export const playSlice = createSlice({
       state.log = [];
       state.lastError = null;
       state.lastRoundResult = null;
+      state.lastEvents = [];
       state.nextLogId = 1;
     },
 
@@ -130,6 +134,7 @@ export const playSlice = createSlice({
       }
       state.lastError = null;
       state.round = result.state;
+      state.lastEvents = result.events;
       for (const ev of result.events) {
         const msg = formatEvent(ev, state.playerNames);
         if (msg) {
@@ -175,6 +180,7 @@ export const playSlice = createSlice({
       });
       state.lastError = null;
       state.lastRoundResult = null;
+      state.lastEvents = [];
       state.thinkingPlayerId = null;
     },
 
@@ -192,6 +198,10 @@ export const playSlice = createSlice({
 
     clearRoundResult: (state) => {
       state.lastRoundResult = null;
+    },
+
+    clearLastEvents: (state) => {
+      state.lastEvents = [];
     },
 
     endGame: () => initialState,
@@ -246,6 +256,7 @@ export const {
   markGameOver,
   clearError,
   clearRoundResult,
+  clearLastEvents,
   endGame,
 } = playSlice.actions;
 
@@ -266,5 +277,6 @@ export const selectPlayNames = (s: RootState) => s.play.playerNames;
 export const selectPlayLastError = (s: RootState) => s.play.lastError;
 export const selectPlayLastRoundResult = (s: RootState) => s.play.lastRoundResult;
 export const selectPlayLog = (s: RootState) => s.play.log;
+export const selectPlayLastEvents = (s: RootState) => s.play.lastEvents;
 export const selectPlayLength = (s: RootState) => s.play.length;
 export const selectPlayGameOver = (s: RootState) => s.play.gameOver;

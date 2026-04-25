@@ -21,10 +21,12 @@ import { classifyDiscard, pickableFromDiscard } from './engine/combos';
 import { Card, handPoints } from './engine/cards';
 import {
   clearError,
+  clearLastEvents,
   endGame,
   selectPlayCurrentPlayerId,
   selectPlayHumanId,
   selectPlayLastError,
+  selectPlayLastEvents,
   selectPlayLog,
   selectPlayRound,
   submitAction,
@@ -46,6 +48,7 @@ export const PlayTable: React.FC = () => {
   const currentId = useAppSelector(selectPlayCurrentPlayerId);
   const error = useAppSelector(selectPlayLastError);
   const log = useAppSelector(selectPlayLog);
+  const lastEvents = useAppSelector(selectPlayLastEvents);
   const totals = useAppSelector((s) => s.play.cumulativeTotals);
   const thinking = useAppSelector((s) => s.play.thinkingPlayerId);
   const history = useAppSelector((s) => s.play.roundHistory);
@@ -56,6 +59,112 @@ export const PlayTable: React.FC = () => {
   usePlayGameEnd();
 
   const [selected, setSelected] = React.useState<Set<string>>(new Set());
+
+  // --- Card-flight animations -------------------------------------------------
+  // We keep refs to the deck, the discard area, the human hand row, and each
+  // opponent's card stack so we can compute pixel-space source/target rects
+  // for each event and animate transient "flyer" cards between them.
+  const containerRef = React.useRef<HTMLDivElement | null>(null);
+  const deckRef = React.useRef<HTMLDivElement | null>(null);
+  const discardRef = React.useRef<HTMLDivElement | null>(null);
+  const humanHandRef = React.useRef<HTMLDivElement | null>(null);
+  const opponentRefs = React.useRef<Record<string, HTMLDivElement | null>>({});
+
+  interface Flyer {
+    id: string;
+    fromX: number;
+    fromY: number;
+    toX: number;
+    toY: number;
+    card?: Card;
+    faceDown: boolean;
+    delay: number;
+  }
+  const [flyers, setFlyers] = React.useState<Flyer[]>([]);
+  const flyerSeqRef = React.useRef(0);
+
+  React.useLayoutEffect(() => {
+    if (!lastEvents.length) return;
+    const containerRect = containerRef.current?.getBoundingClientRect();
+    if (!containerRect) {
+      dispatch(clearLastEvents());
+      return;
+    }
+    const centerOf = (el: HTMLElement | null) => {
+      if (!el) return null;
+      const r = el.getBoundingClientRect();
+      return {
+        x: r.left + r.width / 2 - containerRect.left,
+        y: r.top + r.height / 2 - containerRect.top,
+      };
+    };
+    const playerCenter = (playerId: string) => {
+      if (playerId === humanId) return centerOf(humanHandRef.current);
+      return centerOf(opponentRefs.current[playerId] ?? null);
+    };
+
+    const newFlyers: Flyer[] = [];
+    for (const ev of lastEvents) {
+      if (ev.type === 'discarded') {
+        const from = playerCenter(ev.playerId);
+        const to = centerOf(discardRef.current);
+        if (!from || !to) continue;
+        ev.cards.forEach((card, i) => {
+          newFlyers.push({
+            id: `fly-${flyerSeqRef.current++}`,
+            fromX: from.x,
+            fromY: from.y,
+            toX: to.x + (i - (ev.cards.length - 1) / 2) * 10,
+            toY: to.y,
+            card,
+            faceDown: false,
+            delay: i * 60,
+          });
+        });
+      } else if (ev.type === 'drewFromDeck') {
+        const from = centerOf(deckRef.current);
+        const to = playerCenter(ev.playerId);
+        if (!from || !to) continue;
+        newFlyers.push({
+          id: `fly-${flyerSeqRef.current++}`,
+          fromX: from.x,
+          fromY: from.y,
+          toX: to.x,
+          toY: to.y,
+          faceDown: true,
+          delay: 120,
+        });
+      } else if (ev.type === 'drewFromDiscard') {
+        const from = centerOf(discardRef.current);
+        const to = playerCenter(ev.playerId);
+        if (!from || !to) continue;
+        newFlyers.push({
+          id: `fly-${flyerSeqRef.current++}`,
+          fromX: from.x,
+          fromY: from.y,
+          toX: to.x,
+          toY: to.y,
+          // Hide opponent draws so the human can't see what was taken.
+          card: ev.playerId === humanId ? ev.card : undefined,
+          faceDown: ev.playerId !== humanId,
+          delay: 120,
+        });
+      }
+    }
+
+    if (newFlyers.length) {
+      setFlyers((prev) => [...prev, ...newFlyers]);
+      const ids = new Set(newFlyers.map((f) => f.id));
+      const maxDelay = newFlyers.reduce((m, f) => Math.max(m, f.delay), 0);
+      const cleanup = window.setTimeout(
+        () => setFlyers((prev) => prev.filter((f) => !ids.has(f.id))),
+        700 + maxDelay,
+      );
+      dispatch(clearLastEvents());
+      return () => window.clearTimeout(cleanup);
+    }
+    dispatch(clearLastEvents());
+  }, [lastEvents, dispatch, humanId]);
 
   React.useEffect(() => {
     setSelected(new Set());
@@ -165,7 +274,7 @@ export const PlayTable: React.FC = () => {
   );
 
   return (
-    <Box sx={{ width: '100%', pb: 10, pt: 0, px: 0 }}>
+    <Box ref={containerRef} sx={{ width: '100%', pb: 10, pt: 0, px: 0, position: 'relative' }}>
       {/* Top bar with logo, stats + quit buttons (matches PlayPlayerRanking) */}
       <Stack
         direction="row"
@@ -247,7 +356,13 @@ export const PlayTable: React.FC = () => {
                 sx={{ height: 18, '& .MuiChip-label': { px: 0.75, fontSize: 11 } }}
               />
             </Stack>
-            <Stack direction="row" spacing={-1.5}>
+            <Stack
+              direction="row"
+              spacing={-1.5}
+              ref={(el: HTMLDivElement | null) => {
+                opponentRefs.current[p.id] = el;
+              }}
+            >
               {p.hand.map((c) => (
                 <PlayingCard key={c.id} faceDown size="sm" />
               ))}
@@ -261,7 +376,7 @@ export const PlayTable: React.FC = () => {
 
       {/* Center: deck + discard */}
       <Stack direction="row" spacing={3} justifyContent="center" alignItems="center" sx={{ mb: 2 }}>
-        <Stack alignItems="center">
+        <Stack alignItems="center" ref={deckRef}>
           <Tooltip title={canDiscard ? 'Draw from deck' : 'Select a valid discard first'}>
             <span>
               <PlayingCard
@@ -277,7 +392,7 @@ export const PlayTable: React.FC = () => {
           </Typography>
         </Stack>
 
-        <Stack alignItems="center">
+        <Stack alignItems="center" ref={discardRef}>
           <Stack direction="row" spacing={pickable.size > 1 ? 0.5 : -1.5}>
             {topPly.length === 0 ? (
               <Box sx={{ width: 62, height: 88 }} />
@@ -342,6 +457,7 @@ export const PlayTable: React.FC = () => {
           justifyContent="center"
           useFlexGap
           sx={{ pt: 1.5 }}
+          ref={humanHandRef}
         >
           {[...humanHand]
             .sort((a, b) => a.suit.localeCompare(b.suit) || a.rank.localeCompare(b.rank))
@@ -408,7 +524,66 @@ export const PlayTable: React.FC = () => {
         length={length}
       />
 
+      {/* Card-flight animation overlay (above table, below dialogs). */}
+      <Box
+        aria-hidden="true"
+        sx={{
+          position: 'absolute',
+          inset: 0,
+          pointerEvents: 'none',
+          overflow: 'hidden',
+          zIndex: 5,
+        }}
+      >
+        {flyers.map((f) => (
+          <FlyerCard key={f.id} flyer={f} />
+        ))}
+      </Box>
+
       <RoundEndDialog />
+    </Box>
+  );
+};
+
+interface FlyerCardProps {
+  flyer: {
+    id: string;
+    fromX: number;
+    fromY: number;
+    toX: number;
+    toY: number;
+    card?: Card;
+    faceDown: boolean;
+    delay: number;
+  };
+}
+
+// Card width/height for size="md", as defined in PlayingCard.tsx.
+const FLYER_W = 62;
+const FLYER_H = 88;
+
+const FlyerCard: React.FC<FlyerCardProps> = ({ flyer }) => {
+  const [arrived, setArrived] = React.useState(false);
+  React.useLayoutEffect(() => {
+    // Trigger transition on the next paint frame.
+    const id = window.requestAnimationFrame(() => setArrived(true));
+    return () => window.cancelAnimationFrame(id);
+  }, []);
+  const x = arrived ? flyer.toX : flyer.fromX;
+  const y = arrived ? flyer.toY : flyer.fromY;
+  return (
+    <Box
+      sx={{
+        position: 'absolute',
+        left: 0,
+        top: 0,
+        transform: `translate(${x - FLYER_W / 2}px, ${y - FLYER_H / 2}px)`,
+        transition: `transform 600ms cubic-bezier(.4,.9,.3,1) ${flyer.delay}ms, opacity 200ms ease-out ${flyer.delay + 500}ms`,
+        opacity: arrived ? 0 : 1,
+        willChange: 'transform, opacity',
+      }}
+    >
+      <PlayingCard card={flyer.card} faceDown={flyer.faceDown} size="md" />
     </Box>
   );
 };
