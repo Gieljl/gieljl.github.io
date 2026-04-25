@@ -13,11 +13,18 @@ import {
 import AddIcon from '@mui/icons-material/Add';
 import RemoveIcon from '@mui/icons-material/Remove';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
-import { useAppDispatch } from '../../app/hooks';
+import PersonIcon from '@mui/icons-material/Person';
+import LogoutIcon from '@mui/icons-material/Logout';
+import { useAppDispatch, useAppSelector } from '../../app/hooks';
 import { goHome, startGame, setGameLength } from '../game/gameSlice';
 import { GAME_LENGTH_OPTIONS, GAME_LENGTH_DESCRIPTION, type GameLength } from '../game/gameLength';
 import { initGame } from './playSlice';
 import type { Difficulty } from './ai/botPolicy';
+import { IdentityDialog } from '../identity/IdentityDialog';
+import {
+  logout,
+  selectCurrentPlayer,
+} from '../identity/identitySlice';
 import logo from '../../yasa7.png';
 import logolight from '../../yasa7_light.png';
 import '../../App.css';
@@ -58,15 +65,25 @@ function shuffled<T>(arr: readonly T[]): T[] {
 export const PlayCreator: React.FC = () => {
   const dispatch = useAppDispatch();
   const theme = useTheme();
-  const [yourName, setYourName] = React.useState('You');
+  const currentPlayer = useAppSelector(selectCurrentPlayer);
+  const isLoggedIn = !!currentPlayer;
+  const [yourName, setYourName] = React.useState(
+    currentPlayer?.displayName || 'You',
+  );
   const [numBots, setNumBots] = React.useState(2);
   const [difficulty, setDifficulty] = React.useState<Difficulty>('normal');
   const [length, setLength] = React.useState<GameLength>('classic');
+  const [openIdentity, setOpenIdentity] = React.useState(false);
+
+  // Keep the name field in sync with the logged-in player.
+  React.useEffect(() => {
+    if (currentPlayer?.displayName) setYourName(currentPlayer.displayName);
+  }, [currentPlayer?.displayName]);
 
   const difficultyHint: Record<Difficulty, string> = {
     easy: 'Easy: bots play simpler and declare Yasat earlier.',
     normal: 'Normal: bots play for weighted stats and better long-term value.',
-    godlike: 'Godlike: bots use one-turn lookahead and optimize for weighted stats.',
+    godlike: 'Godlike: bots use one-turn lookahead and optimise for weighted stats.',
   };
 
   const start = () => {
@@ -76,7 +93,15 @@ export const PlayCreator: React.FC = () => {
       isBot: true,
     }));
     const players = [{ name: yourName.trim() || 'You', isBot: false }, ...bots];
-    dispatch(initGame({ players, humanIndex: 0, difficulty, length }));
+    dispatch(
+      initGame({
+        players,
+        humanIndex: 0,
+        difficulty,
+        length,
+        humanUsername: currentPlayer?.username ?? null,
+      }),
+    );
     dispatch(setGameLength(length));
     dispatch(startGame());
   };
@@ -114,7 +139,38 @@ export const PlayCreator: React.FC = () => {
         onChange={(e) => setYourName(e.target.value)}
         size="small"
         sx={{ width: 220 }}
+        disabled={isLoggedIn}
+        helperText={isLoggedIn ? 'Using your account name' : ' '}
       />
+
+      {isLoggedIn ? (
+        <Stack direction="row" spacing={1} alignItems="center">
+          <Typography variant="caption" color="text.secondary">
+            Saving stats as <strong>{currentPlayer.displayName}</strong>
+          </Typography>
+          <IconButton
+            size="small"
+            aria-label="Log out"
+            onClick={() => dispatch(logout())}
+          >
+            <LogoutIcon fontSize="small" />
+          </IconButton>
+        </Stack>
+      ) : (
+        <Stack direction="row" spacing={1} alignItems="center">
+          <Typography variant="caption" color="text.secondary">
+            Log in to save your Play stats
+          </Typography>
+          <Button
+            size="small"
+            variant="outlined"
+            startIcon={<PersonIcon />}
+            onClick={() => setOpenIdentity(true)}
+          >
+            Log in
+          </Button>
+        </Stack>
+      )}
 
       <Stack direction="row" spacing={2} alignItems="center">
         <Typography>Opponents:</Typography>
@@ -180,10 +236,12 @@ export const PlayCreator: React.FC = () => {
       </Box>
 
       <Typography variant="caption" color="text.secondary" sx={{ maxWidth: 360, textAlign: 'center' }}>
-        Local sandbox game vs. bots. Results are not saved, shared, or counted
-        towards any ranking.
+        {isLoggedIn
+          ? 'Best of 10 / First to 10 stats are saved to your Play leaderboards. Classic games are not tracked. Bots are never saved.'
+          : 'Log in to save Best of 10 / First to 10 stats to your Play leaderboards. Classic and bots are never saved.'}
       </Typography>
     </Stack>
+      <IdentityDialog open={openIdentity} onClose={() => setOpenIdentity(false)} />
     </>
   );
 };

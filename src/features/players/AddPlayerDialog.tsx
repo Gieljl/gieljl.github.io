@@ -109,7 +109,7 @@ export function AddPlayerDialog() {
               <CloseIcon />
             </IconButton>
             <Typography sx={{ ml: 2, flex: 1 }} variant="h6" component="div">
-              Player Editor
+              Player editor
             </Typography>
           </Toolbar>
         </AppBar>

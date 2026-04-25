@@ -68,7 +68,7 @@ export const GameCreator = () => {
         }}
       >
         <Typography variant="h6" color="primary">
-          Unranked Game
+          Unranked game
         </Typography>
         <PlayerList editable />
         {players.length < 1 && (

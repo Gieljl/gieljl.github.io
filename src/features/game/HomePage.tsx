@@ -18,6 +18,8 @@ import LeaderboardIcon from "@mui/icons-material/Leaderboard";
 import CastConnectedIcon from "@mui/icons-material/CastConnected";
 import HelpOutlineIcon from "@mui/icons-material/HelpOutline";
 import CloseIcon from "@mui/icons-material/Close";
+import ArrowBackIcon from "@mui/icons-material/ArrowBack";
+import ScoreboardIcon from "@mui/icons-material/Scoreboard";
 import { TransitionProps } from "@mui/material/transitions";
 import { useAppDispatch } from "../../app/hooks";
 import { setGameType, startNewGame } from "./gameSlice";
@@ -41,6 +43,9 @@ export const HomePage: React.FC = () => {
   const [leaderboardOpen, setLeaderboardOpen] = React.useState(false);
   const [joinOpen, setJoinOpen] = React.useState(false);
   const [rulesOpen, setRulesOpen] = React.useState(false);
+  const [homeView, setHomeView] = React.useState<"main" | "score-tracker">(
+    "main",
+  );
 
   const choose = (mode: "unranked" | "ranked" | "play") => {
     dispatch(setGameType(mode));
@@ -62,80 +67,119 @@ export const HomePage: React.FC = () => {
         />
       </Box>
 
-      <Typography variant="h5" color="text.primary">
-        Choose a game mode
+      <Typography variant="h5" sx={{ color: "#7df3e1" }}>
+        {homeView === "main" ? "Choose a game mode" : "Score tracker"}
       </Typography>
 
-      <Stack direction="column" spacing={3} alignItems="center">
-        <Button
-          variant="contained"
-          size="large"
-          startIcon={<EmojiEventsIcon />}
-          onClick={() => choose("ranked")}
-          sx={{ width: 260, height: 60, fontSize: 18 }}
+      {homeView === "score-tracker" && (
+        <IconButton
+          aria-label="Back to home"
+          color="primary"
+          onClick={() => setHomeView("main")}
+          sx={{ position: "absolute", top: 8, left: 8 }}
         >
-          Ranked
-        </Button>
-        <Typography variant="caption" color="text.secondary" sx={{ mt: -2 }}>
-          Log in, track stats, compete online.
-        </Typography>
+          <ArrowBackIcon />
+        </IconButton>
+      )}
 
-        <Button
-          variant="outlined"
-          size="large"
-          startIcon={<SportsEsportsIcon />}
-          onClick={() => choose("unranked")}
-          sx={{ width: 260, height: 60, fontSize: 18 }}
-        >
-          Unranked
-        </Button>
-        <Typography variant="caption" color="text.secondary" sx={{ mt: -2 }}>
-          Quick local game, no login needed.
-        </Typography>
+      {homeView === "main" ? (
+        <Stack direction="column" spacing={3} alignItems="center">
+          <Button
+            variant="contained"
+            size="large"
+            startIcon={<ScoreboardIcon />}
+            onClick={() => setHomeView("score-tracker")}
+            sx={{ width: 260, height: 60, fontSize: 18 }}
+          >
+            Score Tracker
+          </Button>
+          <Typography variant="caption" color="text.secondary" sx={{ mt: -2 }}>
+            For in-person games. Tap scores as you play.
+          </Typography>
 
-        <Button
-          variant="outlined"
-          size="large"
-          startIcon={<StyleIcon />}
-          onClick={() => choose("play")}
-          sx={{ width: 260, height: 60, fontSize: 18 }}
-        >
-          Play vs. Bots
-        </Button>
-        <Typography variant="caption" color="text.secondary" sx={{ mt: -2 }}>
-          Live card game against NPCs. Nothing saved.
-        </Typography>
+          <Button
+            variant="outlined"
+            size="large"
+            startIcon={<StyleIcon />}
+            onClick={() => choose("play")}
+            sx={{ width: 260, height: 60, fontSize: 18 }}
+          >
+            Play vs. Bots
+          </Button>
+          <Typography variant="caption" color="text.secondary" sx={{ mt: -2 }}>
+            Live card game vs. bots. Log in to save Best of 10 / First to 10 stats.
+          </Typography>
 
-        <Button
-          variant="text"
-          size="large"
-          startIcon={<LeaderboardIcon />}
-          onClick={() => setLeaderboardOpen(true)}
-          sx={{ width: 260, height: 60, fontSize: 18, mt: 1 }}
-        >
-          Leaderboards
-        </Button>
+          <Button
+            variant="text"
+            size="large"
+            startIcon={<LeaderboardIcon />}
+            onClick={() => setLeaderboardOpen(true)}
+            sx={{ width: 260, height: 60, fontSize: 18, mt: 1 }}
+          >
+            Leaderboards
+          </Button>
 
-        <Button
-          variant="text"
-          size="large"
-          startIcon={<CastConnectedIcon />}
-          onClick={() => setJoinOpen(true)}
-          sx={{ width: 260, height: 60, fontSize: 18 }}
-        >
-          Join Online Game
-        </Button>
+          <Button
+            variant="text"
+            size="large"
+            startIcon={<CastConnectedIcon />}
+            onClick={() => setJoinOpen(true)}
+            sx={{ width: 260, height: 60, fontSize: 18 }}
+          >
+            Join Online Game
+          </Button>
+          <Typography variant="caption" color="text.secondary" sx={{ mt: -2 }}>
+            Watch / co-track a friend's ranked online game.
+          </Typography>
 
-        <Button
-          variant="text"
-          size="large"
-          startIcon={<HelpOutlineIcon />}
-          onClick={() => setRulesOpen(true)}
-          sx={{ width: 260, height: 60, fontSize: 18 }}
-        >
-          Rules
-        </Button>
-      </Stack>
+          <Button
+            variant="text"
+            size="large"
+            startIcon={<HelpOutlineIcon />}
+            onClick={() => setRulesOpen(true)}
+            sx={{ width: 260, height: 60, fontSize: 18 }}
+          >
+            Rules
+          </Button>
+        </Stack>
+      ) : (
+        <Stack direction="column" spacing={3} alignItems="center">
+          <Typography
+            variant="caption"
+            color="text.secondary"
+            sx={{ maxWidth: 280, textAlign: "center" }}
+          >
+            Manual scorekeeper for in-person games.
+          </Typography>
+
+          <Button
+            variant="contained"
+            size="large"
+            startIcon={<EmojiEventsIcon />}
+            onClick={() => choose("ranked")}
+            sx={{ width: 260, height: 60, fontSize: 18 }}
+          >
+            Ranked
+          </Button>
+          <Typography variant="caption" color="text.secondary" sx={{ mt: -2, maxWidth: 280, textAlign: "center" }}>
+            Log in. Stats saved to leaderboards. Others can Join to spectate.
+          </Typography>
+
+          <Button
+            variant="outlined"
+            size="large"
+            startIcon={<SportsEsportsIcon />}
+            onClick={() => choose("unranked")}
+            sx={{ width: 260, height: 60, fontSize: 18 }}
+          >
+            Unranked
+          </Button>
+          <Typography variant="caption" color="text.secondary" sx={{ mt: -2, maxWidth: 280, textAlign: "center" }}>
+            Quick local game. No login, nothing saved.
+          </Typography>
+        </Stack>
+      )}
 
       <JoinGameDialog open={joinOpen} onClose={() => setJoinOpen(false)} />
 
@@ -158,7 +202,7 @@ export const HomePage: React.FC = () => {
               <CloseIcon />
             </IconButton>
             <Typography sx={{ ml: 2, flex: 1 }} variant="h6" component="div">
-              Yasat Rules Explained
+              Yasat rules explained
             </Typography>
           </Toolbar>
         </AppBar>

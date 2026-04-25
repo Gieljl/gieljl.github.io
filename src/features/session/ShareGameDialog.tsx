@@ -79,7 +79,7 @@ export const ShareGameDialog: React.FC<ShareGameDialogProps> = ({ open, onClose 
             <CloseIcon />
           </IconButton>
           <Typography sx={{ ml: 2, flex: 1 }} variant="h6" component="div">
-            Share Game
+            Share game
           </Typography>
         </Toolbar>
       </AppBar>

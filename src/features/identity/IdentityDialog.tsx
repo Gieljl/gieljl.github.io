@@ -37,10 +37,10 @@ interface IdentityDialogProps {
 }
 
 const SECURITY_QUESTIONS = [
-  'What is your favorite food?',
+  'What is your favourite food?',
   'What is the name of your first pet?',
   'What city were you born in?',
-  'What is your favorite movie?',
+  'What is your favourite movie?',
   'What is your nickname among friends?',
 ];
 
@@ -173,7 +173,7 @@ export const IdentityDialog: React.FC<IdentityDialogProps> = ({ open, onClose })
     <Dialog open={open} onClose={handleClose} fullWidth maxWidth="xs">
       {step === 'username' && (
         <>
-          <DialogTitle>Enter Username</DialogTitle>
+          <DialogTitle sx={{ color: '#7df3e1' }}>Enter username</DialogTitle>
           <DialogContent>
             <Stack spacing={2} mt={1}>
               <Typography variant="body2" color="text.secondary">
@@ -210,7 +210,7 @@ export const IdentityDialog: React.FC<IdentityDialogProps> = ({ open, onClose })
 
       {step === 'register' && (
         <>
-          <DialogTitle>Welcome, new player!</DialogTitle>
+          <DialogTitle sx={{ color: '#7df3e1' }}>Welcome, new player!</DialogTitle>
           <DialogContent>
             <Stack spacing={2} mt={1}>
               <Typography variant="body2" color="text.secondary">
@@ -237,7 +237,7 @@ export const IdentityDialog: React.FC<IdentityDialogProps> = ({ open, onClose })
                   {displayName.slice(0, 2).toUpperCase()}
                 </Avatar>
                 <Typography variant="body2" color="text.secondary">
-                  Pick your color
+                  Pick your colour
                 </Typography>
               </Stack>
               <Box>
@@ -306,7 +306,7 @@ export const IdentityDialog: React.FC<IdentityDialogProps> = ({ open, onClose })
 
       {step === 'verify' && (
         <>
-          <DialogTitle>Welcome back!</DialogTitle>
+          <DialogTitle sx={{ color: '#7df3e1' }}>Welcome back!</DialogTitle>
           <DialogContent>
             <Stack spacing={2} mt={1}>
               <Typography variant="body2" color="text.secondary">

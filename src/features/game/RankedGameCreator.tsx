@@ -93,7 +93,7 @@ export const RankedGameCreator: React.FC = () => {
         }}
       >
         <Typography variant="h6" color="primary">
-          Ranked Game
+          Ranked game
         </Typography>
 
         {!currentPlayer ? (

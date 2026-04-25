@@ -14,15 +14,20 @@ import { useEffect, useRef } from 'react';
 import { useAppDispatch, useAppSelector } from '../../app/hooks';
 import { setGameView } from '../game/gameSlice';
 import { isGameLengthMet } from '../game/gameLength';
+import { GAME_LENGTH_OPTIONS } from '../game/gameLength';
 import { selectStatsWeight } from '../stats/statsSlice';
 import {
   markGameOver,
   selectPlayGameOver,
+  selectPlayHumanId,
+  selectPlayHumanUsername,
   selectPlayLength,
   selectPlayNames,
   selectPlayTotals,
 } from './playSlice';
 import { computePlayWeightedScores } from './weightedScore';
+import { computePlayGameResult } from './playGameResults';
+import { savePlayGameResult } from '../identity/playerService';
 import type { RootState } from '../../app/store';
 import { enqueueSnackbar } from 'notistack';
 
@@ -32,6 +37,8 @@ export function usePlayGameEnd(): void {
   const length = useAppSelector(selectPlayLength);
   const totals = useAppSelector(selectPlayTotals);
   const names = useAppSelector(selectPlayNames);
+  const humanId = useAppSelector(selectPlayHumanId);
+  const humanUsername = useAppSelector(selectPlayHumanUsername);
   const seating = useAppSelector((s: RootState) => s.play.seating);
   const history = useAppSelector((s: RootState) => s.play.roundHistory);
   const round = useAppSelector((s: RootState) => s.play.round);
@@ -85,6 +92,37 @@ export function usePlayGameEnd(): void {
       `Game over! Winner: ${winnerName} \u2014 final score ${winnerScore}.`,
       { variant: 'success', autoHideDuration: 6000 },
     );
+
+    // Persist Play stats for the logged-in human (bo10 / firstTo10 only).
+    if (
+      humanUsername &&
+      humanId &&
+      (length === 'bo10' || length === 'firstTo10')
+    ) {
+      const entry = computePlayGameResult({
+        username: humanUsername,
+        humanId,
+        history,
+        seating,
+        weights,
+        winnerId,
+      });
+      const lengthLabel =
+        GAME_LENGTH_OPTIONS.find((o) => o.value === length)?.label ?? length;
+      savePlayGameResult(humanUsername, length, entry)
+        .then(() => {
+          enqueueSnackbar(
+            `Stats saved to your Play (${lengthLabel}) leaderboard.`,
+            { variant: 'info', autoHideDuration: 4000 },
+          );
+        })
+        .catch(() => {
+          enqueueSnackbar('Could not save Play stats.', {
+            variant: 'warning',
+            autoHideDuration: 4000,
+          });
+        });
+    }
   }, [
     gameOver,
     length,
@@ -93,6 +131,8 @@ export function usePlayGameEnd(): void {
     weights,
     totals,
     names,
+    humanId,
+    humanUsername,
     dispatch,
     round,
   ]);

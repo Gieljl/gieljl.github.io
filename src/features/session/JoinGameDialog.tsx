@@ -85,7 +85,7 @@ export const JoinGameDialog: React.FC<JoinGameDialogProps> = ({
 
   return (
     <Dialog open={open} onClose={handleClose} fullWidth maxWidth="xs">
-      <DialogTitle>Join Online Game</DialogTitle>
+      <DialogTitle sx={{ color: '#7df3e1' }}>Join online game</DialogTitle>
       <DialogContent>
         <Stack spacing={2} sx={{ pt: 1 }}>
           <Typography variant="body2" color="text.secondary">

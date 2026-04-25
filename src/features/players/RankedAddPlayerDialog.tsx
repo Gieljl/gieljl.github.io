@@ -29,10 +29,10 @@ import { addPlayer, selectPlayers } from "./playersSlice";
 type Step = "username" | "register" | "verify";
 
 const SECURITY_QUESTIONS = [
-  "What is your favorite food?",
+  "What is your favourite food?",
   "What is the name of your first pet?",
   "What city were you born in?",
-  "What is your favorite movie?",
+  "What is your favourite movie?",
   "What is your nickname among friends?",
 ];
 
@@ -204,7 +204,7 @@ export const RankedAddPlayerDialog: React.FC = () => {
       <Dialog open={open} onClose={handleClose} fullWidth maxWidth="xs">
         {step === "username" && (
           <>
-            <DialogTitle>Add player — enter username</DialogTitle>
+            <DialogTitle sx={{ color: '#7df3e1' }}>Add player — enter username</DialogTitle>
             <DialogContent>
               <Stack spacing={2} mt={1}>
                 <Typography variant="body2" color="text.secondary">
@@ -241,7 +241,7 @@ export const RankedAddPlayerDialog: React.FC = () => {
 
         {step === "register" && (
           <>
-            <DialogTitle>New player — register</DialogTitle>
+            <DialogTitle sx={{ color: '#7df3e1' }}>New player — register</DialogTitle>
             <DialogContent>
               <Stack spacing={2} mt={1}>
                 <Typography variant="body2" color="text.secondary">
@@ -343,7 +343,7 @@ export const RankedAddPlayerDialog: React.FC = () => {
 
         {step === "verify" && (
           <>
-            <DialogTitle>Returning player — verify</DialogTitle>
+            <DialogTitle sx={{ color: '#7df3e1' }}>Returning player — verify</DialogTitle>
             <DialogContent>
               <Stack spacing={2} mt={1}>
                 <Typography variant="body2" color="text.secondary">

@@ -39,6 +39,11 @@ export interface PlayState {
   /** Ids in seating order. */
   seating: PlayerId[];
   humanId: PlayerId | null;
+  /**
+   * Username of the logged-in human player when this game started, used to
+   * persist Play stats to Firestore at game end. Null when anonymous.
+   */
+  humanUsername: string | null;
   dealerId: PlayerId | null;
   difficulty: Difficulty;
   /** Configured length condition for this play game. */
@@ -62,6 +67,7 @@ const initialState: PlayState = {
   playerNames: {},
   seating: [],
   humanId: null,
+  humanUsername: null,
   dealerId: null,
   difficulty: 'normal',
   length: 'classic',
@@ -81,9 +87,9 @@ export const playSlice = createSlice({
   reducers: {
     initGame: (
       state,
-      action: PayloadAction<{ players: PlaySetupEntry[]; humanIndex: number; difficulty?: Difficulty; length?: GameLength; seed?: number }>,
+      action: PayloadAction<{ players: PlaySetupEntry[]; humanIndex: number; difficulty?: Difficulty; length?: GameLength; humanUsername?: string | null; seed?: number }>,
     ) => {
-      const { players, humanIndex, difficulty = 'normal', length = 'classic', seed } = action.payload;
+      const { players, humanIndex, difficulty = 'normal', length = 'classic', humanUsername = null, seed } = action.payload;
       const seating: PlayerId[] = players.map(() => nanoid(6));
       const playerNames: Record<PlayerId, string> = {};
       const totals: Record<PlayerId, number> = {};
@@ -101,6 +107,7 @@ export const playSlice = createSlice({
       state.playerNames = playerNames;
       state.seating = seating;
       state.humanId = humanId;
+      state.humanUsername = humanUsername;
       state.dealerId = dealerId;
       state.difficulty = difficulty;
       state.length = length;
@@ -253,6 +260,7 @@ export const selectPlayCurrentPlayerId = (s: RootState): PlayerId | null => {
   return r.players[r.currentPlayerIndex]?.id ?? null;
 };
 export const selectPlayHumanId = (s: RootState) => s.play.humanId;
+export const selectPlayHumanUsername = (s: RootState) => s.play.humanUsername;
 export const selectPlayTotals = (s: RootState) => s.play.cumulativeTotals;
 export const selectPlayNames = (s: RootState) => s.play.playerNames;
 export const selectPlayLastError = (s: RootState) => s.play.lastError;

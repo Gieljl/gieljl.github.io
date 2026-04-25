@@ -397,7 +397,7 @@ export default function Menu({
             <CloseIcon />
           </IconButton>
           <Typography sx={{ ml: 2, flex: 1 }} variant="h6" component="div">
-            Yasat Rules Explained
+            Yasat rules explained
           </Typography>
         </Toolbar>
       </AppBar>
@@ -427,7 +427,7 @@ export default function Menu({
 
   const SettingsDialogContent: React.FC = () => (
     <Dialog open={openSettings} onClose={handleCloseSettings} fullWidth>
-      <DialogTitle id="settings-dialog">{"Game Settings"}</DialogTitle>
+      <DialogTitle id="settings-dialog" sx={{ color: '#7df3e1' }}>{"Game settings"}</DialogTitle>
       <DialogContent>
         <Stack direction="column" alignItems="left" spacing={5} mt={5}>
           <FormControl required>
@@ -463,7 +463,7 @@ export default function Menu({
       aria-labelledby="alert-dialog-title"
       aria-describedby="alert-dialog-description"
     >
-      <DialogTitle id="alert-dialog-title">{"About"}</DialogTitle>
+      <DialogTitle id="alert-dialog-title" sx={{ color: '#7df3e1' }}>{"About"}</DialogTitle>
       <DialogContent>
         <DialogContentText id="alert-dialog-description">
           One of the most significant outfits in the card gaming scene!

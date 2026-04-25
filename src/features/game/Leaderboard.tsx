@@ -79,6 +79,15 @@ export const Leaderboard: React.FC = () => {
   const [entries, setEntries] = useState<LeaderboardEntry[] | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [metricKey, setMetricKey] = useState<MetricKey>("wins");
+  const [mode, setMode] = useState<
+    "ranked" | "play-bo10" | "play-firstTo10"
+  >("ranked");
+
+  const getStats = (entry: LeaderboardEntry): PlayerStats | null => {
+    if (mode === "ranked") return entry.stats;
+    if (mode === "play-bo10") return entry.playStats?.bo10 ?? null;
+    return entry.playStats?.firstTo10 ?? null;
+  };
 
   useEffect(() => {
     let cancelled = false;
@@ -113,12 +122,18 @@ export const Leaderboard: React.FC = () => {
 
   const ranked = useMemo(() => {
     if (!entries) return [];
-    return [...entries]
-      .map((e) => ({ entry: e, value: activeMetric.get(e.stats) }))
-      .filter((r) => r.value > 0)
+    return entries
+      .map((e) => {
+        const s = getStats(e);
+        return s ? { entry: e, value: activeMetric.get(s) } : null;
+      })
+      .filter((r): r is { entry: LeaderboardEntry; value: number } =>
+        r !== null && r.value > 0,
+      )
       .sort((a, b) => b.value - a.value)
       .slice(0, 10);
-  }, [entries, activeMetric]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [entries, activeMetric, mode]);
 
   return (
     <Stack
@@ -128,8 +143,24 @@ export const Leaderboard: React.FC = () => {
     >
       <Stack direction="row" spacing={1} alignItems="center">
         <EmojiEventsIcon color="primary" />
-        <Typography variant="h6">Leaderboards</Typography>
+        <Typography variant="h6" sx={{ color: '#7df3e1' }}>Leaderboards</Typography>
       </Stack>
+
+      <FormControl size="small" fullWidth>
+        <InputLabel id="leaderboard-mode-label">Mode</InputLabel>
+        <Select
+          labelId="leaderboard-mode-label"
+          label="Mode"
+          value={mode}
+          onChange={(e) =>
+            setMode(e.target.value as typeof mode)
+          }
+        >
+          <MenuItem value="ranked">Ranked</MenuItem>
+          <MenuItem value="play-bo10">Play – Best of 10</MenuItem>
+          <MenuItem value="play-firstTo10">Play – First to 10</MenuItem>
+        </Select>
+      </FormControl>
 
       <FormControl size="small" fullWidth>
         <InputLabel id="leaderboard-metric-label">Ranking</InputLabel>
@@ -169,7 +200,9 @@ export const Leaderboard: React.FC = () => {
         )}
         {entries !== null && ranked.length === 0 && !loadError && (
           <Typography variant="body2" color="text.secondary" align="center">
-            No data yet. Play some ranked games!
+            {mode === "ranked"
+              ? "No data yet. Play some ranked games!"
+              : "No data yet. Log in and finish a Play game to appear here."}
           </Typography>
         )}
         {ranked.map((r, idx) => (
@@ -205,6 +238,16 @@ export const Leaderboard: React.FC = () => {
           </Stack>
         ))}
       </Box>
+
+      {mode !== "ranked" && (
+        <Typography
+          variant="caption"
+          color="text.secondary"
+          sx={{ textAlign: "center" }}
+        >
+          Play stats are saved only when logged in. Classic games are not tracked.
+        </Typography>
+      )}
     </Stack>
   );
 };

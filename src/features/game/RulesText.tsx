@@ -26,7 +26,7 @@ const RulesPopUp: React.FC = () => {
       it is played by the players to gain an advantage over their opponents.{" "}
       <br />
       <br />
-      <h2>Basic Rules</h2>
+      <h2>Basic rules</h2>
       <strong>1. Objective of a Round</strong>
       <br />
       The goal of a Yasat round is to declare "Yasat" with 7 or fewer points in
@@ -38,7 +38,7 @@ const RulesPopUp: React.FC = () => {
       <br />
       <strong>2. Round Flow</strong>
       <br />
-      Players aim to minimize the number and point value of cards in their hands
+      Players aim to minimise the number and point value of cards in their hands
       by exchanging cards.
       <br />
       <br />
@@ -55,7 +55,7 @@ const RulesPopUp: React.FC = () => {
       <br />
       Players can combine cards to improve their hand:
       <br />
-      - Pairs: For example, two Jacks, regardless of color, can be exchanged for
+      - Pairs: For example, two Jacks, regardless of colour, can be exchanged for
       one card from the disc.
       <br />
       - Three of a Kind: Three cards of the same rank, such as three 7s, can be
@@ -117,7 +117,7 @@ const RulesPopUp: React.FC = () => {
       exactly 50 or 100 points.
       <br />
       <br />
-      <h2>Meta Game and Stats</h2>
+      <h2>Meta game and stats</h2>
       <br />
       Beyond the basic card game, Yasat features a Meta Game where players
       collect <i>stats</i> based on in-game events. Each stat has a weighted
@@ -204,7 +204,7 @@ const RulesPopUp: React.FC = () => {
       100 (Contra-own 100). You get both the Own and the Contra-own bonus.
       <br />
       <br />
-      <h3>Weighted Score</h3>
+      <h3>Weighted score</h3>
       The weighted score is calculated by multiplying each stat's count by its
       weight and summing them up. The Longest Streak bonus is applied only once
       (not multiplied by streak length). Custom weight configurations can be set

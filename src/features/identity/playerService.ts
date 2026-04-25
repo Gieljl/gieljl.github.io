@@ -24,6 +24,17 @@ export interface PlayerStats {
   statCounts: Record<string, number>;
 }
 
+/**
+ * Stats bucket scoped to Play-mode games of a specific length. Same shape as
+ * `PlayerStats` so the leaderboard UI can use one set of metric definitions.
+ */
+export type PlayStats = PlayerStats;
+
+/** Per-length stats. `classic` is intentionally excluded (no auto-end save). */
+export type PlayStatsLength = 'bo10' | 'firstTo10';
+
+export type PlayStatsByLength = Partial<Record<PlayStatsLength, PlayStats>>;
+
 export interface PlayerProfile {
   username: string;
   displayName: string;
@@ -303,11 +314,55 @@ export async function saveRankedGameResult(entries: GameStatsEntry[]): Promise<v
   );
 }
 
+/**
+ * Save the final results of a Play-mode game (vs. bots) for the human player
+ * who is logged in. Aggregates into `players/{username}.playStats[length]`.
+ * Skips when no username or `length === 'classic'` (Classic games are not
+ * tracked).
+ */
+export async function savePlayGameResult(
+  username: string,
+  length: PlayStatsLength | 'classic',
+  entry: GameStatsEntry,
+): Promise<void> {
+  if (!entry.username || !username) return;
+  if (length === 'classic') return;
+  const normalized = username.trim().toLowerCase();
+  const ref = doc(db, 'players', normalized);
+  const snap = await getDoc(ref);
+  if (!snap.exists()) return; // logged-in player must have a doc
+
+  const data = snap.data();
+  const allByLength: Record<string, unknown> =
+    (data.playStats as Record<string, unknown> | undefined) ?? {};
+  const existing: PlayStats = normalizeStats(
+    allByLength[length] as Record<string, unknown> | undefined,
+  );
+
+  const mergedCounts: Record<string, number> = { ...existing.statCounts };
+  for (const [statName, count] of Object.entries(entry.statCounts)) {
+    if (!count) continue;
+    mergedCounts[statName] = (mergedCounts[statName] ?? 0) + count;
+  }
+
+  const updated: PlayStats = {
+    totalGamesPlayed: existing.totalGamesPlayed + 1,
+    totalWins: existing.totalWins + (entry.won ? 1 : 0),
+    longestStreak: Math.max(existing.longestStreak, entry.longestStreak),
+    bestWeightedScore: Math.max(existing.bestWeightedScore, entry.weightedScore),
+    statCounts: mergedCounts,
+  };
+
+  await updateDoc(ref, { [`playStats.${length}`]: updated });
+}
+
 export interface LeaderboardEntry {
   username: string;
   displayName: string;
   color: string;
   stats: PlayerStats;
+  /** Optional per-length Play-mode stats (only present when player has any). */
+  playStats?: PlayStatsByLength;
 }
 
 /**
@@ -319,11 +374,27 @@ export async function fetchLeaderboard(): Promise<LeaderboardEntry[]> {
   const entries: LeaderboardEntry[] = [];
   snap.forEach((d) => {
     const data = d.data();
+    const rawPlay = data.playStats as Record<string, unknown> | undefined;
+    const playStats: PlayStatsByLength | undefined = rawPlay
+      ? {
+          ...(rawPlay.bo10
+            ? { bo10: normalizeStats(rawPlay.bo10 as Record<string, unknown>) }
+            : {}),
+          ...(rawPlay.firstTo10
+            ? {
+                firstTo10: normalizeStats(
+                  rawPlay.firstTo10 as Record<string, unknown>,
+                ),
+              }
+            : {}),
+        }
+      : undefined;
     entries.push({
       username: d.id,
       displayName: data.displayName || d.id,
       color: data.color || '',
       stats: normalizeStats(data.stats),
+      ...(playStats && Object.keys(playStats).length > 0 ? { playStats } : {}),
     });
   });
   return entries;
