@@ -93,7 +93,7 @@ export const HomePage: React.FC = () => {
           >
             Score Tracker
           </Button>
-          <Typography variant="caption" color="text.secondary" sx={{ mt: -2 }}>
+          <Typography variant="caption" color="text.secondary" sx={{ mt: -2, mb: -2 }}>
             For in-person games. Tap scores as you play.
           </Typography>
 
@@ -104,10 +104,23 @@ export const HomePage: React.FC = () => {
             onClick={() => choose("play")}
             sx={{ width: 260, height: 60, fontSize: 18 }}
           >
-            Play vs. Bots
+            Play vs. AI
           </Button>
-          <Typography variant="caption" color="text.secondary" sx={{ mt: -2 }}>
-            Live card game vs. bots. Log in to save Best of 10 / First to 10 stats.
+          <Typography variant="caption" color="text.secondary" sx={{ mt: -2, mb: -2 }}>
+            Live card game vs. AI. Log in to enter leaderboards.
+          </Typography>
+
+          <Button
+            variant="text"
+            size="large"
+            startIcon={<CastConnectedIcon />}
+            onClick={() => setJoinOpen(true)}
+            sx={{ width: 260, height: 60, fontSize: 18, mt: 1 }}
+          >
+            Join game
+          </Button>
+          <Typography variant="caption" color="text.secondary" sx={{ mt: -2, mb: -2, maxWidth: 280, textAlign: "center" }}>
+            Join a game in progress with extra screen.
           </Typography>
 
           <Button
@@ -115,23 +128,10 @@ export const HomePage: React.FC = () => {
             size="large"
             startIcon={<LeaderboardIcon />}
             onClick={() => setLeaderboardOpen(true)}
-            sx={{ width: 260, height: 60, fontSize: 18, mt: 1 }}
+            sx={{ width: 260, height: 60, fontSize: 18 }}
           >
             Leaderboards
           </Button>
-
-          <Button
-            variant="text"
-            size="large"
-            startIcon={<CastConnectedIcon />}
-            onClick={() => setJoinOpen(true)}
-            sx={{ width: 260, height: 60, fontSize: 18 }}
-          >
-            Join Online Game
-          </Button>
-          <Typography variant="caption" color="text.secondary" sx={{ mt: -2 }}>
-            Watch / co-track a friend's ranked online game.
-          </Typography>
 
           <Button
             variant="text"
@@ -162,8 +162,8 @@ export const HomePage: React.FC = () => {
           >
             Ranked
           </Button>
-          <Typography variant="caption" color="text.secondary" sx={{ mt: -2, maxWidth: 280, textAlign: "center" }}>
-            Log in. Stats saved to leaderboards. Others can Join to spectate.
+          <Typography variant="caption" color="text.secondary" sx={{ mt: -2, mb: -2, maxWidth: 280, textAlign: "center" }}>
+            Log in. Stats saved to leaderboards.
           </Typography>
 
           <Button
@@ -175,7 +175,7 @@ export const HomePage: React.FC = () => {
           >
             Unranked
           </Button>
-          <Typography variant="caption" color="text.secondary" sx={{ mt: -2, maxWidth: 280, textAlign: "center" }}>
+          <Typography variant="caption" color="text.secondary" sx={{ mt: -2, mb: -2, maxWidth: 280, textAlign: "center" }}>
             Quick local game. No login, nothing saved.
           </Typography>
         </Stack>

@@ -6,7 +6,7 @@ import { useAppDispatch, useAppSelector } from "../../app/hooks";
 import { selectPlayers, resetPlayers } from "../players/playersSlice";
 import { resetScores, selectScores } from "./scoreSlice";
 import { selectStatsWeight, resetStats } from "../stats/statsSlice";
-import { goHome } from "./gameSlice";
+import { goHome, selectGameLength } from "./gameSlice";
 import { RootState } from "../../app/store";
 import {
   computeRankedGameResults,
@@ -28,6 +28,7 @@ export function useEndRankedGame() {
     (state: RootState) => state.scores.past
   );
   const weights = useAppSelector(selectStatsWeight);
+  const length = useAppSelector(selectGameLength);
   const isSharing = useAppSelector(selectIsSharing);
   const sessionCode = useAppSelector(selectSessionCode);
 
@@ -55,7 +56,7 @@ export function useEndRankedGame() {
     const entries = resultsToStatsEntries(results);
 
     try {
-      await saveRankedGameResult(entries);
+      await saveRankedGameResult(entries, length);
       enqueueSnackbar(
         winner
           ? `Game saved! Winner: ${winner.player.name}`

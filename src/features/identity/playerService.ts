@@ -35,6 +35,23 @@ export type PlayStatsLength = 'bo10' | 'firstTo10';
 
 export type PlayStatsByLength = Partial<Record<PlayStatsLength, PlayStats>>;
 
+/** Lightweight per-length counters for Ranked-mode games. */
+export interface RankedLengthStats {
+  totalGamesPlayed: number;
+  totalWins: number;
+}
+
+export type RankedLength = 'bo10' | 'firstTo10' | 'classic';
+
+export type RankedByLength = Partial<Record<RankedLength, RankedLengthStats>>;
+
+export type PlayDifficulty = 'easy' | 'normal' | 'godlike';
+
+/** Aggregate Play wins/games per AI difficulty (across both tracked Play lengths). */
+export type PlayByDifficulty = Partial<
+  Record<PlayDifficulty, RankedLengthStats>
+>;
+
 export interface PlayerProfile {
   username: string;
   displayName: string;
@@ -274,7 +291,10 @@ export interface GameStatsEntry {
  * `longestStreak` / `bestWeightedScore`. Silently skips players without a
  * username.
  */
-export async function saveRankedGameResult(entries: GameStatsEntry[]): Promise<void> {
+export async function saveRankedGameResult(
+  entries: GameStatsEntry[],
+  length: RankedLength = 'classic',
+): Promise<void> {
   await Promise.all(
     entries.map(async (entry) => {
       if (!entry.username) return;
@@ -284,6 +304,9 @@ export async function saveRankedGameResult(entries: GameStatsEntry[]): Promise<v
       const existing: PlayerStats = snap.exists()
         ? normalizeStats(snap.data().stats)
         : emptyStats();
+      const existingByLength: RankedByLength = snap.exists()
+        ? ((snap.data().rankedByLength as RankedByLength | undefined) ?? {})
+        : {};
 
       const mergedCounts: Record<string, number> = { ...existing.statCounts };
       for (const [statName, count] of Object.entries(entry.statCounts)) {
@@ -299,8 +322,20 @@ export async function saveRankedGameResult(entries: GameStatsEntry[]): Promise<v
         statCounts: mergedCounts,
       };
 
+      const prevLen = existingByLength[length] ?? {
+        totalGamesPlayed: 0,
+        totalWins: 0,
+      };
+      const updatedLen: RankedLengthStats = {
+        totalGamesPlayed: prevLen.totalGamesPlayed + 1,
+        totalWins: prevLen.totalWins + (entry.won ? 1 : 0),
+      };
+
       if (snap.exists()) {
-        await updateDoc(ref, { stats: updated });
+        await updateDoc(ref, {
+          stats: updated,
+          [`rankedByLength.${length}`]: updatedLen,
+        });
       } else {
         // Edge case: player was never persisted — create minimal doc.
         await setDoc(ref, {
@@ -308,6 +343,7 @@ export async function saveRankedGameResult(entries: GameStatsEntry[]): Promise<v
           color: '',
           createdAt: serverTimestamp(),
           stats: updated,
+          rankedByLength: { [length]: updatedLen },
         });
       }
     })
@@ -324,6 +360,7 @@ export async function savePlayGameResult(
   username: string,
   length: PlayStatsLength | 'classic',
   entry: GameStatsEntry,
+  difficulty: PlayDifficulty = 'normal',
 ): Promise<void> {
   if (!entry.username || !username) return;
   if (length === 'classic') return;
@@ -353,7 +390,22 @@ export async function savePlayGameResult(
     statCounts: mergedCounts,
   };
 
-  await updateDoc(ref, { [`playStats.${length}`]: updated });
+  // Per-difficulty wins/games counter.
+  const existingByDiff: PlayByDifficulty =
+    (data.playByDifficulty as PlayByDifficulty | undefined) ?? {};
+  const prevDiff = existingByDiff[difficulty] ?? {
+    totalGamesPlayed: 0,
+    totalWins: 0,
+  };
+  const updatedDiff: RankedLengthStats = {
+    totalGamesPlayed: prevDiff.totalGamesPlayed + 1,
+    totalWins: prevDiff.totalWins + (entry.won ? 1 : 0),
+  };
+
+  await updateDoc(ref, {
+    [`playStats.${length}`]: updated,
+    [`playByDifficulty.${difficulty}`]: updatedDiff,
+  });
 }
 
 export interface LeaderboardEntry {
@@ -363,6 +415,10 @@ export interface LeaderboardEntry {
   stats: PlayerStats;
   /** Optional per-length Play-mode stats (only present when player has any). */
   playStats?: PlayStatsByLength;
+  /** Optional per-length Ranked-mode wins/games counters. */
+  rankedByLength?: RankedByLength;
+  /** Optional per-difficulty Play-mode wins/games counters. */
+  playByDifficulty?: PlayByDifficulty;
 }
 
 /**
@@ -395,6 +451,16 @@ export async function fetchLeaderboard(): Promise<LeaderboardEntry[]> {
       color: data.color || '',
       stats: normalizeStats(data.stats),
       ...(playStats && Object.keys(playStats).length > 0 ? { playStats } : {}),
+      ...(data.rankedByLength &&
+      typeof data.rankedByLength === 'object' &&
+      Object.keys(data.rankedByLength as object).length > 0
+        ? { rankedByLength: data.rankedByLength as RankedByLength }
+        : {}),
+      ...(data.playByDifficulty &&
+      typeof data.playByDifficulty === 'object' &&
+      Object.keys(data.playByDifficulty as object).length > 0
+        ? { playByDifficulty: data.playByDifficulty as PlayByDifficulty }
+        : {}),
     });
   });
   return entries;

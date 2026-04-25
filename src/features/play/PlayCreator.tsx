@@ -130,7 +130,7 @@ export const PlayCreator: React.FC = () => {
         sx={{ width: '100%', pt: 4, pb: 10, maxWidth: 360, mx: 'auto', px: 2 }}
       >
       <Typography variant="h6" color="primary">
-        Play vs. Bots
+        Play vs. AI
       </Typography>
 
       <TextField
@@ -237,8 +237,8 @@ export const PlayCreator: React.FC = () => {
 
       <Typography variant="caption" color="text.secondary" sx={{ maxWidth: 360, textAlign: 'center' }}>
         {isLoggedIn
-          ? 'Best of 10 / First to 10 stats are saved to your Play leaderboards. Classic games are not tracked. Bots are never saved.'
-          : 'Log in to save Best of 10 / First to 10 stats to your Play leaderboards. Classic and bots are never saved.'}
+          ? 'Best of 10 / First to 10 stats are saved to your Play leaderboards. Classic games are not tracked. AI games are never saved.'
+          : 'Log in to save Best of 10 / First to 10 stats to your Play leaderboards. Classic and AI games are never saved.'}
       </Typography>
     </Stack>
       <IdentityDialog open={openIdentity} onClose={() => setOpenIdentity(false)} />

@@ -39,6 +39,7 @@ export function usePlayGameEnd(): void {
   const names = useAppSelector(selectPlayNames);
   const humanId = useAppSelector(selectPlayHumanId);
   const humanUsername = useAppSelector(selectPlayHumanUsername);
+  const difficulty = useAppSelector((s: RootState) => s.play.difficulty);
   const seating = useAppSelector((s: RootState) => s.play.seating);
   const history = useAppSelector((s: RootState) => s.play.roundHistory);
   const round = useAppSelector((s: RootState) => s.play.round);
@@ -109,7 +110,7 @@ export function usePlayGameEnd(): void {
       });
       const lengthLabel =
         GAME_LENGTH_OPTIONS.find((o) => o.value === length)?.label ?? length;
-      savePlayGameResult(humanUsername, length, entry)
+      savePlayGameResult(humanUsername, length, entry, difficulty)
         .then(() => {
           enqueueSnackbar(
             `Stats saved to your Play (${lengthLabel}) leaderboard.`,
@@ -133,6 +134,7 @@ export function usePlayGameEnd(): void {
     names,
     humanId,
     humanUsername,
+    difficulty,
     dispatch,
     round,
   ]);

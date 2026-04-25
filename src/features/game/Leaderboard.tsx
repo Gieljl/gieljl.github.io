@@ -2,6 +2,8 @@ import React, { useEffect, useMemo, useState } from "react";
 import {
   Avatar,
   Box,
+  Button,
+  ButtonGroup,
   CircularProgress,
   FormControl,
   InputLabel,
@@ -14,80 +16,249 @@ import EmojiEventsIcon from "@mui/icons-material/EmojiEvents";
 import {
   fetchLeaderboard,
   LeaderboardEntry,
-  PlayerStats,
 } from "../identity/playerService";
 import { selectStatsWeight } from "../stats/statsSlice";
 import { useAppSelector } from "../../app/hooks";
 
-type MetricKey = string;
+type Mode = "ranked" | "play";
+type PlayTab = "games" | "stats";
+type DifficultyFilter = "all" | "easy" | "normal" | "godlike";
+
+type MetricFormat = "int" | "percent";
 
 interface Metric {
-  key: MetricKey;
+  key: string;
   label: string;
-  /** Extract the value to sort/display for a player. */
-  get: (s: PlayerStats) => number;
+  /** Returns the value, or null when the player should be excluded (e.g. min samples). */
+  get: (e: LeaderboardEntry) => number | null;
+  format?: MetricFormat;
 }
 
-const PRIMARY_METRICS: Metric[] = [
-  {
-    key: "wins",
-    label: "Games won",
-    get: (s) => s.totalWins,
-  },
-  {
-    key: "yasats",
-    label: "Yasats",
-    get: (s) => s.statCounts["Yasat"] ?? 0,
-  },
-  {
-    key: "owns",
-    label: "Owns",
-    get: (s) => s.statCounts["Own"] ?? 0,
-  },
-  {
-    key: "owned",
-    label: "Owned",
-    get: (s) => s.statCounts["Owned"] ?? 0,
-  },
-  {
-    key: "kills",
-    label: "Kills",
-    get: (s) => s.statCounts["Kill"] ?? 0,
-  },
-  {
-    key: "deaths",
-    label: "Deaths",
-    get: (s) => s.statCounts["Death"] ?? 0,
-  },
-  {
-    key: "longestStreak",
-    label: "Longest streak",
-    get: (s) => s.longestStreak,
-  },
-  {
-    key: "gamesPlayed",
-    label: "Games played",
-    get: (s) => s.totalGamesPlayed,
-  },
-];
+const WINRATE_MIN_GAMES = 5;
 
-/** Stats that are already covered by a primary metric above. */
+/** Stats already covered by an explicit primary metric — skipped from dynamic stat list. */
 const COVERED_STAT_NAMES = new Set(["Yasat", "Own", "Owned", "Kill", "Death"]);
+
+const winRate = (wins: number, games: number): number | null =>
+  games >= WINRATE_MIN_GAMES ? (wins / games) * 100 : null;
+
+/** Sum of wins / games across the two tracked Play lengths (bo10 + firstTo10). */
+const playTotalWins = (e: LeaderboardEntry): number =>
+  (e.playStats?.bo10?.totalWins ?? 0) +
+  (e.playStats?.firstTo10?.totalWins ?? 0);
+
+const playTotalGames = (e: LeaderboardEntry): number =>
+  (e.playStats?.bo10?.totalGamesPlayed ?? 0) +
+  (e.playStats?.firstTo10?.totalGamesPlayed ?? 0);
+
+/** Per-difficulty wins/games (or totals when filter='all'). */
+const playDiffWins = (
+  e: LeaderboardEntry,
+  filter: DifficultyFilter,
+): number => {
+  if (filter === "all") return playTotalWins(e);
+  return e.playByDifficulty?.[filter]?.totalWins ?? 0;
+};
+const playDiffGames = (
+  e: LeaderboardEntry,
+  filter: DifficultyFilter,
+): number => {
+  if (filter === "all") return playTotalGames(e);
+  return e.playByDifficulty?.[filter]?.totalGamesPlayed ?? 0;
+};
+
+/** Sum of a stat across all tracked Play lengths. */
+const aggregatePlayStat = (e: LeaderboardEntry, statName: string): number =>
+  (e.playStats?.bo10?.statCounts[statName] ?? 0) +
+  (e.playStats?.firstTo10?.statCounts[statName] ?? 0);
+
+const buildRankedMetrics = (weights: { statName: string }[]): Metric[] => {
+  const base: Metric[] = [
+    {
+      key: "ranked-wins",
+      label: "Total wins",
+      get: (e) => e.stats.totalWins,
+    },
+    {
+      key: "ranked-winrate",
+      label: `Win rate (min ${WINRATE_MIN_GAMES})`,
+      get: (e) => winRate(e.stats.totalWins, e.stats.totalGamesPlayed),
+      format: "percent",
+    },
+    {
+      key: "ranked-wins-bo10",
+      label: "Wins — Best of 10",
+      get: (e) => e.rankedByLength?.bo10?.totalWins ?? 0,
+    },
+    {
+      key: "ranked-wins-firstTo10",
+      label: "Wins — First to 10",
+      get: (e) => e.rankedByLength?.firstTo10?.totalWins ?? 0,
+    },
+    {
+      key: "ranked-wins-classic",
+      label: "Wins — Classic",
+      get: (e) => e.rankedByLength?.classic?.totalWins ?? 0,
+    },
+    {
+      key: "ranked-games",
+      label: "Games played",
+      get: (e) => e.stats.totalGamesPlayed,
+    },
+    {
+      key: "ranked-streak",
+      label: "Longest streak",
+      get: (e) => e.stats.longestStreak,
+    },
+    {
+      key: "ranked-yasats",
+      label: "Yasats",
+      get: (e) => e.stats.statCounts["Yasat"] ?? 0,
+    },
+    {
+      key: "ranked-owns",
+      label: "Owns",
+      get: (e) => e.stats.statCounts["Own"] ?? 0,
+    },
+    {
+      key: "ranked-owned",
+      label: "Owned",
+      get: (e) => e.stats.statCounts["Owned"] ?? 0,
+    },
+    {
+      key: "ranked-kills",
+      label: "Kills",
+      get: (e) => e.stats.statCounts["Kill"] ?? 0,
+    },
+    {
+      key: "ranked-deaths",
+      label: "Deaths",
+      get: (e) => e.stats.statCounts["Death"] ?? 0,
+    },
+  ];
+  const dynamic: Metric[] = weights
+    .filter(
+      (w) =>
+        w.statName !== "Longest Streak" && !COVERED_STAT_NAMES.has(w.statName),
+    )
+    .map((w) => ({
+      key: `ranked-stat:${w.statName}`,
+      label: w.statName,
+      get: (e: LeaderboardEntry) => e.stats.statCounts[w.statName] ?? 0,
+    }));
+  return [...base, ...dynamic];
+};
+
+/** Play vs. AI — Games tab: win-related metrics, length-aware. Difficulty
+ *  filter applies to total wins / win rate / games played; per-length cards
+ *  are unaffected because difficulty data is aggregated across lengths.
+ */
+const buildPlayGamesMetrics = (diff: DifficultyFilter): Metric[] => {
+  const diffSuffix = diff === "all" ? "" : ` (${diff})`;
+  return [
+    {
+      key: `play-games-wins-${diff}`,
+      label: `Total wins${diffSuffix}`,
+      get: (e) => playDiffWins(e, diff),
+    },
+    {
+      key: `play-games-winrate-${diff}`,
+      label: `Win rate${diffSuffix} (min ${WINRATE_MIN_GAMES})`,
+      get: (e) => winRate(playDiffWins(e, diff), playDiffGames(e, diff)),
+      format: "percent",
+    },
+    {
+      key: `play-games-played-${diff}`,
+      label: `Games played${diffSuffix}`,
+      get: (e) => playDiffGames(e, diff),
+    },
+    {
+      key: "play-games-wins-bo10",
+      label: "Wins — Best of 10",
+      get: (e) => e.playStats?.bo10?.totalWins ?? 0,
+    },
+    {
+      key: "play-games-wins-firstTo10",
+      label: "Wins — First to 10",
+      get: (e) => e.playStats?.firstTo10?.totalWins ?? 0,
+    },
+    {
+      key: "play-games-played-bo10",
+      label: "Games played — Best of 10",
+      get: (e) => e.playStats?.bo10?.totalGamesPlayed ?? 0,
+    },
+    {
+      key: "play-games-played-firstTo10",
+      label: "Games played — First to 10",
+      get: (e) => e.playStats?.firstTo10?.totalGamesPlayed ?? 0,
+    },
+  ];
+};
+
+/** Play vs. AI — Overall stats tab: per-stat counts aggregated across lengths. */
+const buildPlayStatsMetrics = (weights: { statName: string }[]): Metric[] => {
+  const base: Metric[] = [
+    {
+      key: "play-stats-streak",
+      label: "Longest streak",
+      get: (e) =>
+        Math.max(
+          e.playStats?.bo10?.longestStreak ?? 0,
+          e.playStats?.firstTo10?.longestStreak ?? 0,
+        ),
+    },
+    {
+      key: "play-stats-yasats",
+      label: "Yasats",
+      get: (e) => aggregatePlayStat(e, "Yasat"),
+    },
+    {
+      key: "play-stats-owns",
+      label: "Owns",
+      get: (e) => aggregatePlayStat(e, "Own"),
+    },
+    {
+      key: "play-stats-owned",
+      label: "Owned",
+      get: (e) => aggregatePlayStat(e, "Owned"),
+    },
+    {
+      key: "play-stats-kills",
+      label: "Kills",
+      get: (e) => aggregatePlayStat(e, "Kill"),
+    },
+    {
+      key: "play-stats-deaths",
+      label: "Deaths",
+      get: (e) => aggregatePlayStat(e, "Death"),
+    },
+  ];
+  const dynamic: Metric[] = weights
+    .filter(
+      (w) =>
+        w.statName !== "Longest Streak" && !COVERED_STAT_NAMES.has(w.statName),
+    )
+    .map((w) => ({
+      key: `play-stats-stat:${w.statName}`,
+      label: w.statName,
+      get: (e: LeaderboardEntry) => aggregatePlayStat(e, w.statName),
+    }));
+  return [...base, ...dynamic];
+};
+
+const formatValue = (value: number, format: MetricFormat = "int"): string => {
+  if (format === "percent") return `${value.toFixed(1)}%`;
+  return String(value);
+};
 
 export const Leaderboard: React.FC = () => {
   const weights = useAppSelector(selectStatsWeight);
   const [entries, setEntries] = useState<LeaderboardEntry[] | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
-  const [metricKey, setMetricKey] = useState<MetricKey>("wins");
-  const [mode, setMode] = useState<
-    "ranked" | "play-bo10" | "play-firstTo10"
-  >("ranked");
-
-  const getStats = (entry: LeaderboardEntry): PlayerStats | null => {
-    if (mode === "ranked") return entry.stats;
-    if (mode === "play-bo10") return entry.playStats?.bo10 ?? null;
-    return entry.playStats?.firstTo10 ?? null;
-  };
+  const [mode, setMode] = useState<Mode>("ranked");
+  const [playTab, setPlayTab] = useState<PlayTab>("games");
+  const [difficulty, setDifficulty] = useState<DifficultyFilter>("all");
+  const [metricKey, setMetricKey] = useState<string>("ranked-wins");
 
   useEffect(() => {
     let cancelled = false;
@@ -103,37 +274,36 @@ export const Leaderboard: React.FC = () => {
     };
   }, []);
 
-  const metrics: Metric[] = useMemo(() => {
-    const extra: Metric[] = weights
-      .filter(
-        (w) =>
-          w.statName !== "Longest Streak" && !COVERED_STAT_NAMES.has(w.statName)
-      )
-      .map((w) => ({
-        key: `stat:${w.statName}`,
-        label: w.statName,
-        get: (s: PlayerStats) => s.statCounts[w.statName] ?? 0,
-      }));
-    return [...PRIMARY_METRICS, ...extra];
-  }, [weights]);
+  const metrics = useMemo<Metric[]>(() => {
+    if (mode === "ranked") return buildRankedMetrics(weights);
+    return playTab === "games"
+      ? buildPlayGamesMetrics(difficulty)
+      : buildPlayStatsMetrics(weights);
+  }, [mode, playTab, difficulty, weights]);
 
-  const activeMetric =
-    metrics.find((m) => m.key === metricKey) ?? metrics[0];
+  // Keep metric selection valid when mode/tab changes.
+  useEffect(() => {
+    if (!metrics.find((m) => m.key === metricKey)) {
+      setMetricKey(metrics[0]?.key ?? "");
+    }
+  }, [metrics, metricKey]);
+
+  const activeMetric = metrics.find((m) => m.key === metricKey) ?? metrics[0];
 
   const ranked = useMemo(() => {
-    if (!entries) return [];
+    if (!entries || !activeMetric) return [];
     return entries
       .map((e) => {
-        const s = getStats(e);
-        return s ? { entry: e, value: activeMetric.get(s) } : null;
+        const value = activeMetric.get(e);
+        return value !== null ? { entry: e, value } : null;
       })
-      .filter((r): r is { entry: LeaderboardEntry; value: number } =>
-        r !== null && r.value > 0,
+      .filter(
+        (r): r is { entry: LeaderboardEntry; value: number } =>
+          r !== null && r.value > 0,
       )
       .sort((a, b) => b.value - a.value)
       .slice(0, 10);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [entries, activeMetric, mode]);
+  }, [entries, activeMetric]);
 
   return (
     <Stack
@@ -143,32 +313,70 @@ export const Leaderboard: React.FC = () => {
     >
       <Stack direction="row" spacing={1} alignItems="center">
         <EmojiEventsIcon color="primary" />
-        <Typography variant="h6" sx={{ color: '#7df3e1' }}>Leaderboards</Typography>
+        <Typography variant="h6" sx={{ color: "#7df3e1" }}>
+          Leaderboards
+        </Typography>
       </Stack>
 
-      <FormControl size="small" fullWidth>
-        <InputLabel id="leaderboard-mode-label">Mode</InputLabel>
-        <Select
-          labelId="leaderboard-mode-label"
-          label="Mode"
-          value={mode}
-          onChange={(e) =>
-            setMode(e.target.value as typeof mode)
-          }
+      <ButtonGroup fullWidth size="small" aria-label="Leaderboard mode">
+        <Button
+          variant={mode === "ranked" ? "contained" : "outlined"}
+          onClick={() => setMode("ranked")}
         >
-          <MenuItem value="ranked">Ranked</MenuItem>
-          <MenuItem value="play-bo10">Play – Best of 10</MenuItem>
-          <MenuItem value="play-firstTo10">Play – First to 10</MenuItem>
-        </Select>
-      </FormControl>
+          Ranked
+        </Button>
+        <Button
+          variant={mode === "play" ? "contained" : "outlined"}
+          onClick={() => setMode("play")}
+        >
+          Play vs. AI
+        </Button>
+      </ButtonGroup>
+
+      {mode === "play" && (
+        <ButtonGroup fullWidth size="small" aria-label="Play vs. AI tab">
+          <Button
+            variant={playTab === "games" ? "contained" : "outlined"}
+            onClick={() => setPlayTab("games")}
+          >
+            Games
+          </Button>
+          <Button
+            variant={playTab === "stats" ? "contained" : "outlined"}
+            onClick={() => setPlayTab("stats")}
+          >
+            Overall stats
+          </Button>
+        </ButtonGroup>
+      )}
+
+      {mode === "play" && playTab === "games" && (
+        <ButtonGroup
+          fullWidth
+          size="small"
+          aria-label="Bot difficulty filter"
+        >
+          {(
+            ["all", "easy", "normal", "godlike"] as DifficultyFilter[]
+          ).map((d) => (
+            <Button
+              key={d}
+              variant={difficulty === d ? "contained" : "outlined"}
+              onClick={() => setDifficulty(d)}
+            >
+              {d === "all" ? "All" : d[0].toUpperCase() + d.slice(1)}
+            </Button>
+          ))}
+        </ButtonGroup>
+      )}
 
       <FormControl size="small" fullWidth>
         <InputLabel id="leaderboard-metric-label">Ranking</InputLabel>
         <Select
           labelId="leaderboard-metric-label"
           label="Ranking"
-          value={activeMetric.key}
-          onChange={(e) => setMetricKey(e.target.value as MetricKey)}
+          value={activeMetric?.key ?? ""}
+          onChange={(e) => setMetricKey(e.target.value as string)}
         >
           {metrics.map((m) => (
             <MenuItem key={m.key} value={m.key}>
@@ -233,13 +441,23 @@ export const Leaderboard: React.FC = () => {
               {r.entry.displayName}
             </Typography>
             <Typography variant="body2" fontWeight="bold">
-              {r.value}
+              {formatValue(r.value, activeMetric?.format)}
             </Typography>
           </Stack>
         ))}
       </Box>
 
-      {mode !== "ranked" && (
+      {mode === "play" && playTab === "stats" && (
+        <Typography
+          variant="caption"
+          color="text.secondary"
+          sx={{ textAlign: "center" }}
+        >
+          Overall stats are aggregated across all Play vs. AI game lengths
+          (Best of 10 and First to 10). Classic Play games are not tracked.
+        </Typography>
+      )}
+      {mode === "play" && playTab === "games" && (
         <Typography
           variant="caption"
           color="text.secondary"
