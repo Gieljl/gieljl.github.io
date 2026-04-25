@@ -120,7 +120,7 @@ export const HomePage: React.FC = () => {
             Join game
           </Button>
           <Typography variant="caption" color="text.secondary" sx={{ mt: -2, mb: -2, maxWidth: 280, textAlign: "center" }}>
-            Join a game in progress with extra screen.
+            Join a game in progress with an extra screen.
           </Typography>
 
           <Button
