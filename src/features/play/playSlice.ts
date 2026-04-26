@@ -246,8 +246,11 @@ export const playSlice = createSlice({
 
       // If the round just ended, check for aces before scoring.
       if (state.round.phase === 'ended' && state.round.callerId) {
+        // The caller's pointsAdded is always 0 (yasat) or 35 (owned),
+        // independent of hand value, so skip their ace choice.
+        const callerId = state.round.callerId;
         const withAces = state.round.players
-          .filter((p) => p.hand.some((c) => c.rank === 'A'))
+          .filter((p) => p.id !== callerId && p.hand.some((c) => c.rank === 'A'))
           .map((p) => p.id);
 
         if (withAces.length > 0) {
