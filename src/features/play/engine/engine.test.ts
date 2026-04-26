@@ -332,6 +332,45 @@ describe('scoring.scoreRound', () => {
     expect(p1.events).toContain('kill');
   });
 
+  test('double kill awards only double-kill (no normal kill)', () => {
+    const state = mkEnded('p1', {
+      p1: [c('a', 'spades', '2'), c('b', 'hearts', '2')], // 4
+      p2: [c('c', 'clubs', 'K'), c('d', 'hearts', 'K')], // 20 -> death from 90
+      p3: [c('e', 'spades', 'Q'), c('f', 'diamonds', '10')], // 20 -> death from 90
+    });
+    const out = scoreRound({ state, totalsBefore: { p1: 0, p2: 90, p3: 90 } });
+    const p1 = out.perPlayer.find((r) => r.playerId === 'p1')!;
+    expect(p1.events).toContain('double-kill');
+    expect(p1.events).not.toContain('kill');
+  });
+
+  test('multi/mega/monster are single-tier events with no normal kill', () => {
+    const mk = (nVictims: number) => {
+      const hands: Record<string, Card[]> = {
+        p1: [c('a', 'spades', '2')],
+      };
+      const totals: Record<string, number> = { p1: 0 };
+      for (let i = 0; i < nVictims; i++) {
+        const id = `p${i + 2}`;
+        hands[id] = [c(`k${i}`, 'clubs', 'K'), c(`q${i}`, 'hearts', 'Q')]; // 20
+        totals[id] = 90;
+      }
+      return scoreRound({ state: mkEnded('p1', hands), totalsBefore: totals });
+    };
+
+    const multi = mk(3).perPlayer.find((r) => r.playerId === 'p1')!;
+    expect(multi.events).toContain('multi-kill');
+    expect(multi.events).not.toContain('kill');
+
+    const mega = mk(4).perPlayer.find((r) => r.playerId === 'p1')!;
+    expect(mega.events).toContain('mega-kill');
+    expect(mega.events).not.toContain('kill');
+
+    const monster = mk(5).perPlayer.find((r) => r.playerId === 'p1')!;
+    expect(monster.events).toContain('monster-kill');
+    expect(monster.events).not.toContain('kill');
+  });
+
   test('nullify-50: landing on exactly 50 resets to 0', () => {
     const state = mkEnded('p1', {
       p1: [c('a', 'spades', 'A'), c('b', 'hearts', '2')], // 3

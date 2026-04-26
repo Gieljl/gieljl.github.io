@@ -289,7 +289,9 @@ export function ScoreEntryDialog({ disabled = false }: { disabled?: boolean } = 
       }
     });
 
-    // Handle multi-kills
+    // Handle kill tiers.
+    // Rule: if a special kill tier is earned (double/multi/mega/monster),
+    // normal Kill stats do not count for that round.
     newScores.forEach((player) => {
       const killCount = player.stats.filter(
         (stat) => stat.name === "Kill"
@@ -297,6 +299,9 @@ export function ScoreEntryDialog({ disabled = false }: { disabled?: boolean } = 
       if (killCount === 1) {
         const killAudio = new Audio(kill2);
         killAudio.play();
+      }
+      if (killCount >= 2) {
+        player.stats = player.stats.filter((stat) => stat.name !== "Kill");
       }
       if (killCount === 2) {
         player.stats.push({ name: "Double Kill" });

@@ -169,18 +169,19 @@ export function scoreRound(input: ScoringInput): RoundOutcome {
     r.newTotal = provisional;
   }
 
-  // 5. Kill bonuses: for every non-caller player whose total ended at 0 due to
-  //    a Death event, award the caller a kill (with multi-kill escalations).
+  // 5. Kill bonuses: derive one kill-tier event for the caller.
+  //    Rule: if a special kill tier is earned (double/multi/mega/monster),
+  //    normal Kill does not count for that round.
   const killCount = results.filter(
     (r) => r.playerId !== callerId && r.events.includes('death'),
   ).length;
   if (killCount > 0 && callerWon) {
     const callerResult = results.find((r) => r.playerId === callerId)!;
-    callerResult.events.push('kill');
-    if (killCount >= 2) callerResult.events.push('double-kill');
-    if (killCount >= 3) callerResult.events.push('multi-kill');
-    if (killCount >= 4) callerResult.events.push('mega-kill');
-    if (killCount >= 5) callerResult.events.push('monster-kill');
+    if (killCount === 1) callerResult.events.push('kill');
+    else if (killCount === 2) callerResult.events.push('double-kill');
+    else if (killCount === 3) callerResult.events.push('multi-kill');
+    else if (killCount === 4) callerResult.events.push('mega-kill');
+    else callerResult.events.push('monster-kill');
   }
 
   return {
