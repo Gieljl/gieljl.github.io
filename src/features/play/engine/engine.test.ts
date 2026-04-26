@@ -3,6 +3,7 @@ import {
   cardValue,
   colorOf,
   handPoints,
+  handPointsWithChoices,
   isRed,
   rankOrdinal,
   shuffle,
@@ -355,5 +356,123 @@ describe('scoring.scoreRound', () => {
     expect(p2.events).toContain('lullify');
     const p1 = out.perPlayer.find((r) => r.playerId === 'p1')!;
     expect(p1.events).toContain('enable-69');
+  });
+});
+
+describe('handPointsWithChoices', () => {
+  test('defaults aces to 1 when no choices provided', () => {
+    const hand = [c('a', 'spades', 'A'), c('b', 'hearts', '5')];
+    expect(handPointsWithChoices(hand, {})).toBe(6); // 1 + 5
+  });
+
+  test('ace chosen as 11', () => {
+    const hand = [c('a', 'spades', 'A'), c('b', 'hearts', '5')];
+    expect(handPointsWithChoices(hand, { a: 11 })).toBe(16); // 11 + 5
+  });
+
+  test('multiple aces with mixed choices', () => {
+    const hand = [
+      c('a1', 'spades', 'A'),
+      c('a2', 'hearts', 'A'),
+      c('b', 'clubs', '3'),
+    ];
+    expect(handPointsWithChoices(hand, { a1: 11, a2: 1 })).toBe(15); // 11 + 1 + 3
+  });
+});
+
+describe('scoring with aceChoices', () => {
+  const mkEnded2 = (
+    caller: string,
+    hands: Record<string, Card[]>,
+  ) => ({
+    players: Object.entries(hands).map(([id, hand]) => ({
+      id,
+      name: id,
+      isBot: false,
+      hand,
+    })),
+    currentPlayerIndex: 0,
+    dealerId: Object.keys(hands)[0],
+    drawPile: [],
+    discardPlies: [[]],
+    phase: 'ended' as const,
+    callerId: caller,
+    awaitingDraw: false,
+  });
+
+  test('ace-as-11 triggers nullify-50', () => {
+    // p2: ace + 8 = 9 (default) or 19 (ace=11). Prev total = 31. 31+19=50 → nullify.
+    const state = mkEnded2('p1', {
+      p1: [c('a', 'spades', '2')], // 2 pts, caller wins
+      p2: [c('b', 'hearts', 'A'), c('d', 'clubs', '8')],
+    });
+    const out = scoreRound({
+      state,
+      totalsBefore: { p1: 0, p2: 31 },
+      aceChoices: { p2: { b: 11 } },
+    });
+    const p2 = out.perPlayer.find((r) => r.playerId === 'p2')!;
+    expect(p2.handPoints).toBe(19); // 11 + 8
+    expect(p2.newTotal).toBe(0);
+    expect(p2.events).toContain('nullify-50');
+  });
+
+  test('ace-as-1 avoids death, ace-as-11 would cause death', () => {
+    // p2: ace + K = 11 (default) or 21 (ace=11). Prev total = 90.
+    // ace=1: 90+11=101 → death. ace=11: 90+21=111 → also death.
+    // But with a different hand: ace + 5 = 6. Prev = 90. 90+6=96 (safe).
+    const state = mkEnded2('p1', {
+      p1: [c('a', 'spades', '2')], // 2 pts
+      p2: [c('b', 'hearts', 'A'), c('d', 'clubs', '5')],
+    });
+    // ace as 1 → handPoints 6, total 96 (safe)
+    const out1 = scoreRound({
+      state,
+      totalsBefore: { p1: 0, p2: 90 },
+      aceChoices: { p2: { b: 1 } },
+    });
+    const p2a = out1.perPlayer.find((r) => r.playerId === 'p2')!;
+    expect(p2a.handPoints).toBe(6);
+    expect(p2a.newTotal).toBe(96);
+    expect(p2a.events).not.toContain('death');
+
+    // ace as 11 → handPoints 16, total 106 → death
+    const out2 = scoreRound({
+      state,
+      totalsBefore: { p1: 0, p2: 90 },
+      aceChoices: { p2: { b: 11 } },
+    });
+    const p2b = out2.perPlayer.find((r) => r.playerId === 'p2')!;
+    expect(p2b.handPoints).toBe(16);
+    expect(p2b.newTotal).toBe(0);
+    expect(p2b.events).toContain('death');
+  });
+
+  test('ace-as-11 triggers lullify from 69', () => {
+    // p2: ace + K + K = 21 (default) or 31 (ace=11). Prev total = 69.
+    // ace=11: 69+31=100 → lullify!
+    const state = mkEnded2('p1', {
+      p1: [c('a', 'spades', '2')],
+      p2: [c('b', 'hearts', 'A'), c('d', 'clubs', 'K'), c('e', 'spades', 'K')],
+    });
+    const out = scoreRound({
+      state,
+      totalsBefore: { p1: 0, p2: 69 },
+      aceChoices: { p2: { b: 11 } },
+    });
+    const p2 = out.perPlayer.find((r) => r.playerId === 'p2')!;
+    expect(p2.handPoints).toBe(31); // 11 + 10 + 10
+    expect(p2.newTotal).toBe(0);
+    expect(p2.events).toContain('lullify');
+  });
+
+  test('no aceChoices provided behaves like before (aces as 1)', () => {
+    const state = mkEnded2('p1', {
+      p1: [c('a', 'spades', '2')],
+      p2: [c('b', 'hearts', 'A'), c('d', 'clubs', '8')],
+    });
+    const out = scoreRound({ state, totalsBefore: { p1: 0, p2: 0 } });
+    const p2 = out.perPlayer.find((r) => r.playerId === 'p2')!;
+    expect(p2.handPoints).toBe(9); // 1 + 8
   });
 });

@@ -93,6 +93,22 @@ export function handPoints(cards: readonly Card[]): number {
   return cards.reduce((sum, c) => sum + cardValue(c, 1), 0);
 }
 
+/**
+ * Sum hand points using per-ace overrides.
+ *
+ * @param aceChoices  Map of cardId → 1 | 11 for aces the player chose as 11.
+ *                    Aces not in the map default to 1.
+ */
+export function handPointsWithChoices(
+  cards: readonly Card[],
+  aceChoices: Record<string, 1 | 11>,
+): number {
+  return cards.reduce((sum, c) => {
+    if (c.rank === 'A') return sum + (aceChoices[c.id] ?? 1);
+    return sum + cardValue(c, 1);
+  }, 0);
+}
+
 /** Builds a fresh, ordered 52-card deck. */
 export function buildDeck(): Card[] {
   const deck: Card[] = [];

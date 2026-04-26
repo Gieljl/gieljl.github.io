@@ -44,6 +44,7 @@ import { submitFriendsAction } from '../playFriends/submitFriendsAction';
 import { useBotDriver } from './useBotDriver';
 import { usePlayGameEnd } from './usePlayGameEnd';
 import RoundEndDialog from './RoundEndDialog';
+import AceChoiceDialog from './AceChoiceDialog';
 import { selectStatsWeight } from '../stats/statsSlice';
 import { computePlayWeightedScores } from './weightedScore';
 import { selectPlayLength } from './playSlice';
@@ -612,6 +613,7 @@ export const PlayTable: React.FC = () => {
         ))}
       </Box>
 
+      <AceChoiceDialog />
       <RoundEndDialog />
     </Box>
   );

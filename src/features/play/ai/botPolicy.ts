@@ -505,3 +505,101 @@ function drawSynergyBonus(remaining: readonly Card[], cand: Card): number {
 
   return bonus;
 }
+
+// ---------------------------------------------------------------------------
+// Bot ace-value choice (post-round)
+// ---------------------------------------------------------------------------
+
+/**
+ * For a bot holding aces at round end, choose each ace as 1 or 11.
+ *
+ * Strategy: enumerate all 2^n combinations (max 4 aces), simulate scoring for
+ * each, and pick the combo that produces the best outcome:
+ *   1. Triggers nullify-50 or nullify-100 (reset to 0) — best
+ *   2. Triggers lullify (reset to 0 from 69→100) — equally best
+ *   3. Lowest resulting newTotal (avoid death: death resets to 0 but costs a
+ *      weighted stat; plain low total is preferable)
+ *   4. Tie-break: prefer aces as 1 (lower hand display).
+ */
+export function chooseBotAceValues(
+  hand: readonly Card[],
+  botId: string,
+  totalBefore: number,
+  callerWon: boolean,
+  callerId: string,
+  isOwner: boolean,
+): Record<string, 1 | 11> {
+  const aces = hand.filter((c) => c.rank === 'A');
+  if (aces.length === 0) return {};
+
+  // If this bot's pointsAdded is guaranteed to be 0 (caller who won, or owner),
+  // the ace choice doesn't affect the score. Default all to 1.
+  if ((botId === callerId && callerWon) || isOwner) {
+    const choices: Record<string, 1 | 11> = {};
+    for (const a of aces) choices[a.id] = 1;
+    return choices;
+  }
+
+  // If the bot is the owned caller, pointsAdded is always 35 regardless of
+  // hand value. But the *displayed* handPoints may differ — still, the only
+  // impact on newTotal is via the fixed 35 penalty. So ace value doesn't
+  // change anything strategically. Default to 1.
+  if (botId === callerId && !callerWon) {
+    const choices: Record<string, 1 | 11> = {};
+    for (const a of aces) choices[a.id] = 1;
+    return choices;
+  }
+
+  // Enumerate all 2^n combos of ace values.
+  const n = aces.length;
+  let bestChoices: Record<string, 1 | 11> = {};
+  let bestScore = Infinity;
+  let bestHasNullify = false;
+
+  for (let mask = 0; mask < (1 << n); mask++) {
+    const choices: Record<string, 1 | 11> = {};
+    for (let i = 0; i < n; i++) {
+      choices[aces[i].id] = (mask >> i) & 1 ? 11 : 1;
+    }
+    // Compute hand points with these choices.
+    let hp = 0;
+    for (const c of hand) {
+      if (c.rank === 'A') {
+        hp += choices[c.id] ?? 1;
+      } else {
+        hp += cardValue(c, 1);
+      }
+    }
+    const pointsAdded = hp; // regular non-caller, non-owner
+    const provisional = totalBefore + pointsAdded;
+
+    // Check for beneficial events.
+    const isNullify =
+      provisional === 50 || provisional === 100 ||
+      (totalBefore === 69 && provisional === 100);
+    const isDeath = provisional > 100;
+
+    // Score: lower is better.
+    // Nullify/lullify → effective newTotal 0 and positive event → best.
+    // Death → newTotal 0 but negative event → treat as worse than surviving.
+    let effectiveScore: number;
+    if (isNullify) {
+      effectiveScore = -1; // best possible
+    } else if (isDeath) {
+      effectiveScore = 1000; // very bad
+    } else {
+      effectiveScore = provisional;
+    }
+
+    if (
+      effectiveScore < bestScore ||
+      (effectiveScore === bestScore && !bestHasNullify && isNullify)
+    ) {
+      bestScore = effectiveScore;
+      bestChoices = choices;
+      bestHasNullify = isNullify;
+    }
+  }
+
+  return bestChoices;
+}

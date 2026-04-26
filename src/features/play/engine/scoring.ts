@@ -8,7 +8,7 @@
  *
  * All values are plain returns — nothing is dispatched or persisted anywhere.
  */
-import { handPoints } from './cards';
+import { handPoints, handPointsWithChoices } from './cards';
 import { PlayerId, RoundState } from './round';
 
 export interface PerPlayerRoundResult {
@@ -52,22 +52,31 @@ export interface ScoringInput {
   state: RoundState;
   /** Cumulative totals going INTO this round. */
   totalsBefore: Record<PlayerId, number>;
+  /**
+   * Per-player ace overrides. Each entry maps a card-id of an ace in hand to
+   * the chosen value (1 or 11). Players / cards not listed default to ace = 1.
+   */
+  aceChoices?: Record<PlayerId, Record<string, 1 | 11>>;
 }
 
 /**
  * Compute the full outcome of a terminated round.
  */
 export function scoreRound(input: ScoringInput): RoundOutcome {
-  const { state, totalsBefore } = input;
+  const { state, totalsBefore, aceChoices } = input;
   if (state.phase !== 'ended' || !state.callerId) {
     throw new Error('Cannot score a non-terminated round.');
   }
   const callerId = state.callerId;
 
-  // 1. Raw hand points per player (aces as 1 by default).
+  // 1. Raw hand points per player, using ace overrides when provided.
   const rawPoints = new Map<PlayerId, number>();
   for (const p of state.players) {
-    rawPoints.set(p.id, handPoints(p.hand));
+    const choices = aceChoices?.[p.id];
+    rawPoints.set(
+      p.id,
+      choices ? handPointsWithChoices(p.hand, choices) : handPoints(p.hand),
+    );
   }
   const callerPts = rawPoints.get(callerId)!;
 

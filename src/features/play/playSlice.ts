@@ -73,6 +73,18 @@ export interface PlayState {
   /** Structured events emitted by the most recent submitAction, for UI animations. */
   lastEvents: import('./engine/round').RoundEvent[];
   nextLogId: number;
+  /**
+   * True when a round just ended and at least one player holds an ace,
+   * meaning we need each such player to choose 1 or 11 before scoring.
+   */
+  awaitingAceChoices: boolean;
+  /**
+   * Collected ace overrides so far. Once every player with aces has
+   * submitted, scoring runs with these overrides.
+   */
+  pendingAceChoices: Record<PlayerId, Record<string, 1 | 11>>;
+  /** Player IDs that hold at least one ace and still owe a choice. */
+  playersWithAces: PlayerId[];
 }
 
 const initialState: PlayState = {
@@ -95,6 +107,9 @@ const initialState: PlayState = {
   lastRoundResult: null,
   lastEvents: [],
   nextLogId: 1,
+  awaitingAceChoices: false,
+  pendingAceChoices: {},
+  playersWithAces: [],
 };
 
 export const playSlice = createSlice({
@@ -138,6 +153,9 @@ export const playSlice = createSlice({
       state.lastRoundResult = null;
       state.lastEvents = [];
       state.nextLogId = 1;
+      state.awaitingAceChoices = false;
+      state.pendingAceChoices = {};
+      state.playersWithAces = [];
     },
 
     /**
@@ -202,6 +220,9 @@ export const playSlice = createSlice({
       state.lastRoundResult = null;
       state.lastEvents = [];
       state.nextLogId = 1;
+      state.awaitingAceChoices = false;
+      state.pendingAceChoices = {};
+      state.playersWithAces = [];
     },
 
     submitAction: (state, action: PayloadAction<PlayAction>) => {
@@ -223,26 +244,46 @@ export const playSlice = createSlice({
       // Cap log length to avoid unbounded growth.
       if (state.log.length > 40) state.log.splice(0, state.log.length - 40);
 
-      // If the round just ended, compute + store the outcome.
+      // If the round just ended, check for aces before scoring.
       if (state.round.phase === 'ended' && state.round.callerId) {
-        const outcome = scoreRound({
-          state: state.round,
-          totalsBefore: state.cumulativeTotals,
-        });
-        const stored: StoredRoundResult = {
-          roundIndex: state.roundHistory.length,
-          callerId: outcome.callerId,
-          callerWon: outcome.callerWon,
-          perPlayer: outcome.perPlayer,
-        };
-        state.roundHistory.push(stored);
-        // Update cumulative totals.
-        for (const r of outcome.perPlayer) {
-          state.cumulativeTotals[r.playerId] = r.newTotal;
+        const withAces = state.round.players
+          .filter((p) => p.hand.some((c) => c.rank === 'A'))
+          .map((p) => p.id);
+
+        if (withAces.length > 0) {
+          // Defer scoring — wait for all ace holders to submit choices.
+          state.awaitingAceChoices = true;
+          state.pendingAceChoices = {};
+          state.playersWithAces = withAces;
+          state.thinkingPlayerId = null;
+        } else {
+          // No aces — score immediately.
+          finaliseRoundScoring(state);
         }
-        state.lastRoundResult = stored;
-        state.dealerId = outcome.callerWon ? outcome.callerId : state.dealerId;
-        state.thinkingPlayerId = null;
+      }
+    },
+
+    /**
+     * Submit one player's ace-value choices. Once every player with aces
+     * has submitted, scoring is finalised automatically.
+     */
+    submitAceChoices: (
+      state,
+      action: PayloadAction<{ playerId: PlayerId; choices: Record<string, 1 | 11> }>,
+    ) => {
+      if (!state.awaitingAceChoices) return;
+      const { playerId, choices } = action.payload;
+      state.pendingAceChoices[playerId] = choices;
+
+      // Check if all players with aces have submitted.
+      const allSubmitted = state.playersWithAces.every(
+        (id) => id in state.pendingAceChoices,
+      );
+      if (allSubmitted) {
+        finaliseRoundScoring(state, state.pendingAceChoices);
+        state.awaitingAceChoices = false;
+        state.pendingAceChoices = {};
+        state.playersWithAces = [];
       }
     },
 
@@ -261,6 +302,9 @@ export const playSlice = createSlice({
       state.lastRoundResult = null;
       state.lastEvents = [];
       state.thinkingPlayerId = null;
+      state.awaitingAceChoices = false;
+      state.pendingAceChoices = {};
+      state.playersWithAces = [];
     },
 
     setThinking: (state, action: PayloadAction<PlayerId | null>) => {
@@ -327,10 +371,41 @@ function suitSymbol(s: string): string {
   return '';
 }
 
+/**
+ * Shared helper: run scoreRound with optional ace overrides, store results,
+ * and update cumulative totals. Called from submitAction (no aces) and
+ * submitAceChoices (all ace holders responded).
+ */
+function finaliseRoundScoring(
+  state: PlayState,
+  aceChoices?: Record<PlayerId, Record<string, 1 | 11>>,
+): void {
+  if (!state.round || state.round.phase !== 'ended' || !state.round.callerId) return;
+  const outcome = scoreRound({
+    state: state.round,
+    totalsBefore: state.cumulativeTotals,
+    aceChoices,
+  });
+  const stored: StoredRoundResult = {
+    roundIndex: state.roundHistory.length,
+    callerId: outcome.callerId,
+    callerWon: outcome.callerWon,
+    perPlayer: outcome.perPlayer,
+  };
+  state.roundHistory.push(stored);
+  for (const r of outcome.perPlayer) {
+    state.cumulativeTotals[r.playerId] = r.newTotal;
+  }
+  state.lastRoundResult = stored;
+  state.dealerId = outcome.callerWon ? outcome.callerId : state.dealerId;
+  state.thinkingPlayerId = null;
+}
+
 export const {
   initGame,
   initFriendsGame,
   submitAction,
+  submitAceChoices,
   beginNextRound,
   setThinking,
   markGameOver,
@@ -363,3 +438,6 @@ export const selectPlayLastEvents = (s: RootState) => s.play.lastEvents;
 export const selectPlayLength = (s: RootState) => s.play.length;
 export const selectPlayMode = (s: RootState) => s.play.mode;
 export const selectPlayGameOver = (s: RootState) => s.play.gameOver;
+export const selectAwaitingAceChoices = (s: RootState) => s.play.awaitingAceChoices;
+export const selectPlayersWithAces = (s: RootState) => s.play.playersWithAces;
+export const selectPendingAceChoices = (s: RootState) => s.play.pendingAceChoices;

@@ -7,15 +7,18 @@
  */
 import { useEffect, useRef } from 'react';
 import { useAppDispatch, useAppSelector } from '../../app/hooks';
-import { chooseAction } from './ai/botPolicy';
+import { chooseAction, chooseBotAceValues } from './ai/botPolicy';
 import { selectStatsWeight } from '../stats/statsSlice';
 import {
   selectPlayCurrentPlayerId,
   selectPlayHumanId,
   selectPlayMode,
   selectPlayRound,
+  selectAwaitingAceChoices,
+  selectPlayersWithAces,
   setThinking,
   submitAction,
+  submitAceChoices,
 } from './playSlice';
 
 const MIN_DELAY_MS = 1200;
@@ -32,8 +35,12 @@ export function useBotDriver(): void {
   const history = useAppSelector((s) => s.play.roundHistory);
   const statWeights = useAppSelector(selectStatsWeight);
 
+  const awaitingAceChoices = useAppSelector(selectAwaitingAceChoices);
+  const playersWithAces = useAppSelector(selectPlayersWithAces);
+
   const pendingTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const tokenRef = useRef(0);
+  const aceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     // Clean up any pending think when inputs change.
@@ -82,4 +89,51 @@ export function useBotDriver(): void {
       }
     };
   }, [round, currentId, humanId, mode, difficulty, totals, history, statWeights, dispatch]);
+
+  // --- Bot ace-value submission after round end ---
+  useEffect(() => {
+    if (aceTimerRef.current) {
+      clearTimeout(aceTimerRef.current);
+      aceTimerRef.current = null;
+    }
+    if (!awaitingAceChoices || mode !== 'ai' || !round) return;
+
+    // Determine caller info for the strategy function.
+    const callerId = round.callerId;
+    if (!callerId) return;
+    const callerPts = round.players
+      .find((p) => p.id === callerId)
+      ?.hand.reduce((s, c) => s + (c.rank === 'A' ? 1 : c.rank === 'J' || c.rank === 'Q' || c.rank === 'K' ? 10 : Number(c.rank)), 0) ?? 0;
+    const owners = round.players
+      .filter((p) => p.id !== callerId && p.hand.reduce((s, c) => s + (c.rank === 'A' ? 1 : c.rank === 'J' || c.rank === 'Q' || c.rank === 'K' ? 10 : Number(c.rank)), 0) < callerPts)
+      .map((p) => p.id);
+    const callerWon = owners.length === 0;
+
+    // Submit choices for each bot that has aces with a staggered delay.
+    const botIds = playersWithAces.filter((id) => id !== humanId);
+    if (botIds.length === 0) return;
+
+    aceTimerRef.current = setTimeout(() => {
+      for (const botId of botIds) {
+        const bot = round.players.find((p) => p.id === botId);
+        if (!bot) continue;
+        const choices = chooseBotAceValues(
+          bot.hand,
+          botId,
+          totals[botId] ?? 0,
+          callerWon,
+          callerId,
+          owners.includes(botId),
+        );
+        dispatch(submitAceChoices({ playerId: botId, choices }));
+      }
+    }, 600);
+
+    return () => {
+      if (aceTimerRef.current) {
+        clearTimeout(aceTimerRef.current);
+        aceTimerRef.current = null;
+      }
+    };
+  }, [awaitingAceChoices, playersWithAces, mode, round, humanId, totals, dispatch]);
 }
