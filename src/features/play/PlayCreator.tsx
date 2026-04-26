@@ -6,7 +6,6 @@ import {
   MenuItem,
   Select,
   Stack,
-  TextField,
   Typography,
   useTheme,
 } from '@mui/material';
@@ -67,18 +66,10 @@ export const PlayCreator: React.FC = () => {
   const theme = useTheme();
   const currentPlayer = useAppSelector(selectCurrentPlayer);
   const isLoggedIn = !!currentPlayer;
-  const [yourName, setYourName] = React.useState(
-    currentPlayer?.displayName || 'You',
-  );
   const [numBots, setNumBots] = React.useState(2);
   const [difficulty, setDifficulty] = React.useState<Difficulty>('normal');
-  const [length, setLength] = React.useState<GameLength>('classic');
+  const [length, setLength] = React.useState<GameLength>('bo10');
   const [openIdentity, setOpenIdentity] = React.useState(false);
-
-  // Keep the name field in sync with the logged-in player.
-  React.useEffect(() => {
-    if (currentPlayer?.displayName) setYourName(currentPlayer.displayName);
-  }, [currentPlayer?.displayName]);
 
   const difficultyHint: Record<Difficulty, string> = {
     easy: 'Easy: bots play simpler and declare Yasat earlier.',
@@ -92,7 +83,10 @@ export const PlayCreator: React.FC = () => {
       name: picks[i] ?? `Bot${i + 1}`,
       isBot: true,
     }));
-    const players = [{ name: yourName.trim() || 'You', isBot: false }, ...bots];
+    const players = [
+      { name: currentPlayer?.displayName || 'You', isBot: false },
+      ...bots,
+    ];
     dispatch(
       initGame({
         players,
@@ -132,16 +126,6 @@ export const PlayCreator: React.FC = () => {
       <Typography variant="h6" color="primary">
         Play vs. AI
       </Typography>
-
-      <TextField
-        label="Your name"
-        value={yourName}
-        onChange={(e) => setYourName(e.target.value)}
-        size="small"
-        sx={{ width: 220 }}
-        disabled={isLoggedIn}
-        helperText={isLoggedIn ? 'Using your account name' : ' '}
-      />
 
       {isLoggedIn ? (
         <Stack direction="row" spacing={1} alignItems="center">
@@ -237,8 +221,8 @@ export const PlayCreator: React.FC = () => {
 
       <Typography variant="caption" color="text.secondary" sx={{ maxWidth: 360, textAlign: 'center' }}>
         {isLoggedIn
-          ? 'Best of 10 / First to 10 stats are saved to your Play leaderboards. Classic games are not tracked. AI games are never saved.'
-          : 'Log in to save Best of 10 / First to 10 stats to your Play leaderboards. Classic and AI games are never saved.'}
+          ? 'Best of 10 / First to 10 stats are saved to your Play leaderboards. Classic games are not tracked.'
+          : 'Log in to save Best of 10 / First to 10 stats to your Play leaderboards. Classic games are not tracked.'}
       </Typography>
     </Stack>
       <IdentityDialog open={openIdentity} onClose={() => setOpenIdentity(false)} />
