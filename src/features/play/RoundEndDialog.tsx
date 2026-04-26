@@ -110,10 +110,6 @@ export const RoundEndDialog: React.FC = () => {
             );
           })}
         </List>
-        <Divider sx={{ my: 1 }} />
-        <Typography variant="caption" color="text.secondary">
-          Nothing here is saved to rankings — local sandbox only.
-        </Typography>
       </DialogContent>
       <DialogActions>
         <Button onClick={handleEnd}>End Game</Button>
