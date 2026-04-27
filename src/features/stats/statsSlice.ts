@@ -15,7 +15,7 @@ const initialState: statsState = {
   gameType: 'default',
   weightedStats: [
       {statName: 'Yasat', weight: 1},
-      {statName: 'Longest Streak', weight: 3},
+      {statName: 'Longest Streak', weight: 2},
       {statName: 'Death', weight: -5},
       {statName: 'Kill', weight: 2},
       {statName: 'Own', weight: 3},

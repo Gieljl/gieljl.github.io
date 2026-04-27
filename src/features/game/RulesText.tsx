@@ -131,7 +131,7 @@ const RulesPopUp: React.FC = () => {
       consecutive rounds builds your <i>streak</i>.
       <br />
       <br />
-      <strong>Longest Streak</strong> (+3)
+      <strong>Longest Streak</strong> (+2)
       <br />
       The player who holds the longest consecutive Yasat streak in the game gets
       this bonus. If another player matches your streak it stays with you — they
@@ -162,7 +162,7 @@ const RulesPopUp: React.FC = () => {
       "die" (reset to 0) and you earn a Kill.
       <br />
       <br />
-      <strong>Double / Multi / Mega / Monster Kill</strong> (+1 / +2 / +3 / +4)
+      <strong>Double / Multi / Mega / Monster Kill</strong> (+5 / +8 / +11 / +14)
       <br />
       Bonus stats for killing 2, 3, 4, or 5 players in a single round.
       <br />
