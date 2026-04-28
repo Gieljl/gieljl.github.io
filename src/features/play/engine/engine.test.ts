@@ -396,6 +396,47 @@ describe('scoring.scoreRound', () => {
     const p1 = out.perPlayer.find((r) => r.playerId === 'p1')!;
     expect(p1.events).toContain('enable-69');
   });
+
+  test('contra-own-50: Owned caller at 15 gets +35 penalty landing on 50', () => {
+    // p1 declares Yasat but p2 has lower score → p1 is Owned (+35).
+    // p1 was at 15 total before → 15+35=50 = contra-own-50.
+    const state = mkEnded('p1', {
+      p1: [c('a', 'hearts', '7'), c('b', 'spades', '3')], // 10 pts
+      p2: [c('c', 'clubs', 'A'), c('d', 'hearts', '2')],  // 3 pts — below caller
+    });
+    const out = scoreRound({ state, totalsBefore: { p1: 15, p2: 0 } });
+    expect(out.callerWon).toBe(false);
+    const p1 = out.perPlayer.find((r) => r.playerId === 'p1')!;
+    expect(p1.pointsAdded).toBe(35);
+    expect(p1.newTotal).toBe(0);
+    expect(p1.events).toContain('owned');
+    expect(p1.events).toContain('contra-own-50');
+  });
+
+  test('contra-own-100: Owned caller at 65 gets +35 penalty landing on 100', () => {
+    const state = mkEnded('p1', {
+      p1: [c('a', 'hearts', '7'), c('b', 'spades', '3')], // 10 pts
+      p2: [c('c', 'clubs', 'A'), c('d', 'hearts', '2')],  // 3 pts
+    });
+    const out = scoreRound({ state, totalsBefore: { p1: 65, p2: 0 } });
+    const p1 = out.perPlayer.find((r) => r.playerId === 'p1')!;
+    expect(p1.pointsAdded).toBe(35);
+    expect(p1.newTotal).toBe(0);
+    expect(p1.events).toContain('owned');
+    expect(p1.events).toContain('contra-own-100');
+  });
+
+  test('normal nullify-50 for non-owned player is not labelled contra-own', () => {
+    // p1 wins Yasat. p2 had 40 total + 10 hand = 50 → plain nullify-50.
+    const state = mkEnded('p1', {
+      p1: [c('a', 'spades', 'A'), c('b', 'hearts', '2')], // 3 pts
+      p2: [c('c', 'clubs', '5'), c('d', 'hearts', '5')],  // 10 pts
+    });
+    const out = scoreRound({ state, totalsBefore: { p1: 0, p2: 40 } });
+    const p2 = out.perPlayer.find((r) => r.playerId === 'p2')!;
+    expect(p2.events).toContain('nullify-50');
+    expect(p2.events).not.toContain('contra-own-50');
+  });
 });
 
 describe('handPointsWithChoices', () => {

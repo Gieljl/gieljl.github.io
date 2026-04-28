@@ -143,19 +143,15 @@ export function scoreRound(input: ScoringInput): RoundOutcome {
     }
 
     if (provisional === 50 || provisional === 100) {
-      // Nullify. Distinguish ordinary nullify vs contra-own (only relevant
-      // when this player is an owner that benefited from Own=0 reset).
-      const isOwner = owners.includes(r.playerId);
-      if (isOwner) {
-        // Contra-own: the Own reset pushed them to exactly 50 or 100.
-        // We detect this by checking if previous total was 15→50 or 65→100
-        // (i.e. provisional == prev because pointsAdded is 0). When
-        // pointsAdded is 0 and prev is 50 or 100, that's a contra-own.
-        if (r.pointsAdded === 0 && (prev === 50 || prev === 100)) {
-          r.newTotal = 0;
-          r.events.push(prev === 50 ? 'contra-own-50' : 'contra-own-100');
-          continue;
-        }
+      // Contra-own: the Owned caller's 35-pt penalty lands them exactly on
+      // 50 or 100 (prev=15→50 or prev=65→100). Matches manual-mode rule:
+      // they still get Owned + nullify reset, but also the contra-own stat.
+      if (r.playerId === callerId && !callerWon && r.pointsAdded === 35) {
+        r.newTotal = 0;
+        r.events.push(provisional === 50 ? 'contra-own-50' : 'contra-own-100');
+        // Also record an enable event so the owning players get credit.
+        pushEnableEvent(results, callerId, provisional === 50 ? 'enable-50' : 'enable-100');
+        continue;
       }
       r.newTotal = 0;
       r.events.push(provisional === 50 ? 'nullify-50' : 'nullify-100');
