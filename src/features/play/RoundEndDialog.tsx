@@ -14,11 +14,13 @@ import {
   Typography,
 } from '@mui/material';
 import { useAppDispatch, useAppSelector } from '../../app/hooks';
+import { setGameView } from '../game/gameSlice';
 import { goHome } from '../game/gameSlice';
 import {
   beginNextRound,
   clearRoundResult,
   endGame,
+  selectPlayGameOver,
   selectPlayLastRoundResult,
   selectPlayNames,
   selectPlayRound,
@@ -33,6 +35,7 @@ export const RoundEndDialog: React.FC = () => {
   const names = useAppSelector(selectPlayNames);
   const totals = useAppSelector(selectPlayTotals);
   const round = useAppSelector(selectPlayRound);
+  const gameOver = useAppSelector(selectPlayGameOver);
 
   if (!result) return null;
 
@@ -42,6 +45,10 @@ export const RoundEndDialog: React.FC = () => {
 
   const handleNext = () => {
     dispatch(clearRoundResult());
+    if (gameOver) {
+      dispatch(setGameView('new'));
+      return;
+    }
     dispatch(beginNextRound());
   };
 
@@ -115,7 +122,7 @@ export const RoundEndDialog: React.FC = () => {
         <Button onClick={handleEnd}>End Game</Button>
         <Box sx={{ flex: 1 }} />
         <Button variant="contained" onClick={handleNext}>
-          Next Round
+          {gameOver ? 'Show Final Results' : 'Next Round'}
         </Button>
       </DialogActions>
     </Dialog>

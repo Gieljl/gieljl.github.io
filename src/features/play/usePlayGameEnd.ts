@@ -1,7 +1,9 @@
 /**
  * Watches a Play game's progress and triggers the game-end transition once
  * the configured `length` threshold is met:
- *  - switches view to the stats view (`new`)
+ *  - marks the game as over (`play.gameOver = true`)
+ *  - leaves the final round dialog visible so players can review it
+ *    before moving to stats
  *  - shows a snackbar announcing the winner + final weighted score
  *  - sets `play.gameOver = true` (does NOT clear state, so users can keep
  *    browsing stats until they explicitly return to home)
@@ -12,7 +14,6 @@
  */
 import { useEffect, useRef } from 'react';
 import { useAppDispatch, useAppSelector } from '../../app/hooks';
-import { setGameView } from '../game/gameSlice';
 import { isGameLengthMet } from '../game/gameLength';
 import { GAME_LENGTH_OPTIONS } from '../game/gameLength';
 import { selectStatsWeight } from '../stats/statsSlice';
@@ -100,7 +101,6 @@ export function usePlayGameEnd(): void {
 
     triggeredRef.current = true;
     dispatch(markGameOver());
-    dispatch(setGameView('new'));
 
     const winnerName = names[winnerId] ?? 'Winner';
     const winnerScore = weighted[winnerId] ?? 0;
