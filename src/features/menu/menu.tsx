@@ -468,6 +468,9 @@ export default function Menu({
         <DialogContentText id="alert-dialog-description">
           One of the most significant outfits in the card gaming scene!
         </DialogContentText>
+        <DialogContentText sx={{ mt: 2, fontSize: '0.75rem', color: 'text.secondary' }}>
+          Build: {process.env.REACT_APP_BUILD_VERSION || 'dev'}
+        </DialogContentText>
       </DialogContent>
       <DialogActions>
         <Button onClick={handleClose} autoFocus>

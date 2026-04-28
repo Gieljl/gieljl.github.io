@@ -43,7 +43,7 @@
     "build": "react-scripts build",
     "test": "react-scripts test",
     "eject": "react-scripts eject",
-    "predeploy": "npm run build",
+    "predeploy": "REACT_APP_BUILD_VERSION=$(date +%Y%m%d-%H%M%S) npm run build",
     "deploy": "gh-pages -d build"
   },
   "eslintConfig": {
