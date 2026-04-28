@@ -8,6 +8,7 @@
 import { useEffect, useRef } from 'react';
 import { useAppDispatch, useAppSelector } from '../../app/hooks';
 import { chooseAction, chooseBotAceValues } from './ai/botPolicy';
+import { handPoints } from './engine/cards';
 import { selectStatsWeight } from '../stats/statsSlice';
 import {
   selectPlayCurrentPlayerId,
@@ -24,6 +25,32 @@ import {
 
 const MIN_DELAY_MS = 1200;
 const MAX_DELAY_MS = 1700;
+
+/**
+ * Variable thinking time mimics human deliberation:
+ * - Trivial decisions (high points, no Yasat option) → faster
+ * - Borderline Yasat calls (≤7 points) → slower, "considering"
+ * - Easy bots act faster overall, godlike slower (deep thinking)
+ */
+function computeThinkDelay(
+  pts: number,
+  handSize: number,
+  difficulty: 'easy' | 'normal' | 'godlike',
+): number {
+  let base = MIN_DELAY_MS + Math.random() * (MAX_DELAY_MS - MIN_DELAY_MS);
+
+  // Borderline Yasat decision is hardest — pause longer.
+  if (pts <= 7) base += 400 + Math.random() * 600;
+
+  // Many cards = more options to weigh.
+  if (handSize >= 4) base += 200;
+
+  // Difficulty pacing.
+  if (difficulty === 'easy') base *= 0.75;
+  if (difficulty === 'godlike') base *= 1.15;
+
+  return Math.round(base);
+}
 
 export function useBotDriver(): void {
   const dispatch = useAppDispatch();
@@ -67,7 +94,10 @@ export function useBotDriver(): void {
 
     const myToken = tokenRef.current;
     dispatch(setThinking(currentId));
-    const delay = MIN_DELAY_MS + Math.random() * (MAX_DELAY_MS - MIN_DELAY_MS);
+    const me = round.players.find((p) => p.id === currentId);
+    const myPts = me ? handPoints(me.hand) : 0;
+    const myHandSize = me ? me.hand.length : 0;
+    const delay = computeThinkDelay(myPts, myHandSize, difficulty);
     pendingTimer.current = setTimeout(() => {
       if (myToken !== tokenRef.current) return; // stale
       try {
@@ -127,6 +157,7 @@ export function useBotDriver(): void {
           callerWon,
           callerId,
           owners.includes(botId),
+          difficulty,
         );
         dispatch(submitAceChoices({ playerId: botId, choices }));
       }
@@ -138,5 +169,5 @@ export function useBotDriver(): void {
         aceTimerRef.current = null;
       }
     };
-  }, [awaitingAceChoices, playersWithAces, mode, round, humanId, totals, dispatch]);
+  }, [awaitingAceChoices, playersWithAces, mode, round, humanId, totals, difficulty, dispatch]);
 }

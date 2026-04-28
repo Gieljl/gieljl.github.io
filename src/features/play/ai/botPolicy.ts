@@ -20,6 +20,17 @@ import { EVENT_TO_STAT_NAME } from '../eventLabels';
 
 export type Difficulty = 'easy' | 'normal' | 'godlike';
 
+/**
+ * Personality profiles add per-bot variance to behavior independent of
+ * difficulty. Each bot is deterministically assigned one based on its id.
+ */
+export type Personality =
+  | 'cautious' // -risk tolerance, prefers deck draws, plays safe
+  | 'balanced' // neutral
+  | 'aggressive' // +risk tolerance, prefers discard pickups
+  | 'opportunist' // hunts kills/nullifies, picks up Aces eagerly
+  | 'gambler'; // very loose, accepts more risk, makes more mistakes
+
 export interface BotPolicyContext {
   /** Tournament totals before this action (used for round scoring simulation). */
   totalsBefore?: Record<PlayerId, number>;
@@ -31,6 +42,132 @@ export interface BotPolicyContext {
   }>;
   /** Publicly visible action history for the current round. */
   visibleRoundEvents?: RoundEvent[];
+  /**
+   * Optional explicit personality override. If absent, derived from botId.
+   * Tests can pass this to make assertions deterministic.
+   */
+  personality?: Personality;
+}
+
+// ---------------------------------------------------------------------------
+// Personality + deterministic RNG
+// ---------------------------------------------------------------------------
+
+const PERSONALITIES: Personality[] = [
+  'cautious',
+  'balanced',
+  'aggressive',
+  'opportunist',
+  'gambler',
+];
+
+/** Deterministic personality assignment from bot id. */
+export function getPersonality(botId: string): Personality {
+  const h = hashString(botId);
+  return PERSONALITIES[h % PERSONALITIES.length];
+}
+
+/** FNV-like hash returning a non-negative 32-bit int. */
+function hashString(s: string): number {
+  let h = 2166136261;
+  for (let i = 0; i < s.length; i++) {
+    h ^= s.charCodeAt(i);
+    h = Math.imul(h, 16777619);
+  }
+  return h >>> 0;
+}
+
+/**
+ * Seeded RNG so the same (botId, turn-state) always produces the same
+ * randomness. Keeps tests reproducible while allowing variability.
+ */
+function seededRandom(seed: string): () => number {
+  let h = hashString(seed);
+  return () => {
+    h = Math.imul(h ^ (h >>> 13), 1597334677);
+    h = Math.imul(h ^ (h >>> 15), 1597334677);
+    return ((h >>> 0) % 1000000) / 1000000;
+  };
+}
+
+/** Stable per-turn seed for a bot. */
+function turnSeed(state: RoundState, botId: string, label: string): string {
+  return `${botId}|${state.discardPlies.length}|${label}`;
+}
+
+/** Risk-threshold offset (lower = calls less, higher = calls more). */
+function personalityRiskBias(personality: Personality): number {
+  switch (personality) {
+    case 'cautious':
+      return -2;
+    case 'balanced':
+      return 0;
+    case 'aggressive':
+      return 2;
+    case 'opportunist':
+      return 1;
+    case 'gambler':
+      return 3;
+  }
+}
+
+/** Probability the bot ignores the best computed discard/draw and picks alt. */
+function personalityNoise(personality: Personality, difficulty: Difficulty): number {
+  if (difficulty === 'godlike') return 0;
+  const base = difficulty === 'easy' ? 0.2 : 0.05;
+  const bias =
+    personality === 'gambler' ? 0.15 :
+    personality === 'aggressive' ? 0.05 :
+    personality === 'cautious' ? -0.05 :
+    0;
+  return Math.max(0, Math.min(0.5, base + bias));
+}
+
+/** Memory window: number of recent events the bot remembers. */
+function memoryWindow(difficulty: Difficulty, personality: Personality): number {
+  if (difficulty === 'godlike') return Infinity;
+  const base = difficulty === 'easy' ? 4 : 12;
+  const bias =
+    personality === 'cautious' ? 2 :
+    personality === 'opportunist' ? 2 :
+    personality === 'gambler' ? -1 :
+    0;
+  return Math.max(2, base + bias);
+}
+
+/** Probability of "missing" each visible event entirely. */
+function blindSpotRate(difficulty: Difficulty, personality: Personality): number {
+  if (difficulty === 'godlike') return 0;
+  const base = difficulty === 'easy' ? 0.3 : 0.1;
+  const bias =
+    personality === 'cautious' ? -0.05 :
+    personality === 'opportunist' ? -0.05 :
+    personality === 'gambler' ? 0.1 :
+    0;
+  return Math.max(0, Math.min(0.6, base + bias));
+}
+
+/**
+ * Apply human-like memory limits + blind spots to a stream of round events.
+ * Returns a filtered list the bot "actually remembers".
+ *
+ * When the caller explicitly provides a personality (test mode), blind-spot
+ * dropping is disabled for determinism — only the memory window is enforced.
+ */
+function applyMemoryFilter(
+  events: RoundEvent[],
+  difficulty: Difficulty,
+  personality: Personality,
+  rng: () => number,
+  deterministic: boolean,
+): RoundEvent[] {
+  if (difficulty === 'godlike') return events;
+  const window = memoryWindow(difficulty, personality);
+  const recent = window === Infinity ? events : events.slice(-window);
+  if (deterministic) return recent;
+  const missRate = blindSpotRate(difficulty, personality);
+  if (missRate <= 0) return recent;
+  return recent.filter(() => rng() >= missRate);
 }
 
 interface DiscardCandidate {
@@ -52,14 +189,32 @@ export function chooseAction(
     throw new Error('Not this bot turn');
   }
 
+  const personality = context.personality ?? getPersonality(botId);
+  const deterministic = context.personality !== undefined;
+
+  // Apply human-like memory limits + blind spots once per decision.
+  const memoryRng = seededRandom(turnSeed(state, botId, 'memory'));
+  const rememberedEvents = applyMemoryFilter(
+    context.visibleRoundEvents ?? [],
+    difficulty,
+    personality,
+    memoryRng,
+    deterministic,
+  );
+  const effectiveContext: BotPolicyContext = {
+    ...context,
+    visibleRoundEvents: rememberedEvents,
+    personality,
+  };
+
   // 1. Start-of-turn Yasat check.
   const myPoints = handPoints(me.hand);
-  if (myPoints <= 7 && shouldDeclareYasat(state, botId, difficulty, context)) {
+  if (myPoints <= 7 && shouldDeclareYasat(state, botId, difficulty, effectiveContext)) {
     return { type: 'declareYasat' };
   }
 
   if (difficulty === 'godlike') {
-    const hard = chooseHardDiscardAndDraw(state, me.hand, context);
+    const hard = chooseHardDiscardAndDraw(state, me.hand, effectiveContext);
     return {
       type: 'discardThenDraw',
       discard: hard.cards,
@@ -69,10 +224,25 @@ export function chooseAction(
 
   // 2. Build candidate discards and pick the highest-value one.
   const candidates = enumerateDiscards(me.hand);
-  const chosen = pickBestDiscard(candidates, me.hand, context);
+  const chosen = pickBestDiscard(
+    candidates,
+    me.hand,
+    effectiveContext,
+    difficulty,
+    personality,
+    seededRandom(turnSeed(state, botId, 'discard')),
+  );
 
   // 3. Choose draw source.
-  const drawFrom = chooseDraw(state, me.hand, chosen.cards, context);
+  const drawFrom = chooseDraw(
+    state,
+    me.hand,
+    chosen.cards,
+    effectiveContext,
+    difficulty,
+    personality,
+    seededRandom(turnSeed(state, botId, 'draw')),
+  );
 
   return {
     type: 'discardThenDraw',
@@ -89,6 +259,7 @@ function shouldDeclareYasat(
 ): boolean {
   const me = state.players.find((p) => p.id === botId)!;
   const myPts = handPoints(me.hand);
+  const personality = context.personality ?? getPersonality(botId);
 
   // Godlike is intentionally omniscient: if we have full context, evaluate this
   // exact declare against weighted stats.
@@ -105,14 +276,25 @@ function shouldDeclareYasat(
     opponents,
     context.visibleRoundEvents ?? [],
   );
+
+  // Personality + tactical adjustments to the perceived risk.
+  const riskBias = personalityRiskBias(personality);
+  const survivalBias = survivalRiskBias(state, botId, context);
+  const tacticalBonus = quickTacticalBonusForDeclare(state, botId, context);
+
+  // Effective risk perception: visible-card risk minus personality/tactical
+  // adjustments plus survival bias. Lower = safer to call.
+  const effectiveRisk =
+    lowHandRisk - riskBias - tacticalBonus + survivalBias;
+
   // Rough "safe" thresholds:
-  // - easy: mostly calls Yasat, only bails on very strong visible danger
+  // - easy: mostly calls Yasat, only bails on very strong perceived danger
   // - normal: more cautious on 1–2 card opponent scenarios
   // - godlike: stricter unless very low, prefers value-building turns
   if (difficulty === 'easy') {
     if (myPts <= 1) return true;
-    if (myPts === 2) return lowHandRisk < 7;
-    if (myPts <= 4) return lowHandRisk < 8;
+    if (myPts === 2) return effectiveRisk < 7;
+    if (myPts <= 4) return effectiveRisk < 8;
     return true;
   }
   if (difficulty === 'godlike') {
@@ -120,12 +302,97 @@ function shouldDeclareYasat(
     if (myPts <= 5) return opponents.some((o) => o.hand.length >= 3);
     return false;
   }
+  // Normal
   if (myPts <= 1) return true;
-  if (myPts === 2) return lowHandRisk < 4;
-  if (myPts === 3) return lowHandRisk < 5;
-  if (myPts <= 4) return lowHandRisk < 6;
-  if (lowHandRisk >= 4) return false;
+  if (myPts === 2) return effectiveRisk < 4;
+  if (myPts === 3) return effectiveRisk < 5;
+  if (myPts <= 4) return effectiveRisk < 6;
+  if (effectiveRisk >= 4) return false;
   return opponents.some((o) => o.hand.length >= 3);
+}
+
+/**
+ * Cheap stat-aware tactical bonus: adds positive value when declaring would
+ * likely produce a Kill, Nullify, or own-Yasat-streak protection. Negative
+ * when the bot already securely owns Longest Streak (less reason to call).
+ *
+ * Designed to mimic human pattern recognition without full scoring sim.
+ */
+function quickTacticalBonusForDeclare(
+  state: RoundState,
+  botId: string,
+  context: BotPolicyContext,
+): number {
+  const totals = context.totalsBefore ?? {};
+  const myTotal = totals[botId] ?? 0;
+  const me = state.players.find((p) => p.id === botId);
+  if (!me) return 0;
+  const myPts = handPoints(me.hand);
+
+  let bonus = 0;
+
+  // Kill potential: an opponent's total + their *minimum possible* hand > 100.
+  for (const opp of state.players) {
+    if (opp.id === botId) continue;
+    const oppTotal = totals[opp.id] ?? 0;
+    const oppMinHand = Math.max(opp.hand.length, 0);
+    if (oppTotal + oppMinHand > 100) {
+      bonus += 2; // strong incentive to lock in the kill
+    } else if (oppTotal + oppMinHand >= 95) {
+      bonus += 1; // possible kill if their hand is high
+    }
+  }
+
+  // Nullify-on-50/100 setup: if my own provisional total would land on 50/100.
+  const provisional = myTotal + 0; // pointsAdded === 0 when we win
+  if (provisional === 50 || provisional === 100) bonus += 2;
+
+  // Lullify pattern: at 69 with hand pts that sum to 100 isn't possible by
+  // declaring (we'd reset to 0), but reaching 100 on a fail would Lullify.
+  // Skip — too situational for cheap heuristic.
+
+  // Streak ownership: if I currently own the streak, slightly less eager
+  // to call (already have the bonus). If I'm one Yasat from taking it, more eager.
+  const streakOwner = currentStreakOwner(context.roundHistory ?? []);
+  if (streakOwner === botId) bonus -= 1;
+  else if (myStreakLength(botId, context.roundHistory ?? []) >= 1) bonus += 1;
+
+  // Multi-card hand at high points: wanting Yasat is a stretch — slight penalty.
+  if (myPts >= 6 && me.hand.length >= 4) bonus -= 1;
+
+  return bonus;
+}
+
+/** Risk amplification when bot is near the death threshold (>90 cumulative). */
+function survivalRiskBias(
+  state: RoundState,
+  botId: string,
+  context: BotPolicyContext,
+): number {
+  const total = context.totalsBefore?.[botId] ?? 0;
+  if (total >= 95) return 3; // very close to dying — call sooner
+  if (total >= 85) return 1;
+  if (total <= 10) return -1; // safe, allow more aggressive plays
+  return 0;
+}
+
+function currentStreakOwner(
+  history: Array<{ perPlayer: Array<{ playerId: PlayerId; events: RoundStatEvent[] }> }>,
+): PlayerId | null {
+  return getLongestStreakOwnerFromHistory(history);
+}
+
+function myStreakLength(
+  botId: PlayerId,
+  history: Array<{ perPlayer: Array<{ playerId: PlayerId; events: RoundStatEvent[] }> }>,
+): number {
+  let streak = 0;
+  for (const r of history) {
+    const mine = r.perPlayer.find((p) => p.playerId === botId);
+    if (mine?.events.includes('yasat')) streak += 1;
+    else streak = 0;
+  }
+  return streak;
 }
 
 function estimateLowHandYasatRisk(
@@ -144,17 +411,31 @@ function estimateLowHandYasatRisk(
     const knownPoints = known.reduce((sum, c) => sum + cardValue(c, 1), 0);
     const knownCount = Math.min(known.length, opp.hand.length);
     const unknownCount = Math.max(0, opp.hand.length - knownCount);
+    // Worst case for the bot = opponent's minimum possible hand points.
     const minPossible = knownPoints + unknownCount;
 
-    let oppRisk = opp.hand.length === 1 ? 1 : 0;
     if (minPossible < myPts) {
-      oppRisk += knownCount > 0 ? 3 : 1;
+      // Opponent could have lower points → genuine Own/Owned threat.
+      // Strength scales with how confident the threat signal is:
+      //   - known cards = high confidence
+      //   - 1-card opp = stronger than 2-card
+      const observed = knownCount > 0;
+      let oppRisk = 0;
+      if (opp.hand.length === 1) {
+        oppRisk += observed ? 4 : 2;
+      } else {
+        oppRisk += observed ? 2 : 1;
+      }
+      // Fully observed = high-confidence threat.
+      if (knownCount === opp.hand.length && knownCount > 0) oppRisk += 2;
+      // Specific known low cards add danger when our points are small.
+      if (known.some((c) => c.rank === 'A') && myPts <= 3) oppRisk += 1;
+      risk += oppRisk;
+    } else if (minPossible === myPts) {
+      // Tie or we win. Caller wins ties on Yasat call → no real risk.
+      // (Leaving 0 here keeps the bot willing to call against equal-point opps.)
     }
-    if (known.some((c) => c.rank === 'A') && myPts <= 3) oppRisk += 2;
-    if (known.some((c) => c.rank === '2') && myPts <= 4) oppRisk += 1;
-    if (known.some((c) => cardValue(c, 1) >= 10) && minPossible >= myPts) oppRisk -= 1;
-
-    risk += Math.max(0, oppRisk);
+    // else: opponent must lose → no risk added.
   }
 
   return risk;
@@ -441,8 +722,18 @@ function pickBestDiscard(
   candidates: DiscardCandidate[],
   hand: readonly Card[],
   context: BotPolicyContext,
+  difficulty: Difficulty,
+  personality: Personality,
+  rng: () => number,
 ): { cards: Card[]; shape: NonNullable<ReturnType<typeof classifyDiscard>> } {
-  const allCandidates: DiscardCandidate[] = getAllDiscardCandidates(candidates, hand);
+  // Difficulty-tuned candidate pool: easier bots consider fewer options.
+  let allCandidates: DiscardCandidate[] = getAllDiscardCandidates(candidates, hand);
+  if (difficulty === 'easy') {
+    // Easy considers only singles + pairs (skips triples/quads/straights).
+    allCandidates = allCandidates.filter(
+      (c) => c.shape === 'single' || c.shape === 'pair',
+    );
+  }
 
   // Shape bias is now mild; resulting hand quality drives most of the choice.
   const shapeWeight: Record<string, number> = {
@@ -453,23 +744,32 @@ function pickBestDiscard(
     single: 0,
   };
 
-  let best: DiscardCandidate | null = null;
-  let bestScore = -Infinity;
+  // Score every candidate.
+  const scored: Array<{ cand: DiscardCandidate; score: number }> = [];
   for (const c of allCandidates) {
     const discardIds = new Set(c.cards.map((x) => x.id));
     const remaining = hand.filter((x) => !discardIds.has(x.id));
     const handScore = evaluateHandForStats(remaining, context);
     const score = handScore + c.value * 0.35 + shapeWeight[c.shape];
-    if (score > bestScore) {
-      best = c;
-      bestScore = score;
-    }
+    scored.push({ cand: c, score });
   }
 
-  if (!best) {
+  if (scored.length === 0) {
     const sorted = [...hand].sort((a, b) => cardValue(b, 1) - cardValue(a, 1));
     return { cards: [sorted[0]], shape: 'single' };
   }
+
+  scored.sort((a, b) => b.score - a.score);
+
+  // ε-greedy: with personality+difficulty noise, pick second/third best.
+  const noise = personalityNoise(personality, difficulty);
+  if (noise > 0 && scored.length >= 2 && rng() < noise) {
+    const altIndex = scored.length >= 3 && rng() < 0.3 ? 2 : 1;
+    const alt = scored[altIndex] ?? scored[1];
+    return { cards: alt.cand.cards, shape: alt.cand.shape };
+  }
+
+  const best = scored[0].cand;
   return { cards: best.cards, shape: best.shape };
 }
 
@@ -478,6 +778,9 @@ function chooseDraw(
   hand: readonly Card[],
   discarding: readonly Card[],
   context: BotPolicyContext,
+  difficulty: Difficulty,
+  personality: Personality,
+  rng: () => number,
 ): 'deck' | { fromDiscardId: string } {
   const topPly = state.discardPlies[state.discardPlies.length - 1] ?? [];
   const pickable = pickableFromDiscard(topPly);
@@ -498,9 +801,24 @@ function chooseDraw(
     }
   }
 
-  // Only take from discard when it projects at least as good as deck on
-  // weighted-stat hand quality; otherwise keep uncertainty upside via deck.
-  if (bestPick && bestScore >= deckEstimate) return { fromDiscardId: bestPick.id };
+  // Personality-driven preference: aggressive/opportunist favor discard pickups,
+  // cautious favors deck (less info revealed).
+  const draftPreference =
+    personality === 'aggressive' || personality === 'opportunist' ? 1 :
+    personality === 'cautious' ? -1 :
+    0;
+
+  // ε-greedy noise: occasionally take the worse option (humans sometimes do).
+  const noise = personalityNoise(personality, difficulty);
+  if (bestPick && rng() < noise) return 'deck';
+  if (!bestPick && rng() < noise && pickable.length > 0) {
+    return { fromDiscardId: pickable[0].id };
+  }
+
+  // Take from discard when it scores >= deck (shifted by personality preference).
+  if (bestPick && bestScore + draftPreference >= deckEstimate) {
+    return { fromDiscardId: bestPick.id };
+  }
   return 'deck';
 }
 
@@ -602,6 +920,8 @@ export function chooseBotAceValues(
   callerWon: boolean,
   callerId: string,
   isOwner: boolean,
+  difficulty: Difficulty = 'normal',
+  personality: Personality = getPersonality(botId),
 ): Record<string, 1 | 11> {
   const aces = hand.filter((c) => c.rank === 'A');
   if (aces.length === 0) return {};
@@ -615,16 +935,39 @@ export function chooseBotAceValues(
   }
 
   // If the bot is the owned caller, pointsAdded is always 35 regardless of
-  // hand value. But the *displayed* handPoints may differ — still, the only
-  // impact on newTotal is via the fixed 35 penalty. So ace value doesn't
-  // change anything strategically. Default to 1.
+  // hand value. So ace value doesn't matter strategically. Default to 1.
   if (botId === callerId && !callerWon) {
     const choices: Record<string, 1 | 11> = {};
     for (const a of aces) choices[a.id] = 1;
     return choices;
   }
 
-  // Enumerate all 2^n combos of ace values.
+  // Personality + difficulty-driven simplification.
+  // Easy bots and gamblers often miss optimal Ace play (humans do too).
+  const skipOptimization =
+    difficulty === 'easy' &&
+    (personality === 'cautious' || personality === 'gambler' || personality === 'aggressive');
+
+  if (skipOptimization) {
+    // Default everything to 1 — misses some Nullifies but very human.
+    const choices: Record<string, 1 | 11> = {};
+    for (const a of aces) choices[a.id] = 1;
+    return choices;
+  }
+
+  // Normal-easy or normal: try to optimize but with a chance of missing.
+  const rng = seededRandom(`${botId}|ace|${totalBefore}`);
+  const missChance =
+    difficulty === 'easy' ? 0.4 :
+    difficulty === 'normal' ? 0.1 :
+    0;
+  if (rng() < missChance) {
+    const choices: Record<string, 1 | 11> = {};
+    for (const a of aces) choices[a.id] = 1;
+    return choices;
+  }
+
+  // Enumerate all 2^n combos of ace values (full optimization).
   const n = aces.length;
   let bestChoices: Record<string, 1 | 11> = {};
   let bestScore = Infinity;
@@ -635,7 +978,6 @@ export function chooseBotAceValues(
     for (let i = 0; i < n; i++) {
       choices[aces[i].id] = (mask >> i) & 1 ? 11 : 1;
     }
-    // Compute hand points with these choices.
     let hp = 0;
     for (const c of hand) {
       if (c.rank === 'A') {
@@ -644,23 +986,19 @@ export function chooseBotAceValues(
         hp += cardValue(c, 1);
       }
     }
-    const pointsAdded = hp; // regular non-caller, non-owner
+    const pointsAdded = hp;
     const provisional = totalBefore + pointsAdded;
 
-    // Check for beneficial events.
     const isNullify =
       provisional === 50 || provisional === 100 ||
       (totalBefore === 69 && provisional === 100);
     const isDeath = provisional > 100;
 
-    // Score: lower is better.
-    // Nullify/lullify → effective newTotal 0 and positive event → best.
-    // Death → newTotal 0 but negative event → treat as worse than surviving.
     let effectiveScore: number;
     if (isNullify) {
-      effectiveScore = -1; // best possible
+      effectiveScore = -1;
     } else if (isDeath) {
-      effectiveScore = 1000; // very bad
+      effectiveScore = 1000;
     } else {
       effectiveScore = provisional;
     }
