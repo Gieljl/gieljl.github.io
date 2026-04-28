@@ -9,7 +9,7 @@ import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 import { nanoid } from '@reduxjs/toolkit';
 import type { RootState } from '../../app/store';
 import { Difficulty } from './ai/botPolicy';
-import { PlayAction, PlayerId, RoundState, applyAction, startRound } from './engine/round';
+import { PlayAction, PlayerId, RoundEvent, RoundState, applyAction, startRound } from './engine/round';
 import { PerPlayerRoundResult, scoreRound } from './engine/scoring';
 import type { GameLength } from '../game/gameLength';
 
@@ -71,7 +71,9 @@ export interface PlayState {
   /** Present when the round has just ended and the dialog should show. */
   lastRoundResult: StoredRoundResult | null;
   /** Structured events emitted by the most recent submitAction, for UI animations. */
-  lastEvents: import('./engine/round').RoundEvent[];
+  lastEvents: RoundEvent[];
+  /** Public events emitted in the current round (observable by all players). */
+  currentRoundEvents: RoundEvent[];
   nextLogId: number;
   /**
    * True when a round just ended and at least one player holds an ace,
@@ -106,6 +108,7 @@ const initialState: PlayState = {
   lastError: null,
   lastRoundResult: null,
   lastEvents: [],
+  currentRoundEvents: [],
   nextLogId: 1,
   awaitingAceChoices: false,
   pendingAceChoices: {},
@@ -152,6 +155,7 @@ export const playSlice = createSlice({
       state.lastError = null;
       state.lastRoundResult = null;
       state.lastEvents = [];
+      state.currentRoundEvents = [];
       state.nextLogId = 1;
       state.awaitingAceChoices = false;
       state.pendingAceChoices = {};
@@ -219,6 +223,7 @@ export const playSlice = createSlice({
       state.lastError = null;
       state.lastRoundResult = null;
       state.lastEvents = [];
+      state.currentRoundEvents = [];
       state.nextLogId = 1;
       state.awaitingAceChoices = false;
       state.pendingAceChoices = {};
@@ -235,6 +240,7 @@ export const playSlice = createSlice({
       state.lastError = null;
       state.round = result.state;
       state.lastEvents = result.events;
+      state.currentRoundEvents.push(...result.events);
       for (const ev of result.events) {
         const msg = formatEvent(ev, state.playerNames);
         if (msg) {
@@ -304,6 +310,7 @@ export const playSlice = createSlice({
       state.lastError = null;
       state.lastRoundResult = null;
       state.lastEvents = [];
+      state.currentRoundEvents = [];
       state.thinkingPlayerId = null;
       state.awaitingAceChoices = false;
       state.pendingAceChoices = {};
@@ -438,6 +445,7 @@ export const selectPlayLastError = (s: RootState) => s.play.lastError;
 export const selectPlayLastRoundResult = (s: RootState) => s.play.lastRoundResult;
 export const selectPlayLog = (s: RootState) => s.play.log;
 export const selectPlayLastEvents = (s: RootState) => s.play.lastEvents;
+export const selectPlayCurrentRoundEvents = (s: RootState) => s.play.currentRoundEvents;
 export const selectPlayLength = (s: RootState) => s.play.length;
 export const selectPlayMode = (s: RootState) => s.play.mode;
 export const selectPlayGameOver = (s: RootState) => s.play.gameOver;

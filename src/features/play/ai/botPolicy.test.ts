@@ -143,6 +143,110 @@ describe('botPolicy.chooseAction', () => {
     expect(action.type).toBe('declareYasat');
   });
 
+  test('normal bot calls Yasat on 2 points when no ace-risk is observed', () => {
+    const state = makeState({
+      hand: [c('bA', 'spades', 'A'), c('b1', 'hearts', 'A')], // 2 pts
+      players: [
+        { id: 'bot', name: 'Bot', isBot: true, hand: [c('bA', 'spades', 'A'), c('b1', 'hearts', 'A')] },
+        { id: 'hum', name: 'Hum', isBot: false, hand: [c('h2', 'clubs', '2')] },
+      ],
+    });
+
+    const action = chooseAction(state, 'bot', 'normal', {
+      visibleRoundEvents: [],
+    });
+
+    expect(action.type).toBe('declareYasat');
+  });
+
+  test('normal bot avoids Yasat on 2 points after seeing opponent take Ace from discard', () => {
+    const state = makeState({
+      hand: [c('bA', 'spades', 'A'), c('b1', 'hearts', 'A')], // 2 pts
+      players: [
+        { id: 'bot', name: 'Bot', isBot: true, hand: [c('bA', 'spades', 'A'), c('b1', 'hearts', 'A')] },
+        { id: 'hum', name: 'Hum', isBot: false, hand: [c('h2', 'clubs', '2')] },
+      ],
+    });
+
+    const action = chooseAction(state, 'bot', 'normal', {
+      visibleRoundEvents: [
+        {
+          type: 'drewFromDiscard',
+          playerId: 'hum',
+          card: c('seenA', 'diamonds', 'A'),
+        },
+      ],
+    });
+
+    expect(action.type).toBe('discardThenDraw');
+  });
+
+  test('normal bot still calls Yasat on 2 points when observed one-card risk is a seen 2 (not Ace)', () => {
+    const state = makeState({
+      hand: [c('bA', 'spades', 'A'), c('b1', 'hearts', 'A')], // 2 pts
+      players: [
+        { id: 'bot', name: 'Bot', isBot: true, hand: [c('bA', 'spades', 'A'), c('b1', 'hearts', 'A')] },
+        { id: 'hum', name: 'Hum', isBot: false, hand: [c('h2', 'clubs', '2')] },
+      ],
+    });
+
+    const action = chooseAction(state, 'bot', 'normal', {
+      visibleRoundEvents: [
+        {
+          type: 'drewFromDiscard',
+          playerId: 'hum',
+          card: c('seen2', 'diamonds', '2'),
+        },
+      ],
+    });
+
+    expect(action.type).toBe('declareYasat');
+  });
+
+  test('normal bot avoids Yasat on 3 points when opponent has one visible low card', () => {
+    const state = makeState({
+      hand: [c('bA', 'spades', 'A'), c('b2', 'hearts', '2')], // 3 pts
+      players: [
+        { id: 'bot', name: 'Bot', isBot: true, hand: [c('bA', 'spades', 'A'), c('b2', 'hearts', '2')] },
+        { id: 'hum', name: 'Hum', isBot: false, hand: [c('h2', 'clubs', '2')] },
+      ],
+    });
+
+    const action = chooseAction(state, 'bot', 'normal', {
+      visibleRoundEvents: [
+        {
+          type: 'drewFromDiscard',
+          playerId: 'hum',
+          card: c('seen2', 'diamonds', '2'),
+        },
+      ],
+    });
+
+    expect(action.type).toBe('discardThenDraw');
+  });
+
+  test('easy bot is more reckless than normal on 2 points even with seen ace pickup', () => {
+    const state = makeState({
+      hand: [c('bA', 'spades', 'A'), c('b1', 'hearts', 'A')], // 2 pts
+      players: [
+        { id: 'bot', name: 'Bot', isBot: true, hand: [c('bA', 'spades', 'A'), c('b1', 'hearts', 'A')] },
+        { id: 'hum', name: 'Hum', isBot: false, hand: [c('h2', 'clubs', '2')] },
+      ],
+    });
+
+    const action = chooseAction(state, 'bot', 'easy', {
+      visibleRoundEvents: [
+        {
+          type: 'drewFromDiscard',
+          playerId: 'hum',
+          card: c('seenA', 'diamonds', 'A'),
+        },
+      ],
+    });
+
+    expect(action.type).toBe('declareYasat');
+  });
+
   test('godlike difficulty deterministically picks best-scored draw source', () => {
     const state = makeState({
       hand: [

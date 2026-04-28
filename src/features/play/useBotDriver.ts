@@ -14,6 +14,7 @@ import {
   selectPlayHumanId,
   selectPlayMode,
   selectPlayRound,
+  selectPlayCurrentRoundEvents,
   selectAwaitingAceChoices,
   selectPlayersWithAces,
   setThinking,
@@ -34,6 +35,7 @@ export function useBotDriver(): void {
   const totals = useAppSelector((s) => s.play.cumulativeTotals);
   const history = useAppSelector((s) => s.play.roundHistory);
   const statWeights = useAppSelector(selectStatsWeight);
+  const currentRoundEvents = useAppSelector(selectPlayCurrentRoundEvents);
 
   const awaitingAceChoices = useAppSelector(selectAwaitingAceChoices);
   const playersWithAces = useAppSelector(selectPlayersWithAces);
@@ -73,6 +75,7 @@ export function useBotDriver(): void {
           totalsBefore: totals,
           statWeights,
           roundHistory: history,
+          visibleRoundEvents: currentRoundEvents,
         });
         dispatch(submitAction(action));
       } catch {
@@ -88,7 +91,7 @@ export function useBotDriver(): void {
         pendingTimer.current = null;
       }
     };
-  }, [round, currentId, humanId, mode, difficulty, totals, history, statWeights, dispatch]);
+  }, [round, currentId, humanId, mode, difficulty, totals, history, statWeights, currentRoundEvents, dispatch]);
 
   // --- Bot ace-value submission after round end ---
   useEffect(() => {

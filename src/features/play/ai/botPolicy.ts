@@ -15,7 +15,7 @@ import {
   pickableFromDiscard,
 } from '../engine/combos';
 import { scoreRound, type RoundStatEvent } from '../engine/scoring';
-import type { PlayerId, PlayAction, RoundState } from '../engine/round';
+import type { PlayerId, PlayAction, RoundEvent, RoundState } from '../engine/round';
 import { EVENT_TO_STAT_NAME } from '../eventLabels';
 
 export type Difficulty = 'easy' | 'normal' | 'godlike';
@@ -29,6 +29,8 @@ export interface BotPolicyContext {
   roundHistory?: Array<{
     perPlayer: Array<{ playerId: PlayerId; events: RoundStatEvent[] }>;
   }>;
+  /** Publicly visible action history for the current round. */
+  visibleRoundEvents?: RoundEvent[];
 }
 
 interface DiscardCandidate {
@@ -88,30 +90,101 @@ function shouldDeclareYasat(
   const me = state.players.find((p) => p.id === botId)!;
   const myPts = handPoints(me.hand);
 
-  // If we have full context, evaluate this exact declare against weighted stats.
-  const simulated = evaluateDeclareWeightedDelta(state, botId, context);
-  if (simulated !== null) {
-    // Godlike accepts neutral declarations to secure safe outcomes, while normal
-    // requires strictly positive gain.
-    if (difficulty === 'godlike') return simulated >= 0;
-    if (simulated > 0) return true;
-    return false;
+  // Godlike is intentionally omniscient: if we have full context, evaluate this
+  // exact declare against weighted stats.
+  if (difficulty === 'godlike') {
+    const simulated = evaluateDeclareWeightedDelta(state, botId, context);
+    if (simulated !== null) return simulated >= 0;
   }
 
-  // Opponents' card counts: more cards → higher chance we're ahead.
+  // Human-like heuristic: infer risk from visible actions + opponent card counts.
   const opponents = state.players.filter((p) => p.id !== botId);
+  const lowHandRisk = estimateLowHandYasatRisk(
+    myPts,
+    botId,
+    opponents,
+    context.visibleRoundEvents ?? [],
+  );
   // Rough "safe" thresholds:
-  // - easy: call at ≤ 7 whenever possible
-  // - normal: call when we have ≤ 4, OR ≤ 7 and at least one opponent holds ≥ 3 cards
+  // - easy: mostly calls Yasat, only bails on very strong visible danger
+  // - normal: more cautious on 1–2 card opponent scenarios
   // - godlike: stricter unless very low, prefers value-building turns
-  if (difficulty === 'easy') return true;
+  if (difficulty === 'easy') {
+    if (myPts <= 1) return true;
+    if (myPts === 2) return lowHandRisk < 7;
+    if (myPts <= 4) return lowHandRisk < 8;
+    return true;
+  }
   if (difficulty === 'godlike') {
     if (myPts <= 3) return true;
     if (myPts <= 5) return opponents.some((o) => o.hand.length >= 3);
     return false;
   }
-  if (myPts <= 4) return true;
+  if (myPts <= 1) return true;
+  if (myPts === 2) return lowHandRisk < 4;
+  if (myPts === 3) return lowHandRisk < 5;
+  if (myPts <= 4) return lowHandRisk < 6;
+  if (lowHandRisk >= 4) return false;
   return opponents.some((o) => o.hand.length >= 3);
+}
+
+function estimateLowHandYasatRisk(
+  myPts: number,
+  botId: string,
+  opponents: Array<{ id: string; hand: readonly Card[] }>,
+  visibleEvents: RoundEvent[],
+): number {
+  const observedByOpponent = observedDiscardCardsByOpponent(botId, visibleEvents);
+  let risk = 0;
+
+  for (const opp of opponents) {
+    if (opp.hand.length > 2) continue;
+
+    const known = observedByOpponent.get(opp.id) ?? [];
+    const knownPoints = known.reduce((sum, c) => sum + cardValue(c, 1), 0);
+    const knownCount = Math.min(known.length, opp.hand.length);
+    const unknownCount = Math.max(0, opp.hand.length - knownCount);
+    const minPossible = knownPoints + unknownCount;
+
+    let oppRisk = opp.hand.length === 1 ? 1 : 0;
+    if (minPossible < myPts) {
+      oppRisk += knownCount > 0 ? 3 : 1;
+    }
+    if (known.some((c) => c.rank === 'A') && myPts <= 3) oppRisk += 2;
+    if (known.some((c) => c.rank === '2') && myPts <= 4) oppRisk += 1;
+    if (known.some((c) => cardValue(c, 1) >= 10) && minPossible >= myPts) oppRisk -= 1;
+
+    risk += Math.max(0, oppRisk);
+  }
+
+  return risk;
+}
+
+function observedDiscardCardsByOpponent(
+  botId: string,
+  visibleEvents: RoundEvent[],
+): Map<string, Card[]> {
+  const held = new Map<string, Card[]>();
+
+  for (const ev of visibleEvents) {
+    if (ev.playerId === botId) continue;
+    if (ev.type === 'drewFromDiscard') {
+      const list = held.get(ev.playerId) ?? [];
+      list.push(ev.card);
+      held.set(ev.playerId, list);
+    }
+    if (ev.type === 'discarded') {
+      const list = held.get(ev.playerId);
+      if (!list || list.length === 0) continue;
+      const discardedIds = new Set(ev.cards.map((c) => c.id));
+      held.set(
+        ev.playerId,
+        list.filter((c) => !discardedIds.has(c.id)),
+      );
+    }
+  }
+
+  return held;
 }
 
 function chooseHardDiscardAndDraw(
