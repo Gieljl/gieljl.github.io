@@ -167,13 +167,14 @@ function observedDiscardCardsByOpponent(
   const held = new Map<string, Card[]>();
 
   for (const ev of visibleEvents) {
-    if (ev.playerId === botId) continue;
     if (ev.type === 'drewFromDiscard') {
+      if (ev.playerId === botId) continue;
       const list = held.get(ev.playerId) ?? [];
       list.push(ev.card);
       held.set(ev.playerId, list);
     }
     if (ev.type === 'discarded') {
+      if (ev.playerId === botId) continue;
       const list = held.get(ev.playerId);
       if (!list || list.length === 0) continue;
       const discardedIds = new Set(ev.cards.map((c) => c.id));

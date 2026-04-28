@@ -32,7 +32,7 @@ describe('gameSlice', () => {
     });
 
     it('should work when game view is classic', () => {
-      const classicState: GameState = { status: 'new', view: 'classic', type: 'unranked' };
+      const classicState: GameState = { status: 'new', view: 'classic', type: 'unranked', length: 'classic' };
       const state = gameSlice(classicState, startGame());
       expect(state.status).toBe('started');
       expect(state.view).toBe('classic');
@@ -41,13 +41,13 @@ describe('gameSlice', () => {
 
   describe('startNewGame', () => {
     it('should reset status to "new"', () => {
-      const startedState: GameState = { status: 'started', view: 'new', type: 'unranked' };
+      const startedState: GameState = { status: 'started', view: 'new', type: 'unranked', length: 'classic' };
       const state = gameSlice(startedState, startNewGame());
       expect(state.status).toBe('new');
     });
 
     it('should preserve the game view when resetting', () => {
-      const startedState: GameState = { status: 'started', view: 'classic', type: 'unranked' };
+      const startedState: GameState = { status: 'started', view: 'classic', type: 'unranked', length: 'classic' };
       const state = gameSlice(startedState, startNewGame());
       expect(state.status).toBe('new');
       expect(state.view).toBe('classic');
@@ -61,13 +61,13 @@ describe('gameSlice', () => {
     });
 
     it('should change game view to new', () => {
-      const classicState: GameState = { status: 'new', view: 'classic', type: 'unranked' };
+      const classicState: GameState = { status: 'new', view: 'classic', type: 'unranked', length: 'classic' };
       const state = gameSlice(classicState, setGameView('new'));
       expect(state.view).toBe('new');
     });
 
     it('should preserve the status when changing view', () => {
-      const startedState: GameState = { status: 'started', view: 'new', type: 'unranked' };
+      const startedState: GameState = { status: 'started', view: 'new', type: 'unranked', length: 'classic' };
       const state = gameSlice(startedState, setGameView('classic'));
       expect(state.status).toBe('started');
       expect(state.view).toBe('classic');
