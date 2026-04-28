@@ -348,10 +348,12 @@ function formatEvent(
   const name = (id: PlayerId) => names[id] ?? id;
   switch (ev.type) {
     case 'discarded': {
+      const cardStr = (c: { rank: string; suit: string }) =>
+        `${c.rank}${suitSymbol(c.suit)}`;
       const shape =
         ev.cards.length === 1
-          ? 'discarded'
-          : `discarded ${ev.cards.length}×${ev.cards[0].rank}`;
+          ? `discarded ${cardStr(ev.cards[0])}`
+          : `discarded ${ev.cards.map(cardStr).join(' ')}`;
       return `${name(ev.playerId)} ${shape}`;
     }
     case 'drewFromDeck':
