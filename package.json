@@ -42,6 +42,7 @@
     "start": "react-scripts start",
     "build": "react-scripts build",
     "test": "react-scripts test",
+    "test:firestore-rules": "npx --yes firebase-tools@15.18.0 emulators:exec --only firestore \"node scripts/firestore.rules.scenario.test.cjs\"",
     "eject": "react-scripts eject",
     "predeploy": "REACT_APP_BUILD_VERSION=$(date +%Y%m%d-%H%M%S) npm run build",
     "deploy": "gh-pages -d build"

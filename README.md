@@ -69,6 +69,13 @@ To test rules locally:
 firebase emulators:start --only firestore
 ```
 
+To run key Firestore rules scenarios automatically (valid/invalid session codes,
+valid/invalid player ids, and protected player field mutations):
+
+```bash
+npm run test:firestore-rules
+```
+
 ---
 
 ## Architecture
