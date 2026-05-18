@@ -46,6 +46,12 @@ service cloud.firestore {
         request.resource.data.securityAnswerHash == resource.data.securityAnswerHash;
     }
 
+    function keepsSecurityQuestionStable() {
+      return !('securityQuestion' in resource.data) ||
+        !('securityQuestion' in request.resource.data) ||
+        request.resource.data.securityQuestion == resource.data.securityQuestion;
+    }
+
     function keepsRegisteredFlagMonotonic() {
       return !('registered' in resource.data) ||
         !('registered' in request.resource.data) ||
@@ -73,6 +79,7 @@ service cloud.firestore {
       allow update: if isValidPlayerId(playerId)
         && isValidPlayerPayload(request.resource.data)
         && keepsImmutablePlayerFields()
+        && keepsSecurityQuestionStable()
         && keepsSecurityAnswerHashStable()
         && keepsRegisteredFlagMonotonic();
     }

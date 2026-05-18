@@ -69,5 +69,8 @@
     "nth-check": "^2.1.1",
     "serialize-javascript": "^7.0.5",
     "underscore": "^1.13.7"
+  },
+  "devDependencies": {
+    "@firebase/rules-unit-testing": "^5.0.1"
   }
 }
