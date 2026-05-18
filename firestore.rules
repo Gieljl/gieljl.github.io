@@ -40,10 +40,17 @@ service cloud.firestore {
         request.resource.data.createdAt == resource.data.createdAt;
     }
 
-    function keepsRegisteredHashStable() {
+    function keepsSecurityAnswerHashStable() {
       return !('securityAnswerHash' in resource.data) ||
         !('securityAnswerHash' in request.resource.data) ||
         request.resource.data.securityAnswerHash == resource.data.securityAnswerHash;
+    }
+
+    function keepsRegisteredFlagMonotonic() {
+      return !('registered' in resource.data) ||
+        !('registered' in request.resource.data) ||
+        request.resource.data.registered == resource.data.registered ||
+        (resource.data.registered == false && request.resource.data.registered == true);
     }
 
     // Score tracker share sessions (read/write by room code).
@@ -66,7 +73,8 @@ service cloud.firestore {
       allow update: if isValidPlayerId(playerId)
         && isValidPlayerPayload(request.resource.data)
         && keepsImmutablePlayerFields()
-        && keepsRegisteredHashStable();
+        && keepsSecurityAnswerHashStable()
+        && keepsRegisteredFlagMonotonic();
     }
 
     // Deny everything else by default.
