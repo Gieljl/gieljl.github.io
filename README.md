@@ -48,6 +48,27 @@ npm run deploy
 
 Runs `npm run build` then publishes `build/` via `gh-pages`.
 
+### Firestore Security Rules
+
+This repository includes Firestore rules in `/firestore.rules` with a default-deny
+baseline and explicit access for:
+
+- `sessions/{CODE}` (6-char room code)
+- `playSessions/{CODE}` (6-char room code)
+- `players/{username}` (validated username id + guarded payload)
+
+To deploy rules:
+
+```bash
+firebase deploy --only firestore:rules
+```
+
+To test rules locally:
+
+```bash
+firebase emulators:start --only firestore
+```
+
 ---
 
 ## Architecture

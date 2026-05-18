@@ -1,0 +1,77 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function isValidSessionCode(code) {
+      return code.matches('^[A-Z2-9]{6}$');
+    }
+
+    function isValidPlayerId(playerId) {
+      return playerId.matches('^[a-z0-9._-]{1,64}$');
+    }
+
+    function isOptionalString(data, field, maxLen) {
+      return !(field in data) || (data[field] is string && data[field].size() <= maxLen);
+    }
+
+    function isOptionalBool(data, field) {
+      return !(field in data) || data[field] is bool;
+    }
+
+    function isOptionalMap(data, field) {
+      return !(field in data) || data[field] is map;
+    }
+
+    function isValidPlayerPayload(data) {
+      return isOptionalString(data, 'displayName', 64)
+        && isOptionalString(data, 'color', 64)
+        && isOptionalString(data, 'securityQuestion', 256)
+        && isOptionalString(data, 'securityAnswerHash', 256)
+        && isOptionalBool(data, 'registered')
+        && isOptionalMap(data, 'stats')
+        && isOptionalMap(data, 'playStats')
+        && isOptionalMap(data, 'friendsPlayStats')
+        && isOptionalMap(data, 'rankedByLength')
+        && isOptionalMap(data, 'playByDifficulty');
+    }
+
+    function keepsImmutablePlayerFields() {
+      return !('createdAt' in resource.data) ||
+        !('createdAt' in request.resource.data) ||
+        request.resource.data.createdAt == resource.data.createdAt;
+    }
+
+    function keepsRegisteredHashStable() {
+      return !('securityAnswerHash' in resource.data) ||
+        !('securityAnswerHash' in request.resource.data) ||
+        request.resource.data.securityAnswerHash == resource.data.securityAnswerHash;
+    }
+
+    // Score tracker share sessions (read/write by room code).
+    match /sessions/{code} {
+      allow read, write: if isValidSessionCode(code);
+    }
+
+    // Play vs Friends sessions (read/write by room code).
+    match /playSessions/{code} {
+      allow read, write: if isValidSessionCode(code);
+    }
+
+    // Public player profiles + leaderboard docs with schema guards.
+    match /players/{playerId} {
+      allow read: if isValidPlayerId(playerId);
+
+      allow create: if isValidPlayerId(playerId)
+        && isValidPlayerPayload(request.resource.data);
+
+      allow update: if isValidPlayerId(playerId)
+        && isValidPlayerPayload(request.resource.data)
+        && keepsImmutablePlayerFields()
+        && keepsRegisteredHashStable();
+    }
+
+    // Deny everything else by default.
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
