@@ -71,10 +71,20 @@ import {
 } from "./features/session/sessionService";
 import { ShareGameDialog } from "./features/session/ShareGameDialog";
 import { JoinGameDialog } from "./features/session/JoinGameDialog";
+import { ShiplakeProvider, useShiplake } from "./features/shiplake/ShiplakeContext";
+import { ShiplakeGame } from "./features/shiplake/ShiplakeGame";
+import {
+  ActiveGame,
+  GAMES,
+  GameSelectionProvider,
+  useGameSelection,
+} from "./features/gameSelection/gameSelectionContext";
 
 const ColorModeContext = React.createContext({ toggleColorMode: () => {} });
 
 function App() {
+  const shiplake = useShiplake();
+  const { setActiveGame } = useGameSelection();
   const colorMode = React.useContext(ColorModeContext);
   const gameStatus = useSelector((state: RootState) => state.game.status);
   const gameView = useSelector((state: RootState) => state.game.view);
@@ -248,6 +258,15 @@ function App() {
       }}
     >
       <ServiceWorkerWrapper />
+      {shiplake.open && (
+        <ShiplakeGame
+          onExit={() => {
+            shiplake.setOpen(false);
+            setActiveGame("yasat");
+          }}
+        />
+      )}
+
       {gameStatus === "started" && gameView === "classic" && (
         <img
           src={theme.palette.mode === "light" ? logolight : logo}
@@ -408,6 +427,7 @@ function App() {
 
 export default function ToggleColorMode() {
   const [mode, setMode] = React.useState<"light" | "dark">("dark");
+  const [activeGame, setActiveGame] = React.useState<ActiveGame>("yasat");
   const colorMode = React.useMemo(
     () => ({
       toggleColorMode: () => {
@@ -416,39 +436,32 @@ export default function ToggleColorMode() {
     }),
     []
   );
-  // Different colors for light and dark mode
-  const theme = React.useMemo(
-    () =>
-      createTheme({
-        palette: {
-          mode,
-          ...(mode === "light"
-            ? {
-                primary: {
-                  main: "#4BCDB9",
-                },
-                secondary: {
-                  main: "#f50057",
-                },
-              }
-            : {
-                primary: {
-                  main: "#7df3e1",
-                },
-                secondary: {
-                  main: "#f50057",
-                },
-              }),
-        },
-      }),
-    [mode]
+  const gameSelection = React.useMemo(
+    () => ({ activeGame, setActiveGame }),
+    [activeGame]
   );
+  // Different colors for light and dark mode
+  const theme = React.useMemo(() => {
+    const def = GAMES[activeGame];
+    const primaryMain = mode === "light" ? def.lightColor : def.darkColor;
+    return createTheme({
+      palette: {
+        mode,
+        primary: { main: primaryMain },
+        secondary: { main: "#f50057" },
+      },
+    });
+  }, [mode, activeGame]);
 
   // Customized Material Design Snackbar
 
+  const snackbarColor =
+    mode === "light"
+      ? GAMES[activeGame].lightColor
+      : GAMES[activeGame].darkColor;
   const StyledMaterialDesignContent = styled(MaterialDesignContent)(() => ({
     "&.notistack-MuiContent-info": {
-      backgroundColor: "#7df3e1",
+      backgroundColor: snackbarColor,
       color: "#424242",
     },
   }));
@@ -462,9 +475,21 @@ export default function ToggleColorMode() {
             info: StyledMaterialDesignContent,
           }}
         >
-          <App />
+          <GameSelectionProvider value={gameSelection}>
+            <ShiplakeProvider>
+              <AppShell />
+            </ShiplakeProvider>
+          </GameSelectionProvider>
         </SnackbarProvider>
       </ThemeProvider>
     </ColorModeContext.Provider>
   );
+}
+
+/**
+ * Bridges the Shiplake fullscreen overlay back to the GameSelection state so
+ * closing Shiplake returns the active game to Yasat.
+ */
+function AppShell() {
+  return <App />;
 }

@@ -47,7 +47,7 @@ export function WeightedValuesDialog() {
         TransitionComponent={Transition}
       >
         <AppBar
-          sx={{ background: "#424242", color:"#7df3e1", position: "relative" }}
+          sx={{ background: "#424242", color: "primary.main", position: "relative" }}
         >
           <Toolbar>
             <IconButton

@@ -147,7 +147,7 @@ export const FriendsLobby: React.FC<FriendsLobbyProps> = ({
         >
           <ArrowBackIcon />
         </IconButton>
-        <Typography variant="h5" sx={{ color: '#7df3e1' }}>
+        <Typography variant="h5" sx={{ color: 'primary.main' }}>
           Play vs. Friends
         </Typography>
         <Typography
@@ -298,7 +298,7 @@ export const FriendsLobby: React.FC<FriendsLobbyProps> = ({
         >
           <ArrowBackIcon />
         </IconButton>
-        <Typography variant="h5" sx={{ color: '#7df3e1' }}>
+        <Typography variant="h5" sx={{ color: 'primary.main' }}>
           Play vs. Friends
         </Typography>
         <Typography
@@ -315,7 +315,7 @@ export const FriendsLobby: React.FC<FriendsLobbyProps> = ({
           alignItems="center"
           sx={{ width: '100%', maxWidth: 360 }}
         >
-          <Typography variant="subtitle1" sx={{ color: '#7df3e1', mt: 2 }}>
+          <Typography variant="subtitle1" sx={{ color: 'primary.main', mt: 2 }}>
             Host a new game
           </Typography>
           <ButtonGroup
@@ -344,7 +344,7 @@ export const FriendsLobby: React.FC<FriendsLobbyProps> = ({
             </Typography>
           </Divider>
 
-          <Typography variant="subtitle1" sx={{ color: '#7df3e1' }}>
+          <Typography variant="subtitle1" sx={{ color: 'primary.main' }}>
             Join with code
           </Typography>
           <TextField
@@ -390,7 +390,7 @@ export const FriendsLobby: React.FC<FriendsLobbyProps> = ({
       >
         <ArrowBackIcon />
       </IconButton>
-      <Typography variant="h5" sx={{ color: '#7df3e1' }}>
+      <Typography variant="h5" sx={{ color: 'primary.main' }}>
         Play vs. Friends — Lobby
       </Typography>
       <Stack direction="row" spacing={1} alignItems="center">
@@ -428,7 +428,7 @@ export const FriendsLobby: React.FC<FriendsLobbyProps> = ({
 
       <Divider flexItem />
 
-      <Typography variant="subtitle1" sx={{ color: '#7df3e1' }}>
+      <Typography variant="subtitle1" sx={{ color: 'primary.main' }}>
         Players ({participants.length}/4)
       </Typography>
       <Stack

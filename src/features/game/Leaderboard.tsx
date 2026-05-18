@@ -422,7 +422,7 @@ export const Leaderboard: React.FC = () => {
     >
       <Stack direction="row" spacing={1} alignItems="center">
         <EmojiEventsIcon color="primary" />
-        <Typography variant="h6" sx={{ color: "#7df3e1" }}>
+        <Typography variant="h6" sx={{ color: "primary.main" }}>
           Leaderboards
         </Typography>
       </Stack>

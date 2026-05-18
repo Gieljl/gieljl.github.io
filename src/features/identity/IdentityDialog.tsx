@@ -173,7 +173,7 @@ export const IdentityDialog: React.FC<IdentityDialogProps> = ({ open, onClose })
     <Dialog open={open} onClose={handleClose} fullWidth maxWidth="xs">
       {step === 'username' && (
         <>
-          <DialogTitle sx={{ color: '#7df3e1' }}>Enter username</DialogTitle>
+          <DialogTitle sx={{ color: 'primary.main' }}>Enter username</DialogTitle>
           <DialogContent>
             <Stack spacing={2} mt={1}>
               <Typography variant="body2" color="text.secondary">
@@ -210,7 +210,7 @@ export const IdentityDialog: React.FC<IdentityDialogProps> = ({ open, onClose })
 
       {step === 'register' && (
         <>
-          <DialogTitle sx={{ color: '#7df3e1' }}>Welcome, new player!</DialogTitle>
+          <DialogTitle sx={{ color: 'primary.main' }}>Welcome, new player!</DialogTitle>
           <DialogContent>
             <Stack spacing={2} mt={1}>
               <Typography variant="body2" color="text.secondary">
@@ -306,7 +306,7 @@ export const IdentityDialog: React.FC<IdentityDialogProps> = ({ open, onClose })
 
       {step === 'verify' && (
         <>
-          <DialogTitle sx={{ color: '#7df3e1' }}>Welcome back!</DialogTitle>
+          <DialogTitle sx={{ color: 'primary.main' }}>Welcome back!</DialogTitle>
           <DialogContent>
             <Stack spacing={2} mt={1}>
               <Typography variant="body2" color="text.secondary">

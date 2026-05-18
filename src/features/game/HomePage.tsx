@@ -22,6 +22,7 @@ import HelpOutlineIcon from "@mui/icons-material/HelpOutline";
 import CloseIcon from "@mui/icons-material/Close";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import ScoreboardIcon from "@mui/icons-material/Scoreboard";
+import SwapHorizIcon from "@mui/icons-material/SwapHoriz";
 import { TransitionProps } from "@mui/material/transitions";
 import { useAppDispatch } from "../../app/hooks";
 import { setGameType, startNewGame } from "./gameSlice";
@@ -31,6 +32,8 @@ import "../../App.css";
 import { Leaderboard } from "./Leaderboard";
 import { JoinGameDialog } from "../session/JoinGameDialog";
 import RulesPopUp from "./RulesText";
+import { GameSwitcherDialog } from "../gameSelection/GameSwitcherDialog";
+import { GAMES, useGameSelection } from "../gameSelection/gameSelectionContext";
 
 const Transition = React.forwardRef(function Transition(
   props: TransitionProps & { children: React.ReactElement },
@@ -45,6 +48,13 @@ export const HomePage: React.FC = () => {
   const [leaderboardOpen, setLeaderboardOpen] = React.useState(false);
   const [joinOpen, setJoinOpen] = React.useState(false);
   const [rulesOpen, setRulesOpen] = React.useState(false);
+  const [switcherOpen, setSwitcherOpen] = React.useState(false);
+  const { activeGame } = useGameSelection();
+  const activeGameDef = GAMES[activeGame];
+  const accent =
+    theme.palette.mode === "light"
+      ? activeGameDef.lightColor
+      : activeGameDef.darkColor;
   const [homeView, setHomeView] = React.useState<
     "main" | "score-tracker" | "play-online"
   >("main");
@@ -69,7 +79,7 @@ export const HomePage: React.FC = () => {
         />
       </Box>
 
-      <Typography variant="h5" sx={{ color: "#7df3e1" }}>
+      <Typography variant="h5" sx={{ color: "primary.main" }}>
         {homeView === "main"
           ? "Choose a game mode"
           : homeView === "score-tracker"
@@ -225,7 +235,31 @@ export const HomePage: React.FC = () => {
         <Stack direction="column" spacing={3} alignItems="center" />
       )}
 
+      {homeView === "main" && (
+        <Box sx={{ display: "flex", justifyContent: "center", width: "100%", pt: 2 }}>
+          <Button
+            aria-label="Switch game"
+            variant="outlined"
+            size="medium"
+            startIcon={<SwapHorizIcon />}
+            onClick={() => setSwitcherOpen(true)}
+            sx={{
+              borderColor: accent,
+              color: accent,
+              "&:hover": { borderColor: accent, opacity: 0.85 },
+            }}
+          >
+            Switch game ({activeGameDef.label})
+          </Button>
+        </Box>
+      )}
+
       <JoinGameDialog open={joinOpen} onClose={() => setJoinOpen(false)} />
+
+      <GameSwitcherDialog
+        open={switcherOpen}
+        onClose={() => setSwitcherOpen(false)}
+      />
 
       <Dialog
         fullScreen
@@ -234,7 +268,7 @@ export const HomePage: React.FC = () => {
         TransitionComponent={Transition}
       >
         <AppBar
-          sx={{ background: "#424242", color: "#7df3e1", position: "relative" }}
+          sx={{ background: "#424242", color: "primary.main", position: "relative" }}
         >
           <Toolbar>
             <IconButton
@@ -246,7 +280,7 @@ export const HomePage: React.FC = () => {
               <CloseIcon />
             </IconButton>
             <Typography sx={{ ml: 2, flex: 1 }} variant="h6" component="div">
-              Yasat rules explained
+              {`${activeGameDef.label} rules explained`}
             </Typography>
           </Toolbar>
         </AppBar>
@@ -262,7 +296,7 @@ export const HomePage: React.FC = () => {
         TransitionComponent={Transition}
       >
         <AppBar
-          sx={{ background: "#424242", color: "#7df3e1", position: "relative" }}
+          sx={{ background: "#424242", color: "primary.main", position: "relative" }}
         >
           <Toolbar>
             <IconButton

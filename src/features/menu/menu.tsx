@@ -64,6 +64,12 @@ import { selectSessionRole, clearSession } from "../session/sessionSlice";
 import { JoinGameDialog } from "../session/JoinGameDialog";
 import { deleteSession as deleteSessionDoc } from "../session/sessionService";
 import { selectSessionCode, selectIsSharing, setSharing } from "../session/sessionSlice";
+import SwapHorizIcon from "@mui/icons-material/SwapHoriz";
+import {
+  GAMES,
+  useGameSelection,
+} from "../gameSelection/gameSelectionContext";
+import { GameSwitcherDialog } from "../gameSelection/GameSwitcherDialog";
 
 type Anchor = "top" | "left" | "bottom" | "right";
 
@@ -312,6 +318,12 @@ export default function Menu({
           </ListItemIcon>
           <ListItemText primary="Refresh" onClick={refreshApp} />
         </ListItemButton>
+        <ListItemButton key="switchGame" onClick={() => setOpenSwitcher(true)}>
+          <ListItemIcon>
+            <SwapHorizIcon />
+          </ListItemIcon>
+          <ListItemText primary={`Switch Game (${activeGameDef.label})`} />
+        </ListItemButton>
         <ListItemButton key="rules">
           <ListItemIcon>
             <HelpOutlineIcon />
@@ -322,7 +334,7 @@ export default function Menu({
           <ListItemIcon>
             <InfoIcon />
           </ListItemIcon>
-          <ListItemText primary="About Yasat" onClick={handleClickOpen} />
+          <ListItemText primary={`About ${activeGameDef.label}`} onClick={handleClickOpen} />
         </ListItemButton>
       </List>
     </Box>
@@ -331,6 +343,9 @@ export default function Menu({
   const [open, setOpen] = React.useState(false);
   const [openSettings, setOpenSettings] = React.useState(false);
   const [openRules, setOpenRules] = React.useState(false);
+  const [openSwitcher, setOpenSwitcher] = React.useState(false);
+  const { activeGame } = useGameSelection();
+  const activeGameDef = GAMES[activeGame];
 
   const [gameViewState, setGameViewState] = React.useState(
     useSelector((state: RootState) => state.game.view)
@@ -385,7 +400,7 @@ export default function Menu({
       TransitionComponent={Transition}
     >
       <AppBar
-        sx={{ background: "#424242", color: "#7df3e1", position: "relative" }}
+        sx={{ background: "#424242", color: "primary.main", position: "relative" }}
       >
         <Toolbar>
           <IconButton
@@ -397,7 +412,7 @@ export default function Menu({
             <CloseIcon />
           </IconButton>
           <Typography sx={{ ml: 2, flex: 1 }} variant="h6" component="div">
-            Yasat rules explained
+            {`${activeGameDef.label} rules explained`}
           </Typography>
         </Toolbar>
       </AppBar>
@@ -427,7 +442,7 @@ export default function Menu({
 
   const SettingsDialogContent: React.FC = () => (
     <Dialog open={openSettings} onClose={handleCloseSettings} fullWidth>
-      <DialogTitle id="settings-dialog" sx={{ color: '#7df3e1' }}>{"Game settings"}</DialogTitle>
+      <DialogTitle id="settings-dialog" sx={{ color: 'primary.main' }}>{"Game settings"}</DialogTitle>
       <DialogContent>
         <Stack direction="column" alignItems="left" spacing={5} mt={5}>
           <FormControl required>
@@ -463,7 +478,7 @@ export default function Menu({
       aria-labelledby="alert-dialog-title"
       aria-describedby="alert-dialog-description"
     >
-      <DialogTitle id="alert-dialog-title" sx={{ color: '#7df3e1' }}>{"About"}</DialogTitle>
+      <DialogTitle id="alert-dialog-title">{`About ${activeGameDef.label}`}</DialogTitle>
       <DialogContent>
         <DialogContentText id="alert-dialog-description">
           One of the most significant outfits in the card gaming scene!
@@ -492,6 +507,10 @@ export default function Menu({
           <RulesDialogContent />
           <IdentityDialog open={openIdentity} onClose={() => setOpenIdentity(false)} />
           <JoinGameDialog open={openJoinGame} onClose={() => setOpenJoinGame(false)} />
+          <GameSwitcherDialog
+            open={openSwitcher}
+            onClose={() => setOpenSwitcher(false)}
+          />
           <Drawer
             ModalProps={{
               keepMounted: false,

@@ -73,7 +73,7 @@ export const ShareGameDialog: React.FC<ShareGameDialogProps> = ({ open, onClose 
       onClose={onClose}
       TransitionComponent={Transition}
     >
-      <AppBar sx={{ background: '#424242', color: '#7df3e1', position: 'relative' }}>
+      <AppBar sx={{ background: '#424242', color: 'primary.main', position: 'relative' }}>
         <Toolbar>
           <IconButton edge="start" color="primary" onClick={onClose} aria-label="close">
             <CloseIcon />
