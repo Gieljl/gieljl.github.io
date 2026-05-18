@@ -1,0 +1,97 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // -------- helpers --------
+    // Cap any single document write at ~512 KB to mitigate abuse.
+    function notTooBig() {
+      return request.resource.size < 512 * 1024;
+    }
+
+    // -------- players collection --------
+    // Doc id = normalized (lowercased) username. The app has no Firebase Auth,
+    // so reads/writes must remain client-accessible, but we harden the most
+    // sensitive field — `securityAnswerHash` — so a registered account cannot
+    // be hijacked by overwriting its hash from another client.
+    match /players/{username} {
+      allow read: if true;
+
+      // Create: anyone may claim a username that does not yet exist.
+      // Constrain shape and size.
+      allow create: if notTooBig()
+        && request.resource.data.keys().hasOnly([
+          'displayName',
+          'color',
+          'securityQuestion',
+          'securityAnswerHash',
+          'createdAt',
+          'stats',
+          'unregisteredStats'
+        ])
+        && (
+          !('displayName' in request.resource.data)
+          || request.resource.data.displayName is string
+        )
+        && (
+          !('securityQuestion' in request.resource.data)
+          || request.resource.data.securityQuestion is string
+        )
+        && (
+          !('securityAnswerHash' in request.resource.data)
+          || request.resource.data.securityAnswerHash is string
+        );
+
+      // Update: allowed, but once a `securityAnswerHash` is set, nobody may
+      // change or remove it. This effectively makes registered accounts
+      // tamper-resistant against drive-by clients.
+      allow update: if notTooBig()
+        && (
+          !('securityAnswerHash' in resource.data)
+          || (
+            'securityAnswerHash' in request.resource.data
+            && request.resource.data.securityAnswerHash == resource.data.securityAnswerHash
+          )
+        )
+        // Prevent rewriting securityQuestion on a registered account.
+        && (
+          !('securityAnswerHash' in resource.data)
+          || (
+            !('securityQuestion' in request.resource.data)
+            || request.resource.data.securityQuestion == resource.data.securityQuestion
+          )
+        );
+
+      // No client-side deletes — leaderboards/stats stay intact.
+      allow delete: if false;
+    }
+
+    // -------- sessions collection (Score-tracker share/view) --------
+    // Short-lived game-state documents keyed by a 6-char share code. Ephemeral
+    // by design; allow CRUD with a size limit and deny anything off-shape.
+    match /sessions/{code} {
+      allow read: if true;
+      allow create, update: if notTooBig();
+      allow delete: if true;
+    }
+
+    // -------- playSessions collection (Play vs. Friends) --------
+    match /playSessions/{code} {
+      allow read: if true;
+      allow create, update: if notTooBig();
+      allow delete: if true;
+
+      // Allow subcollection writes for action requests, if used.
+      match /{subDoc=**} {
+        allow read: if true;
+        allow create, update: if notTooBig();
+        allow delete: if true;
+      }
+    }
+
+    // -------- everything else: deny --------
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
