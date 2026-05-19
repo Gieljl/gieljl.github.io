@@ -73,6 +73,8 @@ import { ShareGameDialog } from "./features/session/ShareGameDialog";
 import { JoinGameDialog } from "./features/session/JoinGameDialog";
 import { ShiplakeProvider, useShiplake } from "./features/shiplake/ShiplakeContext";
 import { ShiplakeGame } from "./features/shiplake/ShiplakeGame";
+import { RegicideProvider, useRegicide } from "./features/regicide/RegicideContext";
+import { RegicideGame } from "./features/regicide/RegicideGame";
 import {
   ActiveGame,
   GAMES,
@@ -84,6 +86,7 @@ const ColorModeContext = React.createContext({ toggleColorMode: () => {} });
 
 function App() {
   const shiplake = useShiplake();
+  const regicide = useRegicide();
   const { setActiveGame } = useGameSelection();
   const colorMode = React.useContext(ColorModeContext);
   const gameStatus = useSelector((state: RootState) => state.game.status);
@@ -262,6 +265,14 @@ function App() {
         <ShiplakeGame
           onExit={() => {
             shiplake.setOpen(false);
+            setActiveGame("yasat");
+          }}
+        />
+      )}
+      {regicide.open && (
+        <RegicideGame
+          onExit={() => {
+            regicide.setOpen(false);
             setActiveGame("yasat");
           }}
         />
@@ -477,7 +488,9 @@ export default function ToggleColorMode() {
         >
           <GameSelectionProvider value={gameSelection}>
             <ShiplakeProvider>
-              <AppShell />
+              <RegicideProvider>
+                <AppShell />
+              </RegicideProvider>
             </ShiplakeProvider>
           </GameSelectionProvider>
         </SnackbarProvider>

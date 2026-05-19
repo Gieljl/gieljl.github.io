@@ -19,6 +19,8 @@ import {
   useGameSelection,
 } from "./gameSelectionContext";
 import { useShiplake } from "../shiplake/ShiplakeContext";
+import { useRegicide } from "../regicide/RegicideContext";
+import { RegicideLogo } from "../regicide/RegicideLogo";
 
 interface Props {
   open: boolean;
@@ -28,19 +30,18 @@ interface Props {
 const ICONS: Record<ActiveGame, React.ReactNode> = {
   yasat: <StyleIcon sx={{ fontSize: 40 }} />,
   shiplake: <CasinoIcon sx={{ fontSize: 40 }} />,
+  regicide: <RegicideLogo size={40} />,
 };
 
 export const GameSwitcherDialog: React.FC<Props> = ({ open, onClose }) => {
   const { activeGame, setActiveGame } = useGameSelection();
   const shiplake = useShiplake();
+  const regicide = useRegicide();
 
   const pick = (game: ActiveGame) => {
     setActiveGame(game);
-    if (game === "shiplake") {
-      shiplake.setOpen(true);
-    } else {
-      shiplake.setOpen(false);
-    }
+    shiplake.setOpen(game === "shiplake");
+    regicide.setOpen(game === "regicide");
     onClose();
   };
 
