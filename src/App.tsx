@@ -75,6 +75,8 @@ import { ShiplakeProvider, useShiplake } from "./features/shiplake/ShiplakeConte
 import { ShiplakeGame } from "./features/shiplake/ShiplakeGame";
 import { RegicideProvider, useRegicide } from "./features/regicide/RegicideContext";
 import { RegicideGame } from "./features/regicide/RegicideGame";
+import { Flip7Provider, useFlip7 } from "./features/flip7/Flip7Context";
+import { Flip7Game } from "./features/flip7/Flip7Game";
 import {
   ActiveGame,
   GAMES,
@@ -87,6 +89,7 @@ const ColorModeContext = React.createContext({ toggleColorMode: () => {} });
 function App() {
   const shiplake = useShiplake();
   const regicide = useRegicide();
+  const flip7 = useFlip7();
   const { setActiveGame } = useGameSelection();
   const colorMode = React.useContext(ColorModeContext);
   const gameStatus = useSelector((state: RootState) => state.game.status);
@@ -273,6 +276,14 @@ function App() {
         <RegicideGame
           onExit={() => {
             regicide.setOpen(false);
+            setActiveGame("yasat");
+          }}
+        />
+      )}
+      {flip7.open && (
+        <Flip7Game
+          onExit={() => {
+            flip7.setOpen(false);
             setActiveGame("yasat");
           }}
         />
@@ -489,7 +500,9 @@ export default function ToggleColorMode() {
           <GameSelectionProvider value={gameSelection}>
             <ShiplakeProvider>
               <RegicideProvider>
-                <AppShell />
+                <Flip7Provider>
+                  <AppShell />
+                </Flip7Provider>
               </RegicideProvider>
             </ShiplakeProvider>
           </GameSelectionProvider>
