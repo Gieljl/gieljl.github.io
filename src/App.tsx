@@ -71,12 +71,6 @@ import {
 } from "./features/session/sessionService";
 import { ShareGameDialog } from "./features/session/ShareGameDialog";
 import { JoinGameDialog } from "./features/session/JoinGameDialog";
-import { ShiplakeProvider, useShiplake } from "./features/shiplake/ShiplakeContext";
-import { ShiplakeGame } from "./features/shiplake/ShiplakeGame";
-import { RegicideProvider, useRegicide } from "./features/regicide/RegicideContext";
-import { RegicideGame } from "./features/regicide/RegicideGame";
-import { Flip7Provider, useFlip7 } from "./features/flip7/Flip7Context";
-import { Flip7Game } from "./features/flip7/Flip7Game";
 import {
   ActiveGame,
   GAMES,
@@ -87,10 +81,6 @@ import {
 const ColorModeContext = React.createContext({ toggleColorMode: () => {} });
 
 function App() {
-  const shiplake = useShiplake();
-  const regicide = useRegicide();
-  const flip7 = useFlip7();
-  const { setActiveGame } = useGameSelection();
   const colorMode = React.useContext(ColorModeContext);
   const gameStatus = useSelector((state: RootState) => state.game.status);
   const gameView = useSelector((state: RootState) => state.game.view);
@@ -264,30 +254,6 @@ function App() {
       }}
     >
       <ServiceWorkerWrapper />
-      {shiplake.open && (
-        <ShiplakeGame
-          onExit={() => {
-            shiplake.setOpen(false);
-            setActiveGame("yasat");
-          }}
-        />
-      )}
-      {regicide.open && (
-        <RegicideGame
-          onExit={() => {
-            regicide.setOpen(false);
-            setActiveGame("yasat");
-          }}
-        />
-      )}
-      {flip7.open && (
-        <Flip7Game
-          onExit={() => {
-            flip7.setOpen(false);
-            setActiveGame("yasat");
-          }}
-        />
-      )}
 
       {gameStatus === "started" && gameView === "classic" && (
         <img
@@ -498,13 +464,7 @@ export default function ToggleColorMode() {
           }}
         >
           <GameSelectionProvider value={gameSelection}>
-            <ShiplakeProvider>
-              <RegicideProvider>
-                <Flip7Provider>
-                  <AppShell />
-                </Flip7Provider>
-              </RegicideProvider>
-            </ShiplakeProvider>
+              <AppShell />
           </GameSelectionProvider>
         </SnackbarProvider>
       </ThemeProvider>

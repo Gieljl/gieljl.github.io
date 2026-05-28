@@ -64,12 +64,10 @@ import { selectSessionRole, clearSession } from "../session/sessionSlice";
 import { JoinGameDialog } from "../session/JoinGameDialog";
 import { deleteSession as deleteSessionDoc } from "../session/sessionService";
 import { selectSessionCode, selectIsSharing, setSharing } from "../session/sessionSlice";
-import SwapHorizIcon from "@mui/icons-material/SwapHoriz";
 import {
   GAMES,
   useGameSelection,
 } from "../gameSelection/gameSelectionContext";
-import { GameSwitcherDialog } from "../gameSelection/GameSwitcherDialog";
 
 type Anchor = "top" | "left" | "bottom" | "right";
 
@@ -318,12 +316,6 @@ export default function Menu({
           </ListItemIcon>
           <ListItemText primary="Refresh" onClick={refreshApp} />
         </ListItemButton>
-        <ListItemButton key="switchGame" onClick={() => setOpenSwitcher(true)}>
-          <ListItemIcon>
-            <SwapHorizIcon />
-          </ListItemIcon>
-          <ListItemText primary={`Switch Game (${activeGameDef.label})`} />
-        </ListItemButton>
         <ListItemButton key="rules">
           <ListItemIcon>
             <HelpOutlineIcon />
@@ -343,7 +335,6 @@ export default function Menu({
   const [open, setOpen] = React.useState(false);
   const [openSettings, setOpenSettings] = React.useState(false);
   const [openRules, setOpenRules] = React.useState(false);
-  const [openSwitcher, setOpenSwitcher] = React.useState(false);
   const { activeGame } = useGameSelection();
   const activeGameDef = GAMES[activeGame];
 
@@ -507,10 +498,6 @@ export default function Menu({
           <RulesDialogContent />
           <IdentityDialog open={openIdentity} onClose={() => setOpenIdentity(false)} />
           <JoinGameDialog open={openJoinGame} onClose={() => setOpenJoinGame(false)} />
-          <GameSwitcherDialog
-            open={openSwitcher}
-            onClose={() => setOpenSwitcher(false)}
-          />
           <Drawer
             ModalProps={{
               keepMounted: false,
