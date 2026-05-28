@@ -39,7 +39,6 @@ import { IdentityDialog } from '../identity/IdentityDialog';
 import {
   cancelPlaySession,
   createPlaySession,
-  fetchPlaySession,
   generatePlaySessionCode,
   joinPlaySession,
   pushHostState,

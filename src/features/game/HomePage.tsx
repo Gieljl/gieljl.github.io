@@ -48,10 +48,6 @@ export const HomePage: React.FC = () => {
   const [rulesOpen, setRulesOpen] = React.useState(false);
   const { activeGame } = useGameSelection();
   const activeGameDef = GAMES[activeGame];
-  const accent =
-    theme.palette.mode === "light"
-      ? activeGameDef.lightColor
-      : activeGameDef.darkColor;
   const [homeView, setHomeView] = React.useState<
     "main" | "score-tracker" | "play-online"
   >("main");
