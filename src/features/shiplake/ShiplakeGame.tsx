@@ -18,7 +18,6 @@ import {
   Snackbar,
   Stack,
   Toolbar,
-  Tooltip,
   Typography,
   useTheme,
 } from "@mui/material";
@@ -1203,9 +1202,4 @@ function RulesDialog({ open, onClose }: { open: boolean; onClose: () => void }) 
       </DialogActions>
     </Dialog>
   );
-}
-
-function _unused() {
-  // Keep Tooltip import in case; suppresses unused warning if removed elsewhere.
-  return Tooltip;
 }

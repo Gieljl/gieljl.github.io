@@ -38,13 +38,6 @@ const longestStreak = (
     return pr ? Math.max(longest, pr.yasatStreak) : longest;
   }, 0);
 
-const longestStreakOfGame = (rounds: ScoreState[]): number =>
-  rounds.reduce(
-    (longest, round) =>
-      Math.max(longest, Math.max(...round.playerscores.map((p) => p.yasatStreak), 0)),
-    0
-  );
-
 /**
  * Return the player ID that owns the longest streak of the game.
  * When two players tie, the first to achieve the streak keeps it.
