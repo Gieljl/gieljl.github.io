@@ -7,7 +7,6 @@ import { ScoreEntryDialog } from "./features/rounds/scoreEntryDialog";
 import Box from "@mui/material/Box";
 import "./App.css";
 import {
-  Button,
   IconButton,
   Stack,
   styled,

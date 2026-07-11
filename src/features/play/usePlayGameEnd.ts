@@ -113,7 +113,7 @@ export function usePlayGameEnd(): void {
     if (
       friendsRole === null &&
       humanUsername &&
-      humanId &&
+      humanId !== null &&
       (length === 'bo10' || length === 'firstTo10')
     ) {
       const entry = computePlayGameResult({

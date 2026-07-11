@@ -146,16 +146,6 @@ export function PlayerRanking() {
     }, 0);
   };
 
-  // get the longest yasat of the game
-  const getLongestYasatStreakOfGame = (scoreState: ScoreState[]) => {
-    return scoreState.reduce((longestStreak, round) => {
-      return Math.max(
-        longestStreak,
-        Math.max(...round.playerscores.map((player) => player.yasatStreak))
-      );
-    }, 0);
-  };
-
   /**
    * Return the player ID that "owns" the longest streak of the game.
    * When two players have the same longest streak value, the one who
