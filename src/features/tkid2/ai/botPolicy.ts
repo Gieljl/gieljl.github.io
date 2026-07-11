@@ -19,7 +19,6 @@ import {
   crownCounts,
   currentPlayer,
   currentRegionId,
-  isInvasion,
   legalActions,
   projectedOwner,
 } from "../engine/tkid2Engine";

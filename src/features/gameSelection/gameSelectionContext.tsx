@@ -1,6 +1,6 @@
 import * as React from "react";
 
-export type ActiveGame = "yasat" | "shiplake" | "regicide" | "flip7";
+export type ActiveGame = "yasat" | "shiplake" | "regicide" | "flip7" | "tkid2";
 
 export interface GameDefinition {
   id: ActiveGame;
@@ -41,6 +41,13 @@ export const GAMES: Record<ActiveGame, GameDefinition> = {
     darkColor: "#5fc4c1",
     lightColor: "#1B3A8A",
     tagline: "Press your luck — first to 200.",
+  },
+  tkid2: {
+    id: "tkid2",
+    label: "The King Is Dead",
+    darkColor: "#B07CF3",
+    lightColor: "#5B2E93",
+    tagline: "Area-majority intrigue vs. AI.",
   },
 };
 

@@ -76,6 +76,8 @@ import { RegicideProvider, useRegicide } from "./features/regicide/RegicideConte
 import { RegicideGame } from "./features/regicide/RegicideGame";
 import { Flip7Provider, useFlip7 } from "./features/flip7/Flip7Context";
 import { Flip7Game } from "./features/flip7/Flip7Game";
+import { Tkid2Provider, useTkid2 } from "./features/tkid2/Tkid2Context";
+import { Tkid2Game } from "./features/tkid2/Tkid2Game";
 import {
   ActiveGame,
   GAMES,
@@ -89,6 +91,7 @@ function App() {
   const shiplake = useShiplake();
   const regicide = useRegicide();
   const flip7 = useFlip7();
+  const tkid2 = useTkid2();
   const { setActiveGame } = useGameSelection();
   const colorMode = React.useContext(ColorModeContext);
   const gameStatus = useSelector((state: RootState) => state.game.status);
@@ -154,7 +157,19 @@ function App() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Ranked / unranked game-length end detection. Compute on every change; show
+  // Deep link: yasat.nl/tkid2e opens "The King Is Dead" directly. The path is
+  // matched loosely (with/without trailing slash, and under any base path) and
+  // the URL is then cleaned so a refresh keeps working. Relies on the GitHub
+  // Pages SPA fallback (public/404.html) to serve index.html for the path.
+  React.useEffect(() => {
+    const path = window.location.pathname.replace(/\/+$/, "");
+    if (/\/tkid2e$/i.test(path) || path.toLowerCase() === "/tkid2e") {
+      setActiveGame("tkid2");
+      tkid2.setOpen(true);
+      window.history.replaceState({}, document.title, "/");
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   // a one-time toast when the threshold transitions from not-met to met.
   const isRankedOrUnranked =
     gameStatus === "started" && gameType !== "play" && gameType !== "play-friends" && gameView !== "play";
@@ -283,6 +298,14 @@ function App() {
         <Flip7Game
           onExit={() => {
             flip7.setOpen(false);
+            setActiveGame("yasat");
+          }}
+        />
+      )}
+      {tkid2.open && (
+        <Tkid2Game
+          onExit={() => {
+            tkid2.setOpen(false);
             setActiveGame("yasat");
           }}
         />
@@ -500,7 +523,9 @@ export default function ToggleColorMode() {
             <ShiplakeProvider>
               <RegicideProvider>
                 <Flip7Provider>
-                  <AppShell />
+                  <Tkid2Provider>
+                    <AppShell />
+                  </Tkid2Provider>
                 </Flip7Provider>
               </RegicideProvider>
             </ShiplakeProvider>
