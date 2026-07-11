@@ -280,6 +280,9 @@ export function currentRegionId(state: TKID2State): RegionId | null {
 }
 
 export function currentPlayer(state: TKID2State): TKID2Player {
+  if (state.players.length === 0) {
+    throw new Error("TKID2State has no players");
+  }
   const idx = state.currentPlayerIndex;
   if (idx < 0 || idx >= state.players.length) {
     // Defensive: a well-formed state never has an out-of-range index, but
