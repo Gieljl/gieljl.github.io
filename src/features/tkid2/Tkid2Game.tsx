@@ -558,7 +558,8 @@ export function Tkid2Game({ onExit }: { onExit: () => void }) {
         isBot: true,
       })),
     ];
-    const seed = (Date.now() & 0x7fffffff) >>> 0;
+    // Non-negative 31-bit seed from the clock for a fresh, reproducible game.
+    const seed = Date.now() & 0x7fffffff;
     setState(newGame(players, seed));
     setConfig(r);
   };

@@ -66,7 +66,9 @@ export function useTkid2BotDriver({
       cancelled = true;
       clearTimeout(timer);
     };
-    // Re-run whenever the turn owner or the game shape changes.
+    // Re-run whenever the turn owner or the game shape changes. `botIds` should
+    // be referentially stable across renders (callers memoize it, e.g. with
+    // useMemo) so this effect does not re-fire spuriously.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state, botIds, enabled]);
 }
