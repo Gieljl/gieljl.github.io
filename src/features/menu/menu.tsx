@@ -484,7 +484,9 @@ export default function Menu({
           One of the most significant outfits in the card gaming scene!
         </DialogContentText>
         <DialogContentText sx={{ mt: 2, fontSize: '0.75rem', color: 'text.secondary' }}>
-          Build: {process.env.REACT_APP_BUILD_VERSION || 'dev'}
+          {process.env.REACT_APP_BUILD_DATE
+            ? `Built: ${process.env.REACT_APP_BUILD_DATE}`
+            : `Build: ${process.env.REACT_APP_BUILD_VERSION || 'dev'}`}
         </DialogContentText>
       </DialogContent>
       <DialogActions>
