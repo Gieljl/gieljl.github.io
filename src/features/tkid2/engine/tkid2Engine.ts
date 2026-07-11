@@ -280,7 +280,13 @@ export function currentRegionId(state: TKID2State): RegionId | null {
 }
 
 export function currentPlayer(state: TKID2State): TKID2Player {
-  return state.players[state.currentPlayerIndex];
+  const idx = state.currentPlayerIndex;
+  if (idx < 0 || idx >= state.players.length) {
+    // Defensive: a well-formed state never has an out-of-range index, but
+    // fall back to the first player rather than returning undefined.
+    return state.players[0];
+  }
+  return state.players[idx];
 }
 
 export function cardById(id: string): ActionCard | undefined {

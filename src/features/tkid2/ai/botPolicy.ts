@@ -12,6 +12,7 @@ import {
   CrownOwner,
   FACTIONS,
   Faction,
+  INVASION_THRESHOLD,
   PlayerId,
   TKID2Action,
   TKID2State,
@@ -45,7 +46,7 @@ function projectedDecidingFaction(state: TKID2State): {
   invasion: boolean;
 } {
   const counts = projectedCrownCounts(state);
-  const invasion = counts.french >= 4;
+  const invasion = counts.french >= INVASION_THRESHOLD;
   const ranked = FACTIONS.map((f) => ({ faction: f, crowns: counts[f] })).sort(
     (a, b) =>
       b.crowns - a.crowns ||
