@@ -27,7 +27,11 @@ service cloud.firestore {
           'securityAnswerHash',
           'createdAt',
           'stats',
-          'unregisteredStats'
+          'unregisteredStats',
+          'rankedByLength',
+          'playStats',
+          'playByDifficulty',
+          'friendsPlayStats'
         ])
         && (
           !('displayName' in request.resource.data)
