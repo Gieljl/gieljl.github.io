@@ -139,6 +139,24 @@ App.tsx
 **Identity** — Players register with a username, display name, and a security question (no passwords, no Firebase Auth). Answers are SHA-256 hashed in the browser before storage.
 
 **Game Rooms** — A host creates a room and gets a `YASA-XXXX` code. Other players join with that code. The lobby uses a Firestore realtime listener so all participants see updates instantly. When the host starts, all clients transition to the game view automatically.
+
+### Bundled Games (Game Switcher)
+
+Beyond the core score tracker, the app bundles several self-contained games reachable from the **game switcher** (menu → switch game). Each lives under `src/features/<game>/` with its own context (`XContext.tsx`), full-screen UI (`XGame.tsx`), and a pure engine (`xEngine.ts`).
+
+| Game | Description |
+|---|---|
+| Shiplake | Dice / categories / modifiers score game |
+| Regicide | Co-op royal slayer (solo mode) |
+| Flip 7 | Press-your-luck, first to 200 |
+| The King Is Dead | Area-majority intrigue vs. 1–2 AI opponents |
+
+**The King Is Dead (TKID2)** — Play against 1 or 2 AI opponents for control of Britain. It is built as a pure, deterministic, action-based engine (`features/tkid2/engine/tkid2Engine.ts`) with a seeded setup, so a future online turn-based mode (human vs. human) can reuse the same engine and relay `TKID2Action` objects — mirroring the existing Play-vs-Friends pattern. The heuristic AI (`features/tkid2/ai/botPolicy.ts`) supports `easy` / `normal` / `godlike` difficulty.
+
+> The authoritative rulebook PDF was unavailable while building the engine, so its numeric rules (region layout, cube counts, invasion threshold) are a documented interpretation kept as constants in `tkid2Engine.ts`.
+
+**Direct link** — TKID2 has its own entry URL: `https://yasat.nl/tkid2e`. Because the app is a Create React App SPA hosted on GitHub Pages (no server routing), a `public/404.html` fallback (spa-github-pages technique) restores deep-link paths, and `App.tsx` detects the `/tkid2e` path on startup and opens the game.
+
 # Getting Started with Create React App
 
 This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app), using the [Redux](https://redux.js.org/) and [Redux Toolkit](https://redux-toolkit.js.org/) TS template.

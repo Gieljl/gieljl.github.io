@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Yasat</title>
+    <!--
+      GitHub Pages single-page-app fallback.
+
+      GitHub Pages has no server-side routing, so a deep link such as
+      https://yasat.nl/tkid2e would return this 404 page. The script below
+      (Rafael Pedicini's spa-github-pages technique, MIT) rewrites the requested
+      path into a query string and redirects to the site root, where a matching
+      snippet in index.html restores the original path before React boots.
+
+      pathSegmentsToKeep = 0 because the app is served from the domain root
+      (custom domain yasat.nl).
+    -->
+    <script type="text/javascript">
+      var pathSegmentsToKeep = 0;
+      var l = window.location;
+      l.replace(
+        l.protocol +
+          "//" +
+          l.hostname +
+          (l.port ? ":" + l.port : "") +
+          l.pathname
+            .split("/")
+            .slice(0, 1 + pathSegmentsToKeep)
+            .join("/") +
+          "/?/" +
+          l.pathname
+            .slice(1)
+            .split("/")
+            .slice(pathSegmentsToKeep)
+            .join("/")
+            .replace(/&/g, "~and~") +
+          (l.search ? "&" + l.search.slice(1).replace(/&/g, "~and~") : "") +
+          l.hash
+      );
+    </script>
+  </head>
+  <body></body>
+</html>
