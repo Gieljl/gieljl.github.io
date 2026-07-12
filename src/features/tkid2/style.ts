@@ -23,15 +23,16 @@ export const FACTION_COLOR: Record<Faction, { main: string; dark: string; light:
   english: { main: "#e0af2e", dark: "#a37a14", light: "#efcb69" },
 };
 
+/** Region fills matched to the printed board. */
 export const REGION_COLOR: Record<RegionId, { fill: string; edge: string }> = {
-  moray: { fill: "#8db3d6", edge: "#4a6f96" },
-  strathclyde: { fill: "#d3aa4b", edge: "#96742a" },
-  lancaster: { fill: "#79ab8f", edge: "#47755c" },
-  northumbria: { fill: "#dfa8b4", edge: "#a56b78" },
-  gwynedd: { fill: "#b05446", edge: "#7a3229" },
-  warwick: { fill: "#cd7f45", edge: "#95562a" },
-  essex: { fill: "#b9c465", edge: "#7f8a3c" },
-  devon: { fill: "#8caf5b", edge: "#5d7c37" },
+  moray: { fill: "#7fa3c9", edge: "#48688c" },
+  strathclyde: { fill: "#c2a24a", edge: "#8a6f2b" },
+  lancaster: { fill: "#5f9683", edge: "#3a6455" },
+  northumbria: { fill: "#dca7b4", edge: "#a06a79" },
+  gwynedd: { fill: "#9e4a3e", edge: "#6d2d24" },
+  warwick: { fill: "#517e87", edge: "#33565e" },
+  essex: { fill: "#b3bf62", edge: "#7c883b" },
+  devon: { fill: "#7fa95d", edge: "#547539" },
 };
 
 export const FRANCE_COLOR = { fill: "#9aa5b5", edge: "#5e6a7d" };

@@ -375,6 +375,141 @@ function describeEvents(events: Tkid2Event[], state: Tkid2State): string[] {
 }
 
 // ===========================================================================
+// AI turn overlay
+// ===========================================================================
+
+/** What the last AI action looked like, for the turn overlay. */
+interface BotFeed {
+  playerId: PlayerId;
+  name: string;
+  /** Card played, or null for a pass. */
+  cardId: CardId | null;
+  lines: string[];
+  ts: number;
+}
+
+function ThinkingDots() {
+  return (
+    <Box component="span" sx={{ display: "inline-flex", gap: "3px", ml: 0.5 }}>
+      {[0, 1, 2].map((i) => (
+        <Box
+          key={i}
+          component="span"
+          sx={{
+            width: 6,
+            height: 6,
+            borderRadius: "50%",
+            background: RUBRIC,
+            animation: "tkid2dot 1.2s ease-in-out infinite",
+            animationDelay: `${i * 0.18}s`,
+          }}
+        />
+      ))}
+    </Box>
+  );
+}
+
+function BotTurnOverlay({
+  feed,
+  thinking,
+}: {
+  feed: BotFeed | null;
+  thinking: Tkid2Player | null;
+}) {
+  if (!feed && !thinking) return null;
+  return (
+    <Box
+      sx={{
+        position: "fixed",
+        top: 78,
+        left: "50%",
+        transform: "translateX(-50%)",
+        zIndex: 40,
+        pointerEvents: "none",
+        width: "min(94vw, 460px)",
+      }}
+    >
+      <Box
+        key={feed ? `feed-${feed.ts}` : `think-${thinking?.id}`}
+        sx={{
+          borderRadius: "8px",
+          border: `2px solid ${CARD_BACK}`,
+          outline: `1px solid ${GOLD}`,
+          outlineOffset: "-5px",
+          background: `linear-gradient(165deg, #f6eed6, ${PARCHMENT} 60%, ${PARCHMENT_DARK})`,
+          boxShadow: "0 10px 28px rgba(40,20,10,0.5)",
+          px: 2,
+          py: 1.2,
+          display: "flex",
+          alignItems: "center",
+          gap: 1.5,
+          animation: "tkid2overlayin 240ms ease-out",
+        }}
+      >
+        {feed ? (
+          <>
+            {feed.cardId ? (
+              <ActionCardView cardId={feed.cardId} small />
+            ) : (
+              <Box
+                sx={{
+                  width: 46,
+                  height: 46,
+                  borderRadius: "50%",
+                  border: `2px solid ${INK_FADED}`,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  fontFamily: FONT_UNCIAL,
+                  color: INK_FADED,
+                  fontSize: "0.9rem",
+                  flexShrink: 0,
+                }}
+              >
+                ✋
+              </Box>
+            )}
+            <Box sx={{ minWidth: 0 }}>
+              <Typography sx={{ fontFamily: FONT_UNCIAL, color: RUBRIC, fontSize: "0.95rem" }}>
+                {feed.cardId
+                  ? `${feed.name} plays ${CARD_INFO[feed.cardId].name}`
+                  : `${feed.name} passes`}
+              </Typography>
+              {feed.lines.slice(1).map((line, i) => (
+                <Typography
+                  key={`${i}-${line}`}
+                  sx={{ fontFamily: FONT_BODY, color: INK, fontSize: "0.82rem", lineHeight: 1.35 }}
+                >
+                  {line}
+                </Typography>
+              ))}
+            </Box>
+          </>
+        ) : (
+          thinking && (
+            <>
+              <SmartToyIcon sx={{ color: INK_FADED }} />
+              <Typography
+                sx={{
+                  fontFamily: FONT_UNCIAL,
+                  color: RUBRIC,
+                  fontSize: "0.95rem",
+                  display: "flex",
+                  alignItems: "center",
+                }}
+              >
+                {thinking.name} is pondering their move
+                <ThinkingDots />
+              </Typography>
+            </>
+          )
+        )}
+      </Box>
+    </Box>
+  );
+}
+
+// ===========================================================================
 // Game over
 // ===========================================================================
 
@@ -532,6 +667,7 @@ export function Tkid2Game({ onExit }: { onExit: () => void }) {
   const [spyOpen, setSpyOpen] = React.useState(false);
   const [confirmNoEffect, setConfirmNoEffect] = React.useState<CardId | null>(null);
   const [notice, setNotice] = React.useState<string | null>(null);
+  const [botFeed, setBotFeed] = React.useState<BotFeed | null>(null);
 
   const stateRef = React.useRef(state);
   stateRef.current = state;
@@ -539,14 +675,40 @@ export function Tkid2Game({ onExit }: { onExit: () => void }) {
   const applyLocal = React.useCallback((action: Tkid2Action) => {
     const prev = stateRef.current;
     if (!prev) return;
+    const actor = currentPlayer(prev);
     const res = applyAction(prev, action);
     if (res.error) {
       setNotice(res.error);
       return;
     }
     setState(res.state);
-    setLog((l) => [...describeEvents(res.events, prev).reverse(), ...l].slice(0, 24));
+    const lines = describeEvents(res.events, prev);
+    setLog((l) => [...lines.slice().reverse(), ...l].slice(0, 24));
+    // Feed the AI-turn overlay: a play or pass starts a new entry, the
+    // follow-up summon is appended to it.
+    if (actor.isBot) {
+      if (action.type === "play") {
+        setBotFeed({ playerId: actor.id, name: actor.name, cardId: action.cardId, lines, ts: Date.now() });
+      } else if (action.type === "pass") {
+        setBotFeed({ playerId: actor.id, name: actor.name, cardId: null, lines, ts: Date.now() });
+      } else {
+        setBotFeed((f) =>
+          f && f.playerId === actor.id
+            ? { ...f, lines: [...f.lines, ...lines], ts: Date.now() }
+            : f,
+        );
+      }
+    } else {
+      setBotFeed(null);
+    }
   }, []);
+
+  // The overlay lingers on an AI's finished move, then fades away.
+  React.useEffect(() => {
+    if (!botFeed) return;
+    const t = setTimeout(() => setBotFeed(null), 1800);
+    return () => clearTimeout(t);
+  }, [botFeed]);
 
   const start = (r: SetupResult) => {
     const players = [
@@ -708,8 +870,23 @@ export function Tkid2Game({ onExit }: { onExit: () => void }) {
     else prompt = `Waiting for ${currentPlayer(state).name}…`;
   }
 
+  const thinkingBot =
+    state && !gameOver && !botFeed && currentPlayer(state).isBot
+      ? currentPlayer(state)
+      : null;
+
   return (
     <Dialog fullScreen open onClose={onExit} TransitionComponent={Transition as any}>
+      <style>{`
+        @keyframes tkid2overlayin {
+          from { opacity: 0; transform: translateY(-14px) scale(0.96); }
+          to { opacity: 1; transform: translateY(0) scale(1); }
+        }
+        @keyframes tkid2dot {
+          0%, 100% { opacity: 0.2; transform: translateY(0); }
+          50% { opacity: 1; transform: translateY(-3px); }
+        }
+      `}</style>
       <AppBar
         sx={{
           position: "relative",
@@ -742,6 +919,8 @@ export function Tkid2Game({ onExit }: { onExit: () => void }) {
           </IconButton>
         </Toolbar>
       </AppBar>
+
+      {state && !gameOver && <BotTurnOverlay feed={botFeed} thinking={thinkingBot} />}
 
       <DialogContent
         sx={{

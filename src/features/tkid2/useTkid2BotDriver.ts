@@ -16,8 +16,11 @@ import {
   isGameOver,
 } from "./engine/tkid2Engine";
 
-const MIN_DELAY_MS = 650;
-const MAX_DELAY_MS = 1250;
+/** "Thinking time" before an AI decides to play or pass (shown as an
+ *  animated overlay in the UI). */
+export const BOT_THINK_MS = 2000;
+/** Shorter beat before the follow-up summon so a turn reads as one motion. */
+export const BOT_SUMMON_MS = 700;
 
 export interface UseTkid2BotDriverArgs {
   state: Tkid2State | null;
@@ -49,10 +52,7 @@ export function useTkid2BotDriver({
 
     let cancelled = false;
     const difficulty = difficultyById?.[player.id] ?? "normal";
-    // Summons follow a card play; keep them snappy so a bot turn reads as
-    // one motion.
-    const base = state.pendingSummon ? 350 : MIN_DELAY_MS;
-    const delay = base + Math.random() * (MAX_DELAY_MS - MIN_DELAY_MS) * (state.pendingSummon ? 0.4 : 1);
+    const delay = state.pendingSummon ? BOT_SUMMON_MS : BOT_THINK_MS;
 
     const timer = setTimeout(() => {
       if (cancelled) return;

@@ -21,55 +21,147 @@ import {
   SEA,
 } from "./style";
 
-/** Hand-tuned geometry for the stylised portolan chart of Britain. */
+type Pt = [number, number];
+
+/** Closed polygon → path (straight edges; shared vertices keep borders tight). */
+function polyPath(pts: Pt[]): string {
+  return `M ${pts.map(([x, y]) => `${x} ${y}`).join(" L ")} Z`;
+}
+
+/** Closed polygon → smoothed path (quadratic through edge midpoints). */
+function smoothClosed(pts: Pt[]): string {
+  const n = pts.length;
+  const mid = (a: Pt, b: Pt): Pt => [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2];
+  const m0 = mid(pts[n - 1], pts[0]);
+  let d = `M ${m0[0]} ${m0[1]}`;
+  for (let i = 0; i < n; i++) {
+    const p = pts[i];
+    const m = mid(p, pts[(i + 1) % n]);
+    d += ` Q ${p[0]} ${p[1]} ${m[0]} ${m[1]}`;
+  }
+  return d + " Z";
+}
+
+/**
+ * The coastline of Britain, traced clockwise from the northern tip after the
+ * game board's map (ragged sea lochs in the north-west, the Solway and
+ * Humber inlets, the East Anglian bulge, Kent, the Cornish peninsula, the
+ * Bristol Channel and the Welsh coast).
+ */
+const ISLAND: Pt[] = [
+  [322, 42], [352, 60], [346, 88], [324, 98], [352, 112], [372, 140],
+  [388, 168], [380, 198], [354, 210], [336, 216], [368, 232], [398, 252],
+  [418, 288], [438, 330], [448, 372], [444, 408], [462, 428], [452, 448],
+  [492, 462], [524, 486], [532, 516], [516, 540], [498, 552], [536, 576],
+  [548, 600], [524, 622], [476, 634], [430, 642], [386, 650], [344, 658],
+  [306, 668], [270, 676], [240, 690], [200, 706], [162, 724], [148, 712],
+  [176, 692], [208, 672], [232, 654], [246, 636], [226, 624], [196, 630],
+  [166, 644], [154, 626], [176, 608], [192, 588], [182, 560], [162, 544],
+  [148, 528], [172, 516], [196, 512], [216, 496], [236, 480], [232, 456],
+  [218, 440], [238, 420], [234, 392], [222, 376], [246, 360], [226, 348],
+  [204, 352], [188, 336], [212, 322], [232, 312], [222, 288], [206, 292],
+  [198, 276], [222, 262], [216, 236], [192, 244], [186, 222], [208, 214],
+  [198, 188], [178, 196], [172, 176], [196, 168], [188, 142], [210, 136],
+  [204, 108], [228, 104], [224, 76], [252, 74], [262, 50], [290, 52],
+  [302, 36],
+];
+
+/** The Hebrides, off the north-west coast (part of Moray). */
+const ISLES: Pt[][] = [
+  [[140, 92], [160, 80], [170, 98], [156, 120], [138, 112]],
+  [[150, 150], [168, 136], [178, 152], [166, 178], [148, 172]],
+  [[128, 196], [146, 188], [152, 206], [138, 222], [124, 214]],
+];
+
+/**
+ * Region territories, tiling the island (edges beyond the coast are clipped
+ * away by the island silhouette, so only the shared inland borders matter).
+ * Shared border vertices are identical between neighbours.
+ */
 const SHAPES: Record<
   RegionId,
-  { path: string; label: [number, number]; cubes: [number, number] }
+  { poly: Pt[]; label: Pt; angle?: number; cubes: Pt }
 > = {
   moray: {
-    path: "M 210 42 C 255 24 330 20 388 32 C 436 42 456 78 452 118 C 449 146 431 158 400 161 L 205 170 C 172 170 152 142 158 110 C 163 80 182 53 210 42 Z",
-    label: [300, 78],
-    cubes: [298, 122],
+    poly: [
+      [95, 25], [330, 15], [430, 60], [415, 186], [330, 212], [250, 240],
+      [185, 258], [95, 180],
+    ],
+    label: [295, 112],
+    cubes: [290, 162],
   },
   strathclyde: {
-    path: "M 205 170 L 400 161 C 428 160 441 180 437 204 C 434 227 417 240 392 242 L 190 254 C 160 255 144 233 149 208 C 153 187 176 171 205 170 Z",
-    label: [293, 196],
-    cubes: [293, 226],
+    poly: [
+      [185, 258], [250, 240], [330, 212], [415, 186], [445, 210], [430, 262],
+      [330, 315], [290, 336], [200, 380], [160, 330],
+    ],
+    label: [302, 262],
+    angle: -12,
+    cubes: [300, 297],
   },
   lancaster: {
-    path: "M 190 254 L 297 249 L 302 428 L 178 435 C 153 435 141 413 145 388 L 152 292 C 154 270 168 256 190 254 Z",
-    label: [228, 283],
-    cubes: [226, 338],
+    poly: [
+      [200, 380], [290, 336], [330, 315], [342, 396], [356, 462], [306, 486],
+      [240, 476], [200, 474],
+    ],
+    label: [270, 382],
+    angle: -62,
+    cubes: [285, 430],
   },
   northumbria: {
-    path: "M 297 249 L 392 242 C 420 240 444 254 449 280 L 466 388 C 470 413 456 427 432 428 L 302 428 Z",
-    label: [374, 283],
-    cubes: [376, 340],
+    poly: [
+      [330, 315], [430, 262], [470, 300], [492, 432], [448, 460], [408, 492],
+      [356, 462], [342, 396],
+    ],
+    label: [404, 350],
+    angle: -62,
+    cubes: [398, 398],
   },
   gwynedd: {
-    path: "M 178 435 L 254 431 L 257 568 L 192 575 C 150 580 116 561 111 526 C 106 492 126 473 138 458 C 148 444 160 436 178 435 Z",
-    label: [184, 462],
-    cubes: [184, 512],
+    poly: [
+      [200, 474], [240, 476], [306, 486], [298, 530], [292, 572], [268, 606],
+      [240, 646], [130, 660], [120, 500],
+    ],
+    label: [196, 549],
+    angle: -68,
+    cubes: [240, 540],
   },
   warwick: {
-    path: "M 254 431 L 302 428 L 390 430 L 393 550 C 393 562 381 568 366 569 L 257 568 Z",
-    label: [322, 456],
-    cubes: [322, 505],
+    poly: [
+      [356, 462], [408, 492], [398, 538], [404, 584], [350, 582], [292, 572],
+      [298, 530], [306, 486],
+    ],
+    label: [352, 512],
+    angle: -8,
+    cubes: [352, 543],
   },
   essex: {
-    path: "M 390 430 L 432 428 C 456 427 468 434 471 454 L 486 540 C 490 566 476 582 452 586 L 394 592 C 392 578 393 562 393 550 L 390 430 Z",
-    label: [436, 466],
-    cubes: [432, 518],
+    poly: [
+      [408, 492], [448, 460], [492, 432], [560, 470], [580, 560], [560, 640],
+      [470, 680], [420, 660], [416, 620], [404, 584], [398, 538],
+    ],
+    label: [472, 508],
+    angle: -15,
+    cubes: [476, 550],
   },
   devon: {
-    path: "M 257 568 L 366 569 L 394 592 C 390 604 377 640 330 655 C 285 669 205 700 158 685 C 118 672 124 640 155 622 C 188 603 224 585 257 568 Z",
-    label: [268, 598],
-    cubes: [258, 634],
+    poly: [
+      [240, 646], [268, 606], [292, 572], [350, 582], [404, 584], [416, 620],
+      [420, 660], [380, 700], [240, 740], [120, 745], [125, 668],
+    ],
+    label: [246, 666],
+    angle: -14,
+    cubes: [322, 630],
   },
 };
 
-const FRANCE_PATH =
-  "M 476 648 C 528 630 598 634 634 654 L 640 786 L 470 786 C 452 748 456 694 476 648 Z";
+const FRANCE: Pt[] = [
+  [560, 656], [620, 636], [676, 668], [676, 796], [520, 796], [508, 744],
+  [532, 690],
+];
+
+const ISLAND_PATH = smoothClosed(ISLAND);
+const FRANCE_PATH = smoothClosed(FRANCE);
 
 const CUBE = 19;
 const CUBE_GAP = 23;
@@ -253,22 +345,35 @@ function InstabilityDisc({ x, y }: { x: number; y: number }) {
 }
 
 function RegionLabel({ regionId, contested }: { regionId: RegionId; contested: boolean }) {
-  const [x, y] = SHAPES[regionId].label;
+  const { label, angle } = SHAPES[regionId];
   const name = regionName(regionId);
   return (
-    <text
-      x={x}
-      y={y}
-      textAnchor="middle"
-      fontFamily={FONT_BODY}
-      fontSize={17}
-      fontWeight={700}
-      fill={INK}
-      style={{ paintOrder: "stroke", stroke: PARCHMENT, strokeWidth: 4, letterSpacing: 0.5 }}
-    >
-      <tspan fill={contested ? RUBRIC : RUBRIC}>{name.charAt(0)}</tspan>
-      <tspan>{name.slice(1)}</tspan>
-    </text>
+    <g transform={`translate(${label[0]}, ${label[1]}) rotate(${angle ?? 0})`}>
+      <text
+        textAnchor="middle"
+        fontFamily={FONT_BODY}
+        fontSize={17}
+        fontWeight={700}
+        fill={INK}
+        style={{ paintOrder: "stroke", stroke: PARCHMENT, strokeWidth: 4, letterSpacing: 0.5 }}
+      >
+        <tspan fill={RUBRIC}>{name.charAt(0)}</tspan>
+        <tspan>{name.slice(1)}</tspan>
+      </text>
+      {contested && (
+        <text
+          y={15}
+          textAnchor="middle"
+          fontSize={11.5}
+          fontFamily={FONT_BODY}
+          fontStyle="italic"
+          fill={RUBRIC}
+          style={{ paintOrder: "stroke", stroke: PARCHMENT, strokeWidth: 3 }}
+        >
+          ⚔ contested ⚔
+        </text>
+      )}
+    </g>
   );
 }
 
@@ -298,6 +403,15 @@ export function BoardMap({
         @keyframes tkid2glow { 0%,100% { stroke-opacity: 0.35; } 50% { stroke-opacity: 1; } }
       `}</style>
 
+      <defs>
+        <clipPath id="tkid2-island">
+          <path d={ISLAND_PATH} />
+          {ISLES.map((isle, i) => (
+            <path key={i} d={smoothClosed(isle)} />
+          ))}
+        </clipPath>
+      </defs>
+
       {/* Sea */}
       <rect x={0} y={0} width={680} height={800} rx={10} fill={SEA} />
       {/* Portolan rhumb lines */}
@@ -305,8 +419,8 @@ export function BoardMap({
         {[0, 1, 2, 3, 4, 5, 6, 7].map((i) => {
           const angle = (i * Math.PI) / 8;
           const x = 90 + Math.cos(angle) * 900;
-          const y = 700 - Math.sin(angle) * 900;
-          return <line key={`a${i}`} x1={90} y1={700} x2={x} y2={y} />;
+          const y = 760 - Math.sin(angle) * 900;
+          return <line key={`a${i}`} x1={90} y1={760} x2={x} y2={y} />;
         })}
         {[0, 1, 2, 3, 4, 5, 6, 7].map((i) => {
           const angle = Math.PI / 2 + (i * Math.PI) / 8;
@@ -315,11 +429,11 @@ export function BoardMap({
           return <line key={`b${i}`} x1={620} y1={120} x2={x} y2={y} />;
         })}
       </g>
-      <circle cx={90} cy={700} r={26} fill="none" stroke={RUBRIC} strokeWidth={1.4} opacity={0.5} />
-      <circle cx={90} cy={700} r={19} fill="none" stroke={INK_FADED} strokeWidth={1} opacity={0.5} />
-      <path d="M 90 678 L 95 695 L 90 691 L 85 695 Z" fill={RUBRIC} opacity={0.7} />
+      <circle cx={90} cy={760} r={26} fill="none" stroke={RUBRIC} strokeWidth={1.4} opacity={0.5} />
+      <circle cx={90} cy={760} r={19} fill="none" stroke={INK_FADED} strokeWidth={1} opacity={0.5} />
+      <path d="M 90 738 L 95 755 L 90 751 L 85 755 Z" fill={RUBRIC} opacity={0.7} />
 
-      {/* Regions */}
+      {/* Regions (clipped to the island silhouette) */}
       {(Object.keys(SHAPES) as RegionId[]).map((id) => {
         const shape = SHAPES[id];
         const color = REGION_COLOR[id];
@@ -327,6 +441,7 @@ export function BoardMap({
         const isContested = contested === id;
         const highlighted = !!highlightRegions?.has(id);
         const dimRegion = anyRegionHighlight && !highlighted;
+        const d = polyPath(shape.poly);
         return (
           <g
             key={id}
@@ -334,59 +449,47 @@ export function BoardMap({
             style={{ cursor: highlighted ? "pointer" : "default" }}
             opacity={dimRegion ? 0.45 : 1}
           >
-            <path
-              d={shape.path}
-              fill={color.fill}
-              stroke={color.edge}
-              strokeWidth={2.5}
-              strokeLinejoin="round"
-            />
-            {isContested && (
+            <g clipPath="url(#tkid2-island)">
               <path
-                d={shape.path}
-                fill="none"
-                stroke={GOLD}
-                strokeWidth={5}
-                strokeDasharray="10 7"
+                d={d}
+                fill={color.fill}
+                stroke={color.edge}
+                strokeWidth={2.5}
                 strokeLinejoin="round"
-                className="tkid2-region-glow"
               />
-            )}
-            {highlighted && (
-              <path
-                d={shape.path}
-                fill="rgba(255,251,232,0.25)"
-                stroke="#fffbe8"
-                strokeWidth={3.5}
-                strokeLinejoin="round"
-                className="tkid2-region-glow"
-              />
-            )}
+              {isContested && (
+                <>
+                  <path d={d} fill="rgba(200,162,68,0.18)" />
+                  <path
+                    d={d}
+                    fill="none"
+                    stroke={GOLD}
+                    strokeWidth={5}
+                    strokeDasharray="10 7"
+                    strokeLinejoin="round"
+                    className="tkid2-region-glow"
+                  />
+                </>
+              )}
+              {highlighted && (
+                <>
+                  <path d={d} fill="rgba(255,251,232,0.3)" />
+                  <path
+                    d={d}
+                    fill="none"
+                    stroke="#fffbe8"
+                    strokeWidth={3.5}
+                    strokeLinejoin="round"
+                    className="tkid2-region-glow"
+                  />
+                </>
+              )}
+            </g>
             <RegionLabel regionId={id} contested={isContested} />
-            {isContested && (
-              <text
-                x={shape.label[0]}
-                y={shape.label[1] + 16}
-                textAnchor="middle"
-                fontSize={11.5}
-                fontFamily={FONT_BODY}
-                fontStyle="italic"
-                fill={RUBRIC}
-                style={{ paintOrder: "stroke", stroke: PARCHMENT, strokeWidth: 3 }}
-              >
-                ⚔ contested ⚔
-              </text>
-            )}
             {region.control && (
-              <ControlDisc
-                x={SHAPES[id].cubes[0]}
-                y={SHAPES[id].cubes[1]}
-                faction={region.control}
-              />
+              <ControlDisc x={shape.cubes[0]} y={shape.cubes[1]} faction={region.control} />
             )}
-            {region.unstable && (
-              <InstabilityDisc x={SHAPES[id].cubes[0]} y={SHAPES[id].cubes[1]} />
-            )}
+            {region.unstable && <InstabilityDisc x={shape.cubes[0]} y={shape.cubes[1]} />}
             <RegionCubes
               state={state}
               regionId={id}
@@ -399,6 +502,21 @@ export function BoardMap({
         );
       })}
 
+      {/* Coastline over the region fills */}
+      <g pointerEvents="none">
+        <path d={ISLAND_PATH} fill="none" stroke={INK} strokeWidth={2.2} opacity={0.75} />
+        {ISLES.map((isle, i) => (
+          <path
+            key={i}
+            d={smoothClosed(isle)}
+            fill="none"
+            stroke={INK}
+            strokeWidth={2}
+            opacity={0.75}
+          />
+        ))}
+      </g>
+
       {/* France */}
       <g opacity={anyRegionHighlight ? 0.55 : 1}>
         <path
@@ -408,9 +526,10 @@ export function BoardMap({
           strokeWidth={2.5}
           strokeLinejoin="round"
         />
+        <path d={FRANCE_PATH} fill="none" stroke={INK} strokeWidth={2} opacity={0.6} />
         <text
-          x={552}
-          y={680}
+          x={598}
+          y={706}
           textAnchor="middle"
           fontFamily={FONT_BODY}
           fontSize={17}
@@ -422,12 +541,12 @@ export function BoardMap({
           <tspan>rance</tspan>
         </text>
         {Array.from({ length: state.instabilityInFrance }, (_, i) => (
-          <InstabilityDisc key={i} x={518 + i * 34} y={718} />
+          <InstabilityDisc key={i} x={562 + i * 36} y={744} />
         ))}
         {state.instabilityInFrance === 0 && (
           <text
-            x={552}
-            y={724}
+            x={598}
+            y={750}
             textAnchor="middle"
             fontSize={12}
             fontFamily={FONT_BODY}
@@ -489,13 +608,7 @@ export function BoardMap({
                 stroke={c.dark}
                 strokeWidth={1.8}
               />
-              <text
-                x={538}
-                y={y + 5.5}
-                fontFamily={FONT_BODY}
-                fontSize={15}
-                fill={INK}
-              >
+              <text x={538} y={y + 5.5} fontFamily={FONT_BODY} fontSize={15} fill={INK}>
                 × {state.supply[f]}
               </text>
               <text
