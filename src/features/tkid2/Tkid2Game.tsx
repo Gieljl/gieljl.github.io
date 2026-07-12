@@ -3,12 +3,10 @@ import {
   AppBar,
   Box,
   Button,
-  Chip,
   Dialog,
   DialogActions,
   DialogContent,
   DialogTitle,
-  Divider,
   IconButton,
   Slide,
   Stack,
@@ -17,12 +15,10 @@ import {
   Toolbar,
   Tooltip,
   Typography,
-  useTheme,
 } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
 import HelpOutlineIcon from "@mui/icons-material/HelpOutline";
 import RefreshIcon from "@mui/icons-material/Refresh";
-import EmojiEventsIcon from "@mui/icons-material/EmojiEvents";
 import PersonIcon from "@mui/icons-material/Person";
 import SmartToyIcon from "@mui/icons-material/SmartToy";
 import { TransitionProps } from "@mui/material/transitions";
@@ -30,26 +26,58 @@ import { Tkid2Logo } from "./Tkid2Logo";
 import { Difficulty } from "./ai/botPolicy";
 import { useTkid2BotDriver } from "./useTkid2BotDriver";
 import {
-  CrownOwner,
+  CARD_INFO,
+  CardId,
+  CardParams,
   FACTIONS,
+  FACTION_LABEL,
   Faction,
-  REGIONS,
-  RegionId,
-  TKID2Action,
-  TKID2State,
+  FactionCounts,
+  PlayerId,
+  Tkid2Action,
+  Tkid2Event,
+  Tkid2Player,
+  Tkid2State,
   applyAction,
-  cardById,
-  crownCounts,
+  contestedRegionId,
+  controlledCounts,
   currentPlayer,
-  currentRegionId,
-  decidingFaction,
+  enumerateCardParams,
+  gameResult,
   isGameOver,
-  isInvasion,
   newGame,
-  projectedOwner,
-  results,
-  winners,
+  regionName,
+  setCount,
+  summonOptions,
 } from "./engine/tkid2Engine";
+import {
+  CubeRef,
+  Selection,
+  cubeKey,
+  finalParams,
+  getTargets,
+  pickCube,
+  pickRegion,
+  pickSlot,
+  pickVariant,
+  startSelection,
+} from "./selection";
+import { BoardMap } from "./BoardMap";
+import { RegionCardTrack } from "./RegionCardTrack";
+import { ActionCardView } from "./ActionCardView";
+import {
+  CARD_BACK,
+  FACTION_COLOR,
+  FONT_BODY,
+  FONT_UNCIAL,
+  GOLD,
+  INK,
+  INK_FADED,
+  INSTABILITY,
+  PARCHMENT,
+  PARCHMENT_DARK,
+  RUBRIC,
+} from "./style";
 
 const Transition = React.forwardRef(function Transition(
   props: TransitionProps & { children: React.ReactElement },
@@ -58,28 +86,84 @@ const Transition = React.forwardRef(function Transition(
   return <Slide direction="up" ref={ref} {...props} />;
 });
 
-const FACTION_COLOR: Record<Faction, string> = {
-  english: "#9E9E9E",
-  scottish: "#4F86C6",
-  welsh: "#D65A5A",
-};
-const CROWN_COLOR: Record<CrownOwner, string> = {
-  ...FACTION_COLOR,
-  french: "#66A366",
-};
-const CROWN_LABEL: Record<CrownOwner, string> = {
-  english: "English",
-  scottish: "Scottish",
-  welsh: "Welsh",
-  french: "Foreign (revolt)",
-};
-const FACTION_LABEL: Record<Faction, string> = {
-  english: "English",
-  scottish: "Scottish",
-  welsh: "Welsh",
-};
-
 const HUMAN_ID = "human";
+
+// ===========================================================================
+// Small shared pieces
+// ===========================================================================
+
+function FactionCube({ faction, size = 15 }: { faction: Faction; size?: number }) {
+  const c = FACTION_COLOR[faction];
+  return (
+    <Box
+      component="span"
+      sx={{
+        display: "inline-block",
+        width: size,
+        height: size,
+        borderRadius: "3px",
+        background: `linear-gradient(145deg, ${c.light}, ${c.main} 60%)`,
+        border: `1.5px solid ${c.dark}`,
+        verticalAlign: "middle",
+      }}
+    />
+  );
+}
+
+function CourtCubes({ court }: { court: FactionCounts }) {
+  return (
+    <Stack direction="row" spacing={1.2} alignItems="center">
+      {FACTIONS.map((f) => (
+        <Stack key={f} direction="row" spacing={0.4} alignItems="center">
+          <FactionCube faction={f} />
+          <Typography sx={{ fontFamily: FONT_BODY, fontSize: "0.85rem", color: INK }}>
+            {court[f]}
+          </Typography>
+        </Stack>
+      ))}
+    </Stack>
+  );
+}
+
+function ParchmentPanel({
+  children,
+  sx,
+}: {
+  children: React.ReactNode;
+  sx?: object;
+}) {
+  return (
+    <Box
+      sx={{
+        borderRadius: "8px",
+        border: `2px solid ${CARD_BACK}`,
+        outline: `1px solid ${GOLD}`,
+        outlineOffset: "-5px",
+        background: `linear-gradient(165deg, #f6eed6, ${PARCHMENT} 60%, ${PARCHMENT_DARK})`,
+        p: 1.5,
+        ...sx,
+      }}
+    >
+      {children}
+    </Box>
+  );
+}
+
+function UncialHeading({ children, size = "1rem" }: { children: React.ReactNode; size?: string }) {
+  return (
+    <Typography
+      sx={{
+        fontFamily: FONT_UNCIAL,
+        fontSize: size,
+        color: RUBRIC,
+        letterSpacing: 0.5,
+        lineHeight: 1.2,
+      }}
+    >
+      {children}
+    </Typography>
+  );
+}
 
 // ===========================================================================
 // Setup screen
@@ -88,448 +172,344 @@ const HUMAN_ID = "human";
 interface SetupResult {
   botCount: number;
   difficulty: Difficulty;
+  advanced: boolean;
 }
 
 function SetupScreen({ onStart }: { onStart: (r: SetupResult) => void }) {
-  const [botCount, setBotCount] = React.useState(1);
+  const [botCount, setBotCount] = React.useState(2);
   const [difficulty, setDifficulty] = React.useState<Difficulty>("normal");
+  const [advanced, setAdvanced] = React.useState(false);
 
   return (
-    <Stack spacing={3} sx={{ maxWidth: 460, mx: "auto", mt: 2 }}>
-      <Typography variant="body1" color="text.secondary">
-        Vie for control of Britain. Play single-use action cards to sway each
-        region, and collect followers of the faction you think will end up on
-        top. If enough regions fall into revolt, a foreign invasion flips the
-        game — then the weakest faction's followers win.
-      </Typography>
-
-      <Box>
-        <Typography variant="subtitle2" gutterBottom>
-          AI opponents
+    <Stack spacing={2.5} sx={{ maxWidth: 520, mx: "auto", mt: 2, pb: 4 }}>
+      <Box sx={{ textAlign: "center" }}>
+        <Tkid2Logo size={84} />
+        <Typography sx={{ fontFamily: FONT_UNCIAL, fontSize: "1.9rem", color: RUBRIC, mt: 1 }}>
+          The King is Dead
         </Typography>
-        <ToggleButtonGroup
-          exclusive
-          color="primary"
-          value={botCount}
-          onChange={(_, v) => v && setBotCount(v)}
-        >
-          <ToggleButton value={1}>1 AI</ToggleButton>
-          <ToggleButton value={2}>2 AI</ToggleButton>
-        </ToggleButtonGroup>
+        <Typography sx={{ fontFamily: FONT_BODY, fontStyle: "italic", color: INK_FADED }}>
+          Second Edition · after Peer Sylvester
+        </Typography>
       </Box>
 
-      <Box>
-        <Typography variant="subtitle2" gutterBottom>
-          Difficulty
+      <ParchmentPanel>
+        <Typography sx={{ fontFamily: FONT_BODY, color: INK, fontSize: "0.95rem" }}>
+          The king is dead and the kingdom is divided. Three factions — the{" "}
+          <b>Scottish</b>, the <b>Welsh</b>, and the <b>English</b> — vie for control
+          of eight regions of Britain. Play your eight action cards to steer each
+          power struggle, and summon followers to your court so the victorious
+          faction crowns <i>you</i>. But beware: too much instability, and the
+          French will invade…
         </Typography>
-        <ToggleButtonGroup
-          exclusive
-          color="primary"
-          value={difficulty}
-          onChange={(_, v) => v && setDifficulty(v)}
-        >
-          <ToggleButton value="easy">Easy</ToggleButton>
-          <ToggleButton value="normal">Normal</ToggleButton>
-          <ToggleButton value="godlike">Godlike</ToggleButton>
-        </ToggleButtonGroup>
-      </Box>
+      </ParchmentPanel>
+
+      <ParchmentPanel>
+        <Stack spacing={2}>
+          <Box>
+            <UncialHeading>Opponents</UncialHeading>
+            <ToggleButtonGroup
+              exclusive
+              value={botCount}
+              onChange={(_, v) => v && setBotCount(v)}
+              sx={{ mt: 0.5 }}
+            >
+              <ToggleButton value={1}>1 AI</ToggleButton>
+              <ToggleButton value={2}>2 AI</ToggleButton>
+              <ToggleButton value={3}>3 AI</ToggleButton>
+            </ToggleButtonGroup>
+            {botCount === 3 && (
+              <Typography sx={{ fontFamily: FONT_BODY, fontSize: "0.8rem", color: INK_FADED, mt: 0.5 }}>
+                Four players play in teams of two — the AI sitting opposite you is
+                your ally.
+              </Typography>
+            )}
+          </Box>
+          <Box>
+            <UncialHeading>Difficulty</UncialHeading>
+            <ToggleButtonGroup
+              exclusive
+              value={difficulty}
+              onChange={(_, v) => v && setDifficulty(v)}
+              sx={{ mt: 0.5 }}
+            >
+              <ToggleButton value="easy">Easy</ToggleButton>
+              <ToggleButton value="normal">Normal</ToggleButton>
+              <ToggleButton value="godlike">Godlike</ToggleButton>
+            </ToggleButtonGroup>
+          </Box>
+          <Box>
+            <UncialHeading>Rules</UncialHeading>
+            <ToggleButtonGroup
+              exclusive
+              value={advanced}
+              onChange={(_, v) => v !== null && setAdvanced(v)}
+              sx={{ mt: 0.5 }}
+            >
+              <ToggleButton value={false}>Basic game</ToggleButton>
+              <ToggleButton value={true}>Advanced (cunning cards)</ToggleButton>
+            </ToggleButtonGroup>
+            <Typography sx={{ fontFamily: FONT_BODY, fontSize: "0.8rem", color: INK_FADED, mt: 0.5 }}>
+              Advanced: the three Support cards are replaced by three secret
+              cunning action cards, dealt to each player.
+            </Typography>
+          </Box>
+        </Stack>
+      </ParchmentPanel>
 
       <Button
-        variant="contained"
         size="large"
-        onClick={() => onStart({ botCount, difficulty })}
+        onClick={() => onStart({ botCount, difficulty, advanced })}
+        sx={{
+          fontFamily: FONT_UNCIAL,
+          fontSize: "1.1rem",
+          color: "#fdf3d8",
+          background: `linear-gradient(180deg, #a13c30, ${CARD_BACK})`,
+          border: `2px solid #4a1812`,
+          "&:hover": { background: `linear-gradient(180deg, #b04b3e, #8e3a2e)` },
+          py: 1.2,
+        }}
       >
-        Start game
+        Begin the Struggle
       </Button>
     </Stack>
   );
 }
 
 // ===========================================================================
-// Board pieces
+// Player panels & chronicle
 // ===========================================================================
 
-function CubeRow({ cubes }: { cubes: Record<Faction, number> }) {
-  return (
-    <Stack direction="row" spacing={1} flexWrap="wrap" sx={{ rowGap: 0.5 }}>
-      {FACTIONS.map((f) => (
-        <Chip
-          key={f}
-          size="small"
-          label={`${FACTION_LABEL[f]} ${cubes[f]}`}
-          sx={{
-            bgcolor: FACTION_COLOR[f],
-            color: "#111",
-            fontWeight: 700,
-            opacity: cubes[f] > 0 ? 1 : 0.35,
-          }}
-        />
-      ))}
-    </Stack>
-  );
-}
-
-function RegionCard({
+function PlayerPanel({
   state,
-  regionId,
+  player,
+  isTeammate,
 }: {
-  state: TKID2State;
-  regionId: RegionId;
+  state: Tkid2State;
+  player: Tkid2Player;
+  isTeammate: boolean;
 }) {
-  const def = REGIONS.find((r) => r.id === regionId)!;
-  const cubes = state.regions[regionId];
-  const crown = state.crowns[regionId];
-  const contested = currentRegionId(state) === regionId;
-  const projected = projectedOwner(cubes);
-
+  const onTurn = !isGameOver(state) && currentPlayer(state).id === player.id;
+  const topDiscard = player.discard[player.discard.length - 1];
   return (
     <Box
       sx={{
-        p: 1.5,
-        borderRadius: 2,
-        border: "2px solid",
-        borderColor: contested ? "primary.main" : "divider",
-        bgcolor: contested ? "rgba(176,124,243,0.10)" : "background.paper",
-        minWidth: 190,
-        flex: "1 1 190px",
-      }}
-    >
-      <Stack direction="row" alignItems="center" spacing={1}>
-        <Typography variant="subtitle1" sx={{ fontWeight: 700, flexGrow: 1 }}>
-          {def.name}
-        </Typography>
-        {crown && (
-          <Tooltip title={`Crown: ${CROWN_LABEL[crown]}`}>
-            <EmojiEventsIcon sx={{ color: CROWN_COLOR[crown] }} />
-          </Tooltip>
-        )}
-        {contested && !crown && (
-          <Chip
-            size="small"
-            label="Contested"
-            color="primary"
-            variant="outlined"
-          />
-        )}
-      </Stack>
-      {crown ? (
-        <Typography variant="caption" color="text.secondary">
-          Won by {CROWN_LABEL[crown]}
-        </Typography>
-      ) : (
-        <Stack spacing={0.5} sx={{ mt: 0.5 }}>
-          <CubeRow cubes={cubes} />
-          <Typography variant="caption" color="text.secondary">
-            {projected === "french"
-              ? "Currently: revolt (tie/empty)"
-              : `Currently leading: ${CROWN_LABEL[projected]}`}
-          </Typography>
-        </Stack>
-      )}
-    </Box>
-  );
-}
-
-function CourtRow({
-  state,
-  playerId,
-}: {
-  state: TKID2State;
-  playerId: string;
-}) {
-  const player = state.players.find((p) => p.id === playerId)!;
-  const onTurn = currentPlayer(state).id === playerId && !isGameOver(state);
-  return (
-    <Stack
-      direction="row"
-      spacing={1}
-      alignItems="center"
-      sx={{
-        p: 1,
-        borderRadius: 1.5,
-        border: "1px solid",
-        borderColor: onTurn ? "primary.main" : "divider",
-        bgcolor: onTurn ? "rgba(176,124,243,0.08)" : "transparent",
+        display: "flex",
+        alignItems: "center",
+        gap: 1,
+        borderRadius: "6px",
+        border: `2px solid ${onTurn ? GOLD : "#c5ad7c"}`,
+        boxShadow: onTurn ? `0 0 8px ${GOLD}` : "none",
+        background: "rgba(255,252,240,0.5)",
+        px: 1,
+        py: 0.6,
       }}
     >
       {player.isBot ? (
-        <SmartToyIcon fontSize="small" />
+        <SmartToyIcon sx={{ fontSize: 18, color: INK_FADED }} />
       ) : (
-        <PersonIcon fontSize="small" />
+        <PersonIcon sx={{ fontSize: 18, color: INK_FADED }} />
       )}
-      <Typography variant="body2" sx={{ fontWeight: 700, minWidth: 90 }}>
-        {player.name}
-        {player.passed && !isGameOver(state) ? " (passed)" : ""}
-      </Typography>
-      <CubeRow cubes={player.court} />
-      <Box sx={{ flexGrow: 1 }} />
-      <Chip size="small" label={`${player.hand.length} cards`} variant="outlined" />
-    </Stack>
-  );
-}
-
-// ===========================================================================
-// Human controls
-// ===========================================================================
-
-function HumanControls({
-  state,
-  onAction,
-}: {
-  state: TKID2State;
-  onAction: (a: TKID2Action) => void;
-}) {
-  const [passOpen, setPassOpen] = React.useState(false);
-  const [manoeuvreCard, setManoeuvreCard] = React.useState<string | null>(null);
-
-  const region = currentRegionId(state);
-  const me = state.players.find((p) => p.id === HUMAN_ID);
-  if (!me || region === null || isGameOver(state)) return null;
-  const cubes = state.regions[region];
-  const myTurn = currentPlayer(state).id === HUMAN_ID && !me.passed;
-
-  if (!myTurn) {
-    return (
-      <Typography variant="body2" color="text.secondary">
-        {me.passed
-          ? "You have passed this round — waiting for opponents…"
-          : `Waiting for ${currentPlayer(state).name}…`}
-      </Typography>
-    );
-  }
-
-  const def = REGIONS.find((r) => r.id === region)!;
-  const takeable = FACTIONS.filter((f) => cubes[f] > 0);
-
-  return (
-    <Stack spacing={1.5}>
-      <Typography variant="subtitle2">Your turn — play a card or pass</Typography>
-      <Stack direction="row" spacing={1} flexWrap="wrap" sx={{ rowGap: 1 }}>
-        {me.hand.map((cardId) => {
-          const card = cardById(cardId)!;
-          const disabled =
-            card.kind === "exile" &&
-            card.faction !== null &&
-            cubes[card.faction] <= 0;
-          return (
-            <Button
-              key={cardId}
-              size="small"
-              variant="outlined"
-              disabled={disabled}
-              onClick={() => {
-                if (card.kind === "manoeuvre") {
-                  setManoeuvreCard(cardId);
-                } else {
-                  onAction({ type: "playCard", cardId });
-                }
-              }}
-              sx={{
-                borderColor:
-                  card.faction !== null ? FACTION_COLOR[card.faction] : "text.secondary",
-                color: card.faction !== null ? FACTION_COLOR[card.faction] : "text.primary",
-              }}
-            >
-              {card.label}
-            </Button>
-          );
-        })}
-      </Stack>
-      <Box>
-        <Button variant="contained" color="secondary" onClick={() => setPassOpen(true)}>
-          Pass{takeable.length > 0 ? " & take a follower" : ""}
-        </Button>
+      <Box sx={{ minWidth: 76 }}>
+        <Typography sx={{ fontFamily: FONT_BODY, fontWeight: 700, fontSize: "0.9rem", color: INK, lineHeight: 1.1 }}>
+          {player.name}
+          {isTeammate ? " ♥" : ""}
+        </Typography>
+        <Typography sx={{ fontFamily: FONT_BODY, fontSize: "0.72rem", color: INK_FADED }}>
+          {player.hand.length} card{player.hand.length === 1 ? "" : "s"} · sets {setCount(player.court)}
+        </Typography>
       </Box>
-
-      {/* Pass / take-follower dialog */}
-      <Dialog open={passOpen} onClose={() => setPassOpen(false)}>
-        <DialogTitle>Pass this round</DialogTitle>
-        <DialogContent>
-          <Typography variant="body2" color="text.secondary" gutterBottom>
-            Take one follower into your court, then sit out the rest of this
-            round.
-          </Typography>
-          <Stack direction="row" spacing={1} flexWrap="wrap" sx={{ rowGap: 1, mt: 1 }}>
-            {takeable.map((f) => (
-              <Button
-                key={f}
-                variant="contained"
-                onClick={() => {
-                  onAction({ type: "pass", takeFollower: f });
-                  setPassOpen(false);
-                }}
-                sx={{ bgcolor: FACTION_COLOR[f], color: "#111" }}
-              >
-                Take {FACTION_LABEL[f]}
-              </Button>
-            ))}
-          </Stack>
-        </DialogContent>
-        <DialogActions>
-          <Button
-            onClick={() => {
-              onAction({ type: "pass" });
-              setPassOpen(false);
-            }}
-          >
-            {takeable.length > 0 ? "Take nothing" : "Pass"}
-          </Button>
-          <Button onClick={() => setPassOpen(false)}>Cancel</Button>
-        </DialogActions>
-      </Dialog>
-
-      {/* Manoeuvre source picker */}
-      <Dialog open={manoeuvreCard !== null} onClose={() => setManoeuvreCard(null)}>
-        <DialogTitle>Manoeuvre into {def.name}</DialogTitle>
-        <DialogContent>
-          <Typography variant="body2" color="text.secondary" gutterBottom>
-            Move a faction's cubes in from a neighbouring region.
-          </Typography>
-          <Stack spacing={1.5} sx={{ mt: 1 }}>
-            {def.adjacent.map((adj) => {
-              const adjDef = REGIONS.find((r) => r.id === adj)!;
-              const adjCubes = state.regions[adj];
-              const present = FACTIONS.filter((f) => adjCubes[f] > 0);
-              return (
-                <Box key={adj}>
-                  <Typography variant="caption" color="text.secondary">
-                    From {adjDef.name}
-                  </Typography>
-                  <Stack direction="row" spacing={1} flexWrap="wrap" sx={{ rowGap: 1 }}>
-                    {present.length === 0 && (
-                      <Typography variant="caption" color="text.disabled">
-                        (no cubes)
-                      </Typography>
-                    )}
-                    {present.map((f) => (
-                      <Button
-                        key={f}
-                        size="small"
-                        variant="contained"
-                        onClick={() => {
-                          onAction({
-                            type: "playCard",
-                            cardId: manoeuvreCard!,
-                            fromRegion: adj,
-                            faction: f,
-                          });
-                          setManoeuvreCard(null);
-                        }}
-                        sx={{ bgcolor: FACTION_COLOR[f], color: "#111" }}
-                      >
-                        {FACTION_LABEL[f]} ({adjCubes[f]})
-                      </Button>
-                    ))}
-                  </Stack>
-                </Box>
-              );
-            })}
-          </Stack>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setManoeuvreCard(null)}>Cancel</Button>
-        </DialogActions>
-      </Dialog>
-    </Stack>
-  );
-}
-
-// ===========================================================================
-// End-of-game summary
-// ===========================================================================
-
-function GameOverPanel({ state }: { state: TKID2State }) {
-  const ranked = results(state);
-  const won = winners(state);
-  const wonIds = new Set(won.map((w) => w.playerId));
-  const invasion = isInvasion(state);
-  const deciding = decidingFaction(state);
-  const counts = crownCounts(state);
-
-  return (
-    <Box
-      sx={{
-        p: 2,
-        borderRadius: 2,
-        border: "2px solid",
-        borderColor: "primary.main",
-        bgcolor: "rgba(176,124,243,0.10)",
-      }}
-    >
-      <Typography variant="h6" gutterBottom>
-        {invasion ? "Foreign invasion!" : "The realm is united"}
-      </Typography>
-      <Typography variant="body2" color="text.secondary" gutterBottom>
-        {invasion
-          ? `Too many regions fell into revolt (${counts.french}). Alignment with the weakest faction, ${CROWN_LABEL[deciding]}, decides the winner.`
-          : `The ${CROWN_LABEL[deciding]} faction is strongest. Whoever has the most ${FACTION_LABEL[deciding]} followers wins.`}
-      </Typography>
-      <Divider sx={{ my: 1 }} />
-      <Stack spacing={1}>
-        {ranked.map((r, i) => (
-          <Stack key={r.playerId} direction="row" alignItems="center" spacing={1}>
-            {wonIds.has(r.playerId) ? (
-              <EmojiEventsIcon sx={{ color: "#F4C947" }} />
-            ) : (
-              <Typography sx={{ width: 24, textAlign: "center" }}>{i + 1}</Typography>
-            )}
-            <Typography sx={{ fontWeight: wonIds.has(r.playerId) ? 700 : 400, flexGrow: 1 }}>
-              {r.name}
-            </Typography>
-            <Chip
-              size="small"
-              label={`${r.score} ${FACTION_LABEL[deciding]}`}
-              sx={{ bgcolor: FACTION_COLOR[deciding], color: "#111", fontWeight: 700 }}
-            />
-          </Stack>
-        ))}
-      </Stack>
+      <CourtCubes court={player.court} />
+      <Box sx={{ flexGrow: 1 }} />
+      {topDiscard ? (
+        <Tooltip title={`Last played: ${CARD_INFO[topDiscard].name}`}>
+          <Box>
+            <ActionCardView cardId={topDiscard} small />
+          </Box>
+        </Tooltip>
+      ) : (
+        <Box sx={{ width: 74 }} />
+      )}
     </Box>
   );
 }
 
+function describeEvents(events: Tkid2Event[], state: Tkid2State): string[] {
+  const name = (id: PlayerId) => state.players.find((p) => p.id === id)?.name ?? id;
+  const lines: string[] = [];
+  for (const e of events) {
+    switch (e.kind) {
+      case "played":
+        lines.push(
+          e.viaSpy
+            ? `${name(e.playerId)} copied ${CARD_INFO[e.cardId].name} with Spy.`
+            : `${name(e.playerId)} played ${CARD_INFO[e.cardId].name}.`,
+        );
+        break;
+      case "summoned":
+        lines.push(
+          `${name(e.playerId)} summoned a ${FACTION_LABEL[e.faction]} follower from ${regionName(e.regionId)}.`,
+        );
+        break;
+      case "summonSkipped":
+        lines.push(`${name(e.playerId)} could not summon a follower.`);
+        break;
+      case "passed":
+        lines.push(`${name(e.playerId)} passed.`);
+        break;
+      case "struggle":
+        lines.push(
+          e.record.outcome === "unstable"
+            ? `⚑ ${regionName(e.record.regionId)} fell into instability!`
+            : `⚑ The ${FACTION_LABEL[e.record.outcome]} took control of ${regionName(e.record.regionId)}.`,
+        );
+        break;
+      case "invasion":
+        lines.push("⚜ The French invade Britain — the game ends!");
+        break;
+      case "coronation":
+        lines.push("♔ Every region is decided — a new ruler is crowned!");
+        break;
+    }
+  }
+  return lines;
+}
+
 // ===========================================================================
-// Rules help
+// Game over
+// ===========================================================================
+
+function GameOverPanel({ state, onAgain }: { state: Tkid2State; onAgain: () => void }) {
+  const result = gameResult(state);
+  if (!result) return null;
+  const invasion = result.ending === "invasion";
+  const ranked = [...result.results].sort(
+    (a, b) => Number(b.winner) - Number(a.winner) || b.score - a.score || b.secondary - a.secondary,
+  );
+  return (
+    <ParchmentPanel sx={{ textAlign: "center" }}>
+      <UncialHeading size="1.5rem">{invasion ? "Invasion" : "Coronation"}</UncialHeading>
+      <Typography sx={{ fontFamily: FONT_BODY, fontStyle: "italic", color: INK_FADED, mb: 1 }}>
+        {invasion
+          ? "The French invade Britain. The leader who can unite the factions will claim the throne."
+          : "The struggle for power comes to an end, and a new monarch is crowned."}
+      </Typography>
+
+      {!invasion && (
+        <Stack direction="row" spacing={2} justifyContent="center" sx={{ mb: 1.5 }}>
+          {result.standings.map((s, i) => (
+            <Stack key={s.faction} alignItems="center" spacing={0.3}>
+              <Typography sx={{ fontFamily: FONT_BODY, fontSize: "0.75rem", color: INK_FADED }}>
+                {i + 1}
+              </Typography>
+              <Box
+                sx={{
+                  width: 34,
+                  height: 34,
+                  borderRadius: "50%",
+                  background: FACTION_COLOR[s.faction].main,
+                  border: `3px solid ${FACTION_COLOR[s.faction].dark}`,
+                }}
+              />
+              <Typography sx={{ fontFamily: FONT_BODY, fontSize: "0.75rem", color: INK }}>
+                {FACTION_LABEL[s.faction]} · {s.regions}
+              </Typography>
+            </Stack>
+          ))}
+        </Stack>
+      )}
+
+      <Stack spacing={0.6} sx={{ maxWidth: 420, mx: "auto" }}>
+        {ranked.map((r) => (
+          <Stack key={r.playerId} direction="row" spacing={1} alignItems="center">
+            <Typography sx={{ width: 26, fontSize: "1.1rem" }}>{r.winner ? "♔" : ""}</Typography>
+            <Typography
+              sx={{
+                fontFamily: FONT_BODY,
+                fontWeight: r.winner ? 700 : 400,
+                color: INK,
+                flexGrow: 1,
+                textAlign: "left",
+              }}
+            >
+              {r.name}
+              {r.plot ? " (Plot)" : ""}
+            </Typography>
+            <Typography sx={{ fontFamily: FONT_BODY, color: INK }}>
+              {invasion
+                ? `${r.score} set${r.score === 1 ? "" : "s"}`
+                : `${r.score} ${FACTION_LABEL[result.standings[0].faction]}`}
+            </Typography>
+          </Stack>
+        ))}
+      </Stack>
+      {result.teams && (
+        <Typography sx={{ fontFamily: FONT_BODY, fontSize: "0.8rem", color: INK_FADED, mt: 1 }}>
+          Teammates share the victory — the uncrowned ally becomes the power behind the throne.
+        </Typography>
+      )}
+      <Button
+        onClick={onAgain}
+        sx={{
+          mt: 1.5,
+          fontFamily: FONT_UNCIAL,
+          color: "#fdf3d8",
+          background: `linear-gradient(180deg, #a13c30, ${CARD_BACK})`,
+          px: 3,
+          "&:hover": { background: "#8e3a2e" },
+        }}
+      >
+        Play again
+      </Button>
+    </ParchmentPanel>
+  );
+}
+
+// ===========================================================================
+// Rules dialog
 // ===========================================================================
 
 function RulesDialog({ open, onClose }: { open: boolean; onClose: () => void }) {
   return (
     <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
-      <DialogTitle>How to play — The King Is Dead</DialogTitle>
-      <DialogContent dividers>
+      <DialogTitle sx={{ fontFamily: FONT_UNCIAL, color: RUBRIC }}>
+        How to play
+      </DialogTitle>
+      <DialogContent dividers sx={{ fontFamily: FONT_BODY }}>
         <Typography variant="body2" paragraph>
-          Regions of Britain are contested one at a time. On your turn you either
-          play one single-use <b>action card</b> or <b>pass</b>.
+          On your turn, either <b>take an action</b> (play one of your eight
+          single-use action cards and resolve its effect) or <b>pass</b>. After
+          taking an action you <b>must summon a follower</b>: take any one
+          follower cube from any region into your court.
         </Typography>
-        <Typography variant="body2" component="div">
-          <ul style={{ margin: 0, paddingLeft: 18 }}>
-            <li>
-              <b>Muster</b> — add cubes of a faction to the contested region.
-            </li>
-            <li>
-              <b>Exile</b> — remove cubes of a faction from the contested region.
-            </li>
-            <li>
-              <b>Manoeuvre</b> — move a faction's cubes in from a neighbouring
-              region.
-            </li>
-            <li>
-              <b>Pass</b> — take one follower (a cube of your choice present in
-              the region) into your court, then sit out the rest of the round.
-            </li>
-          </ul>
+        <Typography variant="body2" paragraph>
+          When all players pass in sequence, a <b>power struggle</b> is resolved
+          in the contested region — the region card in the lowest-numbered space
+          that is still face up. The faction with the most followers there takes
+          control (its control disc is placed), and all followers in the region
+          return to the supply. A tie — or an empty region — makes the region{" "}
+          <b>unstable</b>, and an instability disc moves there from France.
         </Typography>
-        <Typography variant="body2" paragraph sx={{ mt: 1 }}>
-          When everyone has passed, the region's majority faction earns its
-          crown; a tie leaves the region in revolt (a foreign crown). After all
-          regions resolve, the strongest faction decides the winner — the player
-          with the most followers of that faction. But if enough regions fell
-          into revolt, a foreign invasion flips it: the <i>weakest</i> faction's
-          followers win instead.
+        <Typography variant="body2" paragraph>
+          You can never place or move followers into regions that already have a
+          control or instability disc.
         </Typography>
-        <Typography variant="caption" color="text.secondary">
-          Note: exact rulebook values are an interpretation and may differ from
-          the published game.
+        <Typography variant="body2" paragraph>
+          <b>The game ends</b> when the third instability disc reaches the board
+          (a <b>French invasion</b>: the player with the most complete sets of
+          followers — one of each faction — wins) or when all eight regions are
+          decided (a <b>coronation</b>: the player with the most followers of
+          the most powerful faction in court wins; the most powerful faction is
+          the one controlling the most regions, ties broken by the most recent
+          power-struggle win).
+        </Typography>
+        <Typography variant="body2" paragraph>
+          Followers in your court crown you — but every follower you summon is
+          one fewer fighting for that faction on the board.
+        </Typography>
+        <Typography variant="body2" sx={{ color: "text.secondary" }}>
+          Hover or long-press any card to read its exact effect. In the advanced
+          game the three Support cards are replaced by three secret cunning
+          action cards.
         </Typography>
       </DialogContent>
       <DialogActions>
@@ -540,14 +520,33 @@ function RulesDialog({ open, onClose }: { open: boolean; onClose: () => void }) 
 }
 
 // ===========================================================================
-// Root game component
+// Root component
 // ===========================================================================
 
 export function Tkid2Game({ onExit }: { onExit: () => void }) {
-  const theme = useTheme();
-  const [state, setState] = React.useState<TKID2State | null>(null);
+  const [state, setState] = React.useState<Tkid2State | null>(null);
   const [config, setConfig] = React.useState<SetupResult | null>(null);
+  const [selection, setSelection] = React.useState<Selection | null>(null);
+  const [log, setLog] = React.useState<string[]>([]);
   const [showHelp, setShowHelp] = React.useState(false);
+  const [spyOpen, setSpyOpen] = React.useState(false);
+  const [confirmNoEffect, setConfirmNoEffect] = React.useState<CardId | null>(null);
+  const [notice, setNotice] = React.useState<string | null>(null);
+
+  const stateRef = React.useRef(state);
+  stateRef.current = state;
+
+  const applyLocal = React.useCallback((action: Tkid2Action) => {
+    const prev = stateRef.current;
+    if (!prev) return;
+    const res = applyAction(prev, action);
+    if (res.error) {
+      setNotice(res.error);
+      return;
+    }
+    setState(res.state);
+    setLog((l) => [...describeEvents(res.events, prev).reverse(), ...l].slice(0, 24));
+  }, []);
 
   const start = (r: SetupResult) => {
     const players = [
@@ -558,24 +557,31 @@ export function Tkid2Game({ onExit }: { onExit: () => void }) {
         isBot: true,
       })),
     ];
-    // Non-negative 31-bit seed from the clock for a fresh, reproducible game.
     const seed = Date.now() & 0x7fffffff;
-    setState(newGame(players, seed));
+    setState(newGame(players, seed, { advanced: r.advanced }));
     setConfig(r);
+    setSelection(null);
+    setLog([]);
   };
 
-  const applyLocal = React.useCallback((action: TKID2Action) => {
-    setState((prev) => {
-      if (!prev) return prev;
-      const res = applyAction(prev, action);
-      // Silently ignore rejected actions (shouldn't happen from valid UI/AI).
-      return res.error ? prev : res.state;
-    });
-  }, []);
+  const reset = () => {
+    setState(null);
+    setConfig(null);
+    setSelection(null);
+    setLog([]);
+  };
+
+  // Auto-clear notices.
+  React.useEffect(() => {
+    if (!notice) return;
+    const t = setTimeout(() => setNotice(null), 3500);
+    return () => clearTimeout(t);
+  }, [notice]);
 
   const botIds = React.useMemo(
     () => state?.players.filter((p) => p.isBot).map((p) => p.id) ?? [],
-    [state],
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [state?.players.length],
   );
   const difficultyById = React.useMemo(() => {
     const map: Record<string, Difficulty> = {};
@@ -592,30 +598,134 @@ export function Tkid2Game({ onExit }: { onExit: () => void }) {
   });
 
   const gameOver = state !== null && isGameOver(state);
+  const contested = state ? contestedRegionId(state) : null;
+  const human = state?.players.find((p) => p.id === HUMAN_ID);
+  const humanTurn =
+    !!state && !gameOver && currentPlayer(state).id === HUMAN_ID;
+  const humanSummon = humanTurn && !!state && state.pendingSummon;
+
+  const targets = React.useMemo(
+    () => (selection ? getTargets(selection) : null),
+    [selection],
+  );
+
+  // Dispatch a completed selection.
+  React.useEffect(() => {
+    if (selection && targets?.done) {
+      applyLocal({
+        type: "play",
+        cardId: selection.cardId,
+        params: finalParams(selection, targets.done),
+      });
+      setSelection(null);
+    }
+  }, [selection, targets, applyLocal]);
+
+  const highlightRegions = React.useMemo(() => {
+    if (selection && targets?.regions) return new Set(targets.regions);
+    return undefined;
+  }, [selection, targets]);
+
+  const highlightCubes = React.useMemo(() => {
+    if (selection && targets?.cubes) return new Set(targets.cubes.map(cubeKey));
+    if (humanSummon && state) return new Set(summonOptions(state).map(cubeKey));
+    return undefined;
+  }, [selection, targets, humanSummon, state]);
+
+  const highlightSlots = React.useMemo(() => {
+    if (selection && targets?.slots) return new Set(targets.slots);
+    return undefined;
+  }, [selection, targets]);
+
+  const onCardClick = (cardId: CardId) => {
+    if (!state || !humanTurn || state.pendingSummon || selection) return;
+    if (cardId === "plot") {
+      setNotice("Plot cannot be taken during the game — it is revealed when the winner is decided.");
+      return;
+    }
+    if (cardId === "spy") {
+      const opts = enumerateCardParams(state, "spy");
+      if (opts.length === 0) {
+        setConfirmNoEffect("spy");
+      } else {
+        setSpyOpen(true);
+      }
+      return;
+    }
+    const opts = enumerateCardParams(state, cardId);
+    if (opts.length === 0) {
+      setConfirmNoEffect(cardId);
+    } else {
+      setSelection(startSelection(cardId, opts));
+    }
+  };
+
+  const onRegionClick = (regionId: Parameters<typeof pickRegion>[1]) => {
+    if (selection) setSelection((s) => (s ? pickRegion(s, regionId) : s));
+  };
+
+  const onCubeClick = (cube: CubeRef) => {
+    if (!state || !humanTurn) return;
+    if (selection) {
+      setSelection((s) => (s ? pickCube(s, cube) : s));
+      return;
+    }
+    if (humanSummon) {
+      applyLocal({ type: "summon", regionId: cube.regionId, faction: cube.faction });
+    }
+  };
+
+  const onSlotClick = (position: number) => {
+    if (selection) setSelection((s) => (s ? pickSlot(s, position) : s));
+  };
+
+  const spyGroups = React.useMemo(() => {
+    if (!state || !spyOpen) return [];
+    const opts = enumerateCardParams(state, "spy");
+    const map = new Map<PlayerId, CardParams[]>();
+    for (const o of opts) {
+      if (!o.spyPlayerId) continue;
+      const list = map.get(o.spyPlayerId) ?? [];
+      list.push(o.spyParams ?? {});
+      map.set(o.spyPlayerId, list);
+    }
+    return Array.from(map.entries()).map(([playerId, inner]) => {
+      const target = state.players.find((p) => p.id === playerId)!;
+      return { playerId, name: target.name, top: target.discard[target.discard.length - 1], inner };
+    });
+  }, [state, spyOpen]);
+
+  const counts = state ? controlledCounts(state) : null;
+
+  // ------------------------------------------------------------------
+  // Prompt banner content
+  // ------------------------------------------------------------------
+  let prompt: string | null = null;
+  if (state && !gameOver) {
+    if (selection && targets && !targets.done) prompt = targets.prompt;
+    else if (humanSummon) prompt = "Summon a follower to your court — tap any follower on the map.";
+    else if (humanTurn) prompt = "Your turn — play a card or pass.";
+    else prompt = `Waiting for ${currentPlayer(state).name}…`;
+  }
 
   return (
     <Dialog fullScreen open onClose={onExit} TransitionComponent={Transition as any}>
       <AppBar
         sx={{
-          background: theme.palette.mode === "dark" ? "#2E1B47" : "#5B2E93",
           position: "relative",
+          background: `linear-gradient(180deg, #8e3a2e, ${CARD_BACK})`,
+          borderBottom: `3px solid ${GOLD}`,
         }}
       >
         <Toolbar>
-          <Tkid2Logo size={32} sx={{ marginRight: 8 }} />
-          <Typography variant="h6" sx={{ flex: 1, color: "#fff", fontWeight: 600 }}>
-            The King Is Dead
+          <Tkid2Logo size={34} sx={{ marginRight: 10 }} />
+          <Typography
+            sx={{ flex: 1, color: "#fdf3d8", fontFamily: FONT_UNCIAL, fontSize: "1.25rem" }}
+          >
+            The King is Dead
           </Typography>
           {state && (
-            <Button
-              color="inherit"
-              startIcon={<RefreshIcon />}
-              onClick={() => {
-                setState(null);
-                setConfig(null);
-              }}
-              sx={{ mr: 1 }}
-            >
+            <Button color="inherit" startIcon={<RefreshIcon />} onClick={reset} sx={{ mr: 1, fontFamily: FONT_BODY }}>
               New
             </Button>
           )}
@@ -623,7 +733,7 @@ export function Tkid2Game({ onExit }: { onExit: () => void }) {
             color="inherit"
             startIcon={<HelpOutlineIcon />}
             onClick={() => setShowHelp(true)}
-            sx={{ mr: 1 }}
+            sx={{ mr: 1, fontFamily: FONT_BODY }}
           >
             Rules
           </Button>
@@ -633,69 +743,298 @@ export function Tkid2Game({ onExit }: { onExit: () => void }) {
         </Toolbar>
       </AppBar>
 
-      <DialogContent sx={{ p: 2 }}>
+      <DialogContent
+        sx={{
+          p: { xs: 1, sm: 2 },
+          background: `radial-gradient(ellipse at 50% 20%, #f4ead0 0%, ${PARCHMENT} 55%, ${PARCHMENT_DARK} 100%)`,
+        }}
+      >
         {!state && <SetupScreen onStart={start} />}
 
         {state && (
-          <Stack spacing={2} sx={{ maxWidth: 900, mx: "auto" }}>
-            {/* Progress */}
-            <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap" sx={{ rowGap: 1 }}>
-              <Chip
-                size="small"
-                label={`Region ${Math.min(state.eventIndex + 1, REGIONS.length)} / ${REGIONS.length}`}
-                color="primary"
-              />
-              {FACTIONS.map((f) => (
-                <Chip
-                  key={f}
-                  size="small"
-                  label={`${FACTION_LABEL[f]}: ${crownCounts(state)[f]} 👑`}
-                  sx={{ bgcolor: FACTION_COLOR[f], color: "#111", fontWeight: 700 }}
+          <Stack spacing={1.5} sx={{ maxWidth: 1200, mx: "auto", pb: 2 }}>
+            {/* Status strip */}
+            <Stack
+              direction="row"
+              spacing={1.5}
+              alignItems="center"
+              flexWrap="wrap"
+              useFlexGap
+              sx={{ rowGap: 0.5, justifyContent: "center" }}
+            >
+              <Typography sx={{ fontFamily: FONT_BODY, color: INK, fontSize: "0.9rem" }}>
+                Struggle{" "}
+                <b>
+                  {Math.min(state.struggles.length + 1, 8)}
+                </b>{" "}
+                of 8
+              </Typography>
+              {contested && (
+                <Typography sx={{ fontFamily: FONT_BODY, color: RUBRIC, fontSize: "0.9rem" }}>
+                  ⚔ {regionName(contested)}
+                </Typography>
+              )}
+              {counts &&
+                FACTIONS.map((f) => (
+                  <Stack key={f} direction="row" spacing={0.4} alignItems="center">
+                    <Box
+                      sx={{
+                        width: 14,
+                        height: 14,
+                        borderRadius: "50%",
+                        background: FACTION_COLOR[f].main,
+                        border: `2px solid ${FACTION_COLOR[f].dark}`,
+                      }}
+                    />
+                    <Typography sx={{ fontFamily: FONT_BODY, color: INK, fontSize: "0.9rem" }}>
+                      {counts[f]}
+                    </Typography>
+                  </Stack>
+                ))}
+              <Stack direction="row" spacing={0.4} alignItems="center">
+                <Box
+                  sx={{
+                    width: 14,
+                    height: 14,
+                    borderRadius: "50%",
+                    background: INSTABILITY,
+                    border: "2px solid #2b1e12",
+                  }}
                 />
-              ))}
-              <Chip
-                size="small"
-                label={`Revolt: ${crownCounts(state).french}`}
-                sx={{ bgcolor: CROWN_COLOR.french, color: "#111", fontWeight: 700 }}
-              />
+                <Typography sx={{ fontFamily: FONT_BODY, color: INK, fontSize: "0.9rem" }}>
+                  {3 - state.instabilityInFrance}/3
+                </Typography>
+              </Stack>
             </Stack>
 
-            {gameOver && <GameOverPanel state={state} />}
+            {gameOver && <GameOverPanel state={state} onAgain={reset} />}
 
-            {/* Regions board */}
-            <Box>
-              <Typography variant="overline" color="text.secondary">
-                Regions
-              </Typography>
-              <Stack direction="row" flexWrap="wrap" gap={1.5}>
-                {state.eventOrder.map((rid) => (
-                  <RegionCard key={rid} state={state} regionId={rid} />
+            <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1.5, alignItems: "flex-start" }}>
+              {/* Map column */}
+              <Box sx={{ flex: "1 1 380px", maxWidth: 640, mx: "auto" }}>
+                <Box sx={{ mb: 1 }}>
+                  <RegionCardTrack
+                    state={state}
+                    contested={contested}
+                    highlightSlots={highlightSlots}
+                    pickedSlots={selection?.slotsPicked}
+                    onSlotClick={onSlotClick}
+                  />
+                </Box>
+                <Box
+                  sx={{
+                    borderRadius: "10px",
+                    border: `3px solid ${CARD_BACK}`,
+                    outline: `1.5px solid ${GOLD}`,
+                    outlineOffset: "-7px",
+                    overflow: "hidden",
+                    boxShadow: "0 4px 14px rgba(40,20,10,0.35)",
+                  }}
+                >
+                  <BoardMap
+                    state={state}
+                    contested={contested}
+                    highlightRegions={highlightRegions}
+                    highlightCubes={highlightCubes}
+                    pickedCubes={selection?.cubesPicked}
+                    onRegionClick={onRegionClick}
+                    onCubeClick={onCubeClick}
+                  />
+                </Box>
+              </Box>
+
+              {/* Side column: courts & chronicle */}
+              <Stack spacing={1} sx={{ flex: "1 1 300px", minWidth: 280 }}>
+                <UncialHeading>Courts</UncialHeading>
+                {state.players.map((p, i) => (
+                  <PlayerPanel
+                    key={p.id}
+                    state={state}
+                    player={p}
+                    isTeammate={
+                      state.players.length === 4 &&
+                      p.id !== HUMAN_ID &&
+                      state.players[(state.players.findIndex((q) => q.id === HUMAN_ID) + 2) % 4].id === p.id
+                    }
+                  />
                 ))}
+                <UncialHeading>Chronicle</UncialHeading>
+                <ParchmentPanel sx={{ p: 1, maxHeight: 190, overflowY: "auto" }}>
+                  {log.length === 0 && (
+                    <Typography sx={{ fontFamily: FONT_BODY, fontStyle: "italic", color: INK_FADED, fontSize: "0.82rem" }}>
+                      The chronicle of the struggle will be written here…
+                    </Typography>
+                  )}
+                  {log.map((line, i) => (
+                    <Typography
+                      key={`${i}-${line}`}
+                      sx={{
+                        fontFamily: FONT_BODY,
+                        fontSize: "0.82rem",
+                        color: i === 0 ? INK : INK_FADED,
+                        lineHeight: 1.45,
+                      }}
+                    >
+                      {line}
+                    </Typography>
+                  ))}
+                </ParchmentPanel>
               </Stack>
             </Box>
 
-            {/* Courts */}
-            <Box>
-              <Typography variant="overline" color="text.secondary">
-                Courts
-              </Typography>
-              <Stack spacing={1}>
-                {state.players.map((p) => (
-                  <CourtRow key={p.id} state={state} playerId={p.id} />
-                ))}
-              </Stack>
-            </Box>
+            {/* Prompt + hand (sticky at the bottom) */}
+            {!gameOver && human && (
+              <Box
+                sx={{
+                  position: "sticky",
+                  bottom: 0,
+                  zIndex: 5,
+                  mx: -1,
+                  px: 1,
+                  pt: 0.5,
+                  pb: 1,
+                  background: `linear-gradient(180deg, rgba(240,227,192,0), ${PARCHMENT} 22%)`,
+                }}
+              >
+                <ParchmentPanel sx={{ p: 1, mb: 1 }}>
+                  <Stack
+                    direction="row"
+                    spacing={1}
+                    alignItems="center"
+                    flexWrap="wrap"
+                    useFlexGap
+                    sx={{ rowGap: 0.5 }}
+                  >
+                    <Typography
+                      sx={{
+                        fontFamily: FONT_BODY,
+                        color: notice ? RUBRIC : INK,
+                        fontSize: "0.92rem",
+                        flexGrow: 1,
+                        fontStyle: humanTurn ? "normal" : "italic",
+                      }}
+                    >
+                      {notice ?? prompt}
+                    </Typography>
+                    {selection &&
+                      targets?.variants?.map((v, i) => (
+                        <Button
+                          key={`${v.label}-${i}`}
+                          size="small"
+                          variant="outlined"
+                          onClick={() => setSelection((s) => (s ? pickVariant(s, v.params) : s))}
+                          sx={{ fontFamily: FONT_BODY, color: INK, borderColor: INK_FADED, textTransform: "none" }}
+                        >
+                          {v.label}
+                        </Button>
+                      ))}
+                    {selection && (
+                      <Button
+                        size="small"
+                        onClick={() => setSelection(null)}
+                        sx={{ fontFamily: FONT_BODY, color: RUBRIC, textTransform: "none" }}
+                      >
+                        Cancel
+                      </Button>
+                    )}
+                    {humanTurn && !state.pendingSummon && !selection && (
+                      <Button
+                        size="small"
+                        variant="contained"
+                        onClick={() => applyLocal({ type: "pass" })}
+                        sx={{
+                          fontFamily: FONT_UNCIAL,
+                          background: `linear-gradient(180deg, #a13c30, ${CARD_BACK})`,
+                          color: "#fdf3d8",
+                          "&:hover": { background: "#8e3a2e" },
+                        }}
+                      >
+                        Pass
+                      </Button>
+                    )}
+                  </Stack>
+                </ParchmentPanel>
 
-            {/* Human controls */}
-            {!gameOver && (
-              <>
-                <Divider />
-                <HumanControls state={state} onAction={applyLocal} />
-              </>
+                <Stack
+                  direction="row"
+                  spacing={1}
+                  sx={{ overflowX: "auto", pb: 0.5, justifyContent: { xs: "flex-start", md: "center" } }}
+                >
+                  {human.hand.map((cardId) => (
+                    <ActionCardView
+                      key={cardId}
+                      cardId={cardId}
+                      selected={selection?.cardId === cardId}
+                      disabled={
+                        !humanTurn || state.pendingSummon || (!!selection && selection.cardId !== cardId)
+                      }
+                      onClick={() => onCardClick(cardId)}
+                    />
+                  ))}
+                  {human.hand.length === 0 && (
+                    <Typography sx={{ fontFamily: FONT_BODY, fontStyle: "italic", color: INK_FADED }}>
+                      You have played all your action cards — you can only pass now.
+                    </Typography>
+                  )}
+                </Stack>
+              </Box>
             )}
           </Stack>
         )}
       </DialogContent>
+
+      {/* Spy target dialog */}
+      <Dialog open={spyOpen} onClose={() => setSpyOpen(false)}>
+        <DialogTitle sx={{ fontFamily: FONT_UNCIAL, color: RUBRIC }}>Spy</DialogTitle>
+        <DialogContent>
+          <Typography sx={{ fontFamily: FONT_BODY, mb: 1.5 }} variant="body2">
+            Resolve the card on top of another player's discard pile:
+          </Typography>
+          <Stack direction="row" spacing={2}>
+            {spyGroups.map((g) => (
+              <Stack key={g.playerId} alignItems="center" spacing={0.5}>
+                <ActionCardView
+                  cardId={g.top!}
+                  onClick={() => {
+                    setSpyOpen(false);
+                    setSelection(startSelection("spy", g.inner, { playerId: g.playerId, effectiveCardId: g.top! }));
+                  }}
+                />
+                <Typography sx={{ fontFamily: FONT_BODY, fontSize: "0.8rem" }}>{g.name}</Typography>
+              </Stack>
+            ))}
+          </Stack>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setSpyOpen(false)}>Cancel</Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* No-effect confirmation */}
+      <Dialog open={confirmNoEffect !== null} onClose={() => setConfirmNoEffect(null)}>
+        <DialogTitle sx={{ fontFamily: FONT_UNCIAL, color: RUBRIC }}>
+          {confirmNoEffect ? CARD_INFO[confirmNoEffect].name : ""}
+        </DialogTitle>
+        <DialogContent>
+          <Typography sx={{ fontFamily: FONT_BODY }} variant="body2">
+            This card currently has no possible effect. You may still play it —
+            you will summon a follower to your court as usual.
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setConfirmNoEffect(null)}>Cancel</Button>
+          <Button
+            onClick={() => {
+              if (confirmNoEffect) {
+                applyLocal({ type: "play", cardId: confirmNoEffect, params: {} });
+              }
+              setConfirmNoEffect(null);
+            }}
+          >
+            Play it anyway
+          </Button>
+        </DialogActions>
+      </Dialog>
 
       <RulesDialog open={showHelp} onClose={() => setShowHelp(false)} />
     </Dialog>
