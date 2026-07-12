@@ -45,9 +45,9 @@ export const GAMES: Record<ActiveGame, GameDefinition> = {
   tkid2: {
     id: "tkid2",
     label: "The King Is Dead",
-    darkColor: "#B07CF3",
-    lightColor: "#5B2E93",
-    tagline: "Area-majority intrigue vs. AI.",
+    darkColor: "#e0b44a",
+    lightColor: "#8e3a2e",
+    tagline: "Crown a ruler of medieval Britain.",
   },
 };
 

@@ -1,3 +1,6 @@
+/* Medieval faces for "The King Is Dead" (fall back to system serifs offline) */
+@import url('https://fonts.googleapis.com/css2?family=Uncial+Antiqua&family=IM+Fell+English:ital@0;1&display=swap');
+
 html, body {
   height: 100%;
   margin: 0;
