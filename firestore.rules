@@ -4,9 +4,12 @@ service cloud.firestore {
   match /databases/{database}/documents {
 
     // -------- helpers --------
-    // Cap any single document write at ~512 KB to mitigate abuse.
+    // Rules cannot inspect a document's byte size (`request.resource.size`
+    // does not exist — referencing it throws an evaluation error, which
+    // denies EVERY write). Firestore itself enforces a hard 1 MiB per-doc
+    // limit; as a cheap abuse guard, cap the top-level field count instead.
     function notTooBig() {
-      return request.resource.size < 512 * 1024;
+      return request.resource.data.size() < 64;
     }
 
     // -------- players collection --------
