@@ -58,6 +58,35 @@ describe("botPolicy", () => {
     expect(action.type).toBe("play");
   });
 
+  it("paces itself: at most half the hand goes into the first struggle", () => {
+    // Against a human who only passes, bots used to trade cards over the
+    // first contested region until their hands were nearly empty.
+    for (const seed of [1, 7, 42, 99, 12345]) {
+      const players = [
+        { id: "human", name: "You", isBot: false },
+        { id: "bot-1", name: "AI 1", isBot: true },
+        { id: "bot-2", name: "AI 2", isBot: true },
+      ];
+      let state: Tkid2State = newGame(players, seed);
+      let steps = 0;
+      while (!isGameOver(state) && state.struggles.length === 0 && steps < 300) {
+        const p = currentPlayer(state);
+        const action = p.isBot
+          ? chooseAction(state, p.id, "normal")
+          : ({ type: "pass" } as const);
+        const res = applyAction(state, action);
+        expect(res.error).toBeUndefined();
+        state = res.state;
+        steps++;
+      }
+      expect(state.struggles.length).toBe(1);
+      for (const p of state.players) {
+        if (!p.isBot) continue;
+        expect(8 - p.hand.length).toBeLessThanOrEqual(4);
+      }
+    }
+  });
+
   it("does not dump its whole hand — cards survive a full bots game", () => {
     let state: Tkid2State = newGame(PLAYERS, 9);
     let steps = 0;

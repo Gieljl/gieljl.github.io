@@ -18,7 +18,7 @@ import {
 
 /** "Thinking time" before an AI decides to play or pass (shown as an
  *  animated overlay in the UI). */
-export const BOT_THINK_MS = 2000;
+export const BOT_THINK_MS = 2400;
 /** Shorter beat before the follow-up summon so a turn reads as one motion. */
 export const BOT_SUMMON_MS = 700;
 

@@ -183,7 +183,17 @@ function playThreshold(state: Tkid2State, botId: PlayerId, difficulty: Difficult
   const cardsLeft = me?.hand.filter((c) => c !== "plot").length ?? 0;
   const scarcity = Math.max(0, strugglesLeft - cardsLeft) * 1.2;
   const base = difficulty === "godlike" ? 1.0 : 2.4;
-  return base + scarcity;
+  // Pacing: eight cards must last eight struggles. Once a bot has spent more
+  // cards than there are resolved struggles, each further play this round
+  // costs steeply more — otherwise two bots trading blows over the first
+  // contested region dump their whole hands before it even resolves. A
+  // genuinely game-deciding play still goes through, because losing the game
+  // evaluates far below any threshold.
+  const spent = me?.discard.length ?? 0;
+  const overspend = Math.max(0, spent - state.struggles.length);
+  const perCard = difficulty === "godlike" ? 2.6 : 3.4;
+  const pacing = ((overspend * (overspend + 1)) / 2) * perCard;
+  return base + scarcity + pacing;
 }
 
 /**
