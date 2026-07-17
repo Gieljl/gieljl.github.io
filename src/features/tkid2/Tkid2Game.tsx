@@ -16,6 +16,8 @@ import {
   Tooltip,
   Typography,
 } from "@mui/material";
+import ChevronLeftIcon from "@mui/icons-material/ChevronLeft";
+import ChevronRightIcon from "@mui/icons-material/ChevronRight";
 import CloseIcon from "@mui/icons-material/Close";
 import HelpOutlineIcon from "@mui/icons-material/HelpOutline";
 import RefreshIcon from "@mui/icons-material/Refresh";
@@ -33,7 +35,9 @@ import {
   FACTION_LABEL,
   Faction,
   FactionCounts,
+  Placement,
   PlayerId,
+  RegionId,
   Tkid2Action,
   Tkid2Event,
   Tkid2Player,
@@ -175,16 +179,40 @@ interface SetupResult {
   advanced: boolean;
 }
 
+/** The app theme defaults to dark mode, which gives MUI toggle buttons white
+ *  text — unreadable on this parchment background. Style them explicitly. */
+const toggleGroupSx = {
+  mt: 0.5,
+  flexWrap: "wrap" as const,
+  "& .MuiToggleButton-root": {
+    fontFamily: FONT_BODY,
+    fontWeight: 700,
+    color: INK,
+    borderColor: "#b89968",
+    background: "rgba(255,252,240,0.55)",
+    px: { xs: 1.25, sm: 2 },
+    py: 0.6,
+    lineHeight: 1.3,
+    "&:hover": { background: "rgba(255,252,240,0.9)" },
+    "&.Mui-selected": {
+      color: "#fdf3d8",
+      background: `linear-gradient(180deg, #a13c30, ${CARD_BACK})`,
+      borderColor: "#4a1812",
+      "&:hover": { background: "#8e3a2e" },
+    },
+  },
+};
+
 function SetupScreen({ onStart }: { onStart: (r: SetupResult) => void }) {
   const [botCount, setBotCount] = React.useState(2);
   const [difficulty, setDifficulty] = React.useState<Difficulty>("normal");
   const [advanced, setAdvanced] = React.useState(false);
 
   return (
-    <Stack spacing={2.5} sx={{ maxWidth: 520, mx: "auto", mt: 2, pb: 4 }}>
+    <Stack spacing={2.5} sx={{ maxWidth: 520, mx: "auto", mt: 2, pb: 4, px: { xs: 0.5, sm: 0 } }}>
       <Box sx={{ textAlign: "center" }}>
         <Tkid2Logo size={84} />
-        <Typography sx={{ fontFamily: FONT_UNCIAL, fontSize: "1.9rem", color: RUBRIC, mt: 1 }}>
+        <Typography sx={{ fontFamily: FONT_UNCIAL, fontSize: { xs: "1.6rem", sm: "1.9rem" }, color: RUBRIC, mt: 1 }}>
           The King is Dead
         </Typography>
         <Typography sx={{ fontFamily: FONT_BODY, fontStyle: "italic", color: INK_FADED }}>
@@ -211,7 +239,7 @@ function SetupScreen({ onStart }: { onStart: (r: SetupResult) => void }) {
               exclusive
               value={botCount}
               onChange={(_, v) => v && setBotCount(v)}
-              sx={{ mt: 0.5 }}
+              sx={toggleGroupSx}
             >
               <ToggleButton value={1}>1 AI</ToggleButton>
               <ToggleButton value={2}>2 AI</ToggleButton>
@@ -230,7 +258,7 @@ function SetupScreen({ onStart }: { onStart: (r: SetupResult) => void }) {
               exclusive
               value={difficulty}
               onChange={(_, v) => v && setDifficulty(v)}
-              sx={{ mt: 0.5 }}
+              sx={toggleGroupSx}
             >
               <ToggleButton value="easy">Easy</ToggleButton>
               <ToggleButton value="normal">Normal</ToggleButton>
@@ -243,10 +271,15 @@ function SetupScreen({ onStart }: { onStart: (r: SetupResult) => void }) {
               exclusive
               value={advanced}
               onChange={(_, v) => v !== null && setAdvanced(v)}
-              sx={{ mt: 0.5 }}
+              sx={toggleGroupSx}
             >
               <ToggleButton value={false}>Basic game</ToggleButton>
-              <ToggleButton value={true}>Advanced (cunning cards)</ToggleButton>
+              <ToggleButton value={true}>
+                Advanced
+                <Box component="span" sx={{ display: { xs: "none", sm: "inline" } }}>
+                  &nbsp;(cunning cards)
+                </Box>
+              </ToggleButton>
             </ToggleButtonGroup>
             <Typography sx={{ fontFamily: FONT_BODY, fontSize: "0.8rem", color: INK_FADED, mt: 0.5 }}>
               Advanced: the three Support cards are replaced by three secret
@@ -333,21 +366,116 @@ function PlayerPanel({
   );
 }
 
+const factionArticle = (f: Faction) => (f === "english" ? "an" : "a");
+
+/** "a Welsh follower", "2 Scottish followers and an English follower", … */
+function describeFollowers(fs: Faction[]): string {
+  const counts = new Map<Faction, number>();
+  for (const f of fs) counts.set(f, (counts.get(f) ?? 0) + 1);
+  const parts = Array.from(counts.entries()).map(([f, n]) =>
+    n === 1
+      ? `${factionArticle(f)} ${FACTION_LABEL[f]} follower`
+      : `${n} ${FACTION_LABEL[f]} followers`,
+  );
+  return parts.join(" and ");
+}
+
+function describePlacements(placements: Placement[]): string {
+  const byRegion = new Map<RegionId, Faction[]>();
+  for (const p of placements) {
+    byRegion.set(p.regionId, [...(byRegion.get(p.regionId) ?? []), p.faction]);
+  }
+  return Array.from(byRegion.entries())
+    .map(([r, fs]) => `${describeFollowers(fs)} into ${regionName(r)}`)
+    .join(" and ");
+}
+
+function joinSentence(parts: string[]): string | null {
+  if (parts.length === 0) return null;
+  const s = parts.join(", then ");
+  return s[0].toUpperCase() + s.slice(1) + ".";
+}
+
+/** One sentence saying what a card play actually did on the board — so the
+ *  chronicle reads "played Negotiate — swapped Essex and Devon", not just
+ *  "played Negotiate". `prev` is the state before the play resolved. */
+function describePlay(prev: Tkid2State, cardId: CardId, params: CardParams): string | null {
+  switch (cardId) {
+    case "negotiate": {
+      if (params.slotA === undefined || params.slotB === undefined) return null;
+      const a = prev.slots.find((s) => s.position === params.slotA);
+      const b = prev.slots.find((s) => s.position === params.slotB);
+      if (!a || !b) return null;
+      const disc = params.discRegionId
+        ? `; the negotiation disc goes to ${regionName(params.discRegionId)}`
+        : "";
+      return `Swapped the region cards of ${regionName(a.regionId)} (space ${a.position}) and ${regionName(b.regionId)} (space ${b.position})${disc}.`;
+    }
+    case "manoeuvre":
+    case "outmanoeuvre":
+    case "influence":
+    case "dispute":
+    case "edict": {
+      const { from, to } = params;
+      if (!from || !to) return null;
+      return `Swapped ${describeFollowers(from.factions)} in ${regionName(from.regionId)} with ${describeFollowers(to.factions)} in ${regionName(to.regionId)}.`;
+    }
+    case "march": {
+      const { from, to } = params;
+      if (!from || !to || from.factions.length === 0) return null;
+      return `Marched ${describeFollowers(from.factions)} from ${regionName(from.regionId)} into ${regionName(to.regionId)}.`;
+    }
+    case "ambush": {
+      const parts: string[] = [];
+      if (params.placements?.length) parts.push(`placed ${describePlacements(params.placements)}`);
+      if (params.returnFactions?.length && params.regionId) {
+        parts.push(
+          `returned ${describeFollowers(params.returnFactions)} from ${regionName(params.regionId)} to the supply`,
+        );
+      }
+      return joinSentence(parts);
+    }
+    case "quell":
+    case "muster":
+    case "suppress": {
+      const parts: string[] = [];
+      if (params.returnFactions?.length && params.regionId) {
+        parts.push(
+          `returned ${describeFollowers(params.returnFactions)} from ${regionName(params.regionId)} to the supply`,
+        );
+      }
+      if (params.placements?.length) parts.push(`placed ${describePlacements(params.placements)}`);
+      return joinSentence(parts);
+    }
+    default: {
+      if (params.placements?.length) return `Placed ${describePlacements(params.placements)}.`;
+      return null;
+    }
+  }
+}
+
 function describeEvents(events: Tkid2Event[], state: Tkid2State): string[] {
   const name = (id: PlayerId) => state.players.find((p) => p.id === id)?.name ?? id;
   const lines: string[] = [];
   for (const e of events) {
     switch (e.kind) {
-      case "played":
+      case "played": {
         lines.push(
           e.viaSpy
             ? `${name(e.playerId)} copied ${CARD_INFO[e.cardId].name} with Spy.`
             : `${name(e.playerId)} played ${CARD_INFO[e.cardId].name}.`,
         );
+        const detail = e.params ? describePlay(state, e.cardId, e.params) : null;
+        if (detail) {
+          lines.push(detail);
+        } else if (e.cardId !== "spy" && (!e.params || Object.keys(e.params).length === 0)) {
+          lines.push("It had no effect on the board.");
+        }
         break;
+      }
       case "summoned":
         lines.push(
-          `${name(e.playerId)} summoned a ${FACTION_LABEL[e.faction]} follower from ${regionName(e.regionId)}.`,
+          `${name(e.playerId)} summoned ${factionArticle(e.faction)} ${FACTION_LABEL[e.faction]} follower from ${regionName(e.regionId)}.`,
         );
         break;
       case "summonSkipped":
@@ -421,7 +549,7 @@ function BotTurnOverlay({
     <Box
       sx={{
         position: "fixed",
-        top: 78,
+        top: { xs: 62, sm: 78 },
         left: "50%",
         transform: "translateX(-50%)",
         zIndex: 40,
@@ -658,11 +786,26 @@ function RulesDialog({ open, onClose }: { open: boolean; onClose: () => void }) 
 // Root component
 // ===========================================================================
 
+/** One completed move (a card play plus its summon, or a pass) in the
+ *  chronicle, with the board as it looked afterwards for the history view. */
+interface ChronicleEntry {
+  id: number;
+  actorId: PlayerId;
+  /** Card played, or null for a pass. */
+  cardId: CardId | null;
+  lines: string[];
+  stateAfter: Tkid2State;
+}
+
+const MAX_CHRONICLE = 64;
+
 export function Tkid2Game({ onExit }: { onExit: () => void }) {
   const [state, setState] = React.useState<Tkid2State | null>(null);
   const [config, setConfig] = React.useState<SetupResult | null>(null);
   const [selection, setSelection] = React.useState<Selection | null>(null);
-  const [log, setLog] = React.useState<string[]>([]);
+  const [entries, setEntries] = React.useState<ChronicleEntry[]>([]);
+  /** Index into `entries` while replaying history; null = live play. */
+  const [reviewIndex, setReviewIndex] = React.useState<number | null>(null);
   const [showHelp, setShowHelp] = React.useState(false);
   const [spyOpen, setSpyOpen] = React.useState(false);
   const [confirmNoEffect, setConfirmNoEffect] = React.useState<CardId | null>(null);
@@ -671,6 +814,7 @@ export function Tkid2Game({ onExit }: { onExit: () => void }) {
 
   const stateRef = React.useRef(state);
   stateRef.current = state;
+  const entrySeq = React.useRef(1);
 
   const applyLocal = React.useCallback((action: Tkid2Action) => {
     const prev = stateRef.current;
@@ -683,7 +827,28 @@ export function Tkid2Game({ onExit }: { onExit: () => void }) {
     }
     setState(res.state);
     const lines = describeEvents(res.events, prev);
-    setLog((l) => [...lines.slice().reverse(), ...l].slice(0, 24));
+    setEntries((es) => {
+      // The summon completes the card play before it: merge into one move.
+      if (action.type === "summon") {
+        const last = es[es.length - 1];
+        if (last && last.actorId === actor.id && last.cardId) {
+          return [
+            ...es.slice(0, -1),
+            { ...last, lines: [...last.lines, ...lines], stateAfter: res.state },
+          ];
+        }
+      }
+      return [
+        ...es,
+        {
+          id: entrySeq.current++,
+          actorId: actor.id,
+          cardId: action.type === "play" ? action.cardId : null,
+          lines,
+          stateAfter: res.state,
+        },
+      ].slice(-MAX_CHRONICLE);
+    });
     // Feed the AI-turn overlay: a play or pass starts a new entry, the
     // follow-up summon is appended to it.
     if (actor.isBot) {
@@ -703,10 +868,12 @@ export function Tkid2Game({ onExit }: { onExit: () => void }) {
     }
   }, []);
 
-  // The overlay lingers on an AI's finished move, then fades away.
+  // The overlay lingers on an AI's finished move — longer when there is more
+  // to read — then fades away.
   React.useEffect(() => {
     if (!botFeed) return;
-    const t = setTimeout(() => setBotFeed(null), 1800);
+    const linger = 2200 + 600 * Math.max(0, botFeed.lines.length - 1);
+    const t = setTimeout(() => setBotFeed(null), linger);
     return () => clearTimeout(t);
   }, [botFeed]);
 
@@ -723,14 +890,16 @@ export function Tkid2Game({ onExit }: { onExit: () => void }) {
     setState(newGame(players, seed, { advanced: r.advanced }));
     setConfig(r);
     setSelection(null);
-    setLog([]);
+    setEntries([]);
+    setReviewIndex(null);
   };
 
   const reset = () => {
     setState(null);
     setConfig(null);
     setSelection(null);
-    setLog([]);
+    setEntries([]);
+    setReviewIndex(null);
   };
 
   // Auto-clear notices.
@@ -751,20 +920,36 @@ export function Tkid2Game({ onExit }: { onExit: () => void }) {
     return map;
   }, [botIds, config]);
 
+  // History review: while the user steps back through the chronicle, the
+  // board shows that snapshot and the game (including the bots) pauses.
+  const reviewing =
+    state !== null && reviewIndex !== null && reviewIndex < entries.length;
+  const shownState = reviewing ? entries[reviewIndex!].stateAfter : state;
+
   useTkid2BotDriver({
     state,
     botIds,
     difficultyById,
     onAction: applyLocal,
-    enabled: !showHelp,
+    enabled: !showHelp && !reviewing,
   });
 
   const gameOver = state !== null && isGameOver(state);
-  const contested = state ? contestedRegionId(state) : null;
+  const contested = shownState ? contestedRegionId(shownState) : null;
   const human = state?.players.find((p) => p.id === HUMAN_ID);
   const humanTurn =
-    !!state && !gameOver && currentPlayer(state).id === HUMAN_ID;
+    !!state && !gameOver && !reviewing && currentPlayer(state).id === HUMAN_ID;
   const humanSummon = humanTurn && !!state && state.pendingSummon;
+
+  const goBack = () => {
+    if (entries.length === 0) return;
+    setSelection(null);
+    setBotFeed(null);
+    setReviewIndex((i) => (i === null ? entries.length - 1 : Math.max(0, i - 1)));
+  };
+  const goForward = () => {
+    setReviewIndex((i) => (i === null || i >= entries.length - 1 ? null : i + 1));
+  };
 
   const targets = React.useMemo(
     () => (selection ? getTargets(selection) : null),
@@ -857,13 +1042,15 @@ export function Tkid2Game({ onExit }: { onExit: () => void }) {
     });
   }, [state, spyOpen]);
 
-  const counts = state ? controlledCounts(state) : null;
+  const counts = shownState ? controlledCounts(shownState) : null;
 
   // ------------------------------------------------------------------
   // Prompt banner content
   // ------------------------------------------------------------------
   let prompt: string | null = null;
-  if (state && !gameOver) {
+  if (state && reviewing) {
+    prompt = `Reviewing move ${reviewIndex! + 1} of ${entries.length} — the game is paused.`;
+  } else if (state && !gameOver) {
     if (selection && targets && !targets.done) prompt = targets.prompt;
     else if (humanSummon) prompt = "Summon a follower to your court — tap any follower on the map.";
     else if (humanTurn) prompt = "Your turn — play a card or pass.";
@@ -871,7 +1058,7 @@ export function Tkid2Game({ onExit }: { onExit: () => void }) {
   }
 
   const thinkingBot =
-    state && !gameOver && !botFeed && currentPlayer(state).isBot
+    state && !gameOver && !reviewing && !botFeed && currentPlayer(state).isBot
       ? currentPlayer(state)
       : null;
 
@@ -894,25 +1081,55 @@ export function Tkid2Game({ onExit }: { onExit: () => void }) {
           borderBottom: `3px solid ${GOLD}`,
         }}
       >
-        <Toolbar>
+        <Toolbar sx={{ px: { xs: 1, sm: 2 }, minHeight: { xs: 54 } }}>
           <Tkid2Logo size={34} sx={{ marginRight: 10 }} />
           <Typography
-            sx={{ flex: 1, color: "#fdf3d8", fontFamily: FONT_UNCIAL, fontSize: "1.25rem" }}
+            sx={{
+              flex: 1,
+              color: "#fdf3d8",
+              fontFamily: FONT_UNCIAL,
+              fontSize: { xs: "1.05rem", sm: "1.25rem" },
+              minWidth: 0,
+              whiteSpace: "nowrap",
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+            }}
           >
             The King is Dead
           </Typography>
           {state && (
-            <Button color="inherit" startIcon={<RefreshIcon />} onClick={reset} sx={{ mr: 1, fontFamily: FONT_BODY }}>
-              New
+            <Button
+              color="inherit"
+              startIcon={<RefreshIcon />}
+              onClick={reset}
+              sx={{
+                mr: { xs: 0, sm: 1 },
+                fontFamily: FONT_BODY,
+                minWidth: 0,
+                px: { xs: 1, sm: 2 },
+                "& .MuiButton-startIcon": { mr: { xs: 0, sm: 1 }, ml: 0 },
+              }}
+            >
+              <Box component="span" sx={{ display: { xs: "none", sm: "inline" } }}>
+                New
+              </Box>
             </Button>
           )}
           <Button
             color="inherit"
             startIcon={<HelpOutlineIcon />}
             onClick={() => setShowHelp(true)}
-            sx={{ mr: 1, fontFamily: FONT_BODY }}
+            sx={{
+              mr: { xs: 0, sm: 1 },
+              fontFamily: FONT_BODY,
+              minWidth: 0,
+              px: { xs: 1, sm: 2 },
+              "& .MuiButton-startIcon": { mr: { xs: 0, sm: 1 }, ml: 0 },
+            }}
           >
-            Rules
+            <Box component="span" sx={{ display: { xs: "none", sm: "inline" } }}>
+              Rules
+            </Box>
           </Button>
           <IconButton edge="end" color="inherit" onClick={onExit} aria-label="close">
             <CloseIcon />
@@ -920,7 +1137,9 @@ export function Tkid2Game({ onExit }: { onExit: () => void }) {
         </Toolbar>
       </AppBar>
 
-      {state && !gameOver && <BotTurnOverlay feed={botFeed} thinking={thinkingBot} />}
+      {state && !gameOver && !reviewing && (
+        <BotTurnOverlay feed={botFeed} thinking={thinkingBot} />
+      )}
 
       <DialogContent
         sx={{
@@ -930,7 +1149,7 @@ export function Tkid2Game({ onExit }: { onExit: () => void }) {
       >
         {!state && <SetupScreen onStart={start} />}
 
-        {state && (
+        {state && shownState && (
           <Stack spacing={1.5} sx={{ maxWidth: 1200, mx: "auto", pb: 2 }}>
             {/* Status strip */}
             <Stack
@@ -944,7 +1163,7 @@ export function Tkid2Game({ onExit }: { onExit: () => void }) {
               <Typography sx={{ fontFamily: FONT_BODY, color: INK, fontSize: "0.9rem" }}>
                 Struggle{" "}
                 <b>
-                  {Math.min(state.struggles.length + 1, 8)}
+                  {Math.min(shownState.struggles.length + 1, 8)}
                 </b>{" "}
                 of 8
               </Typography>
@@ -981,19 +1200,19 @@ export function Tkid2Game({ onExit }: { onExit: () => void }) {
                   }}
                 />
                 <Typography sx={{ fontFamily: FONT_BODY, color: INK, fontSize: "0.9rem" }}>
-                  {3 - state.instabilityInFrance}/3
+                  {3 - shownState.instabilityInFrance}/3
                 </Typography>
               </Stack>
             </Stack>
 
-            {gameOver && <GameOverPanel state={state} onAgain={reset} />}
+            {gameOver && !reviewing && <GameOverPanel state={state} onAgain={reset} />}
 
             <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1.5, alignItems: "flex-start" }}>
               {/* Map column */}
               <Box sx={{ flex: "1 1 380px", maxWidth: 640, mx: "auto" }}>
                 <Box sx={{ mb: 1 }}>
                   <RegionCardTrack
-                    state={state}
+                    state={shownState}
                     contested={contested}
                     highlightSlots={highlightSlots}
                     pickedSlots={selection?.slotsPicked}
@@ -1011,7 +1230,7 @@ export function Tkid2Game({ onExit }: { onExit: () => void }) {
                   }}
                 >
                   <BoardMap
-                    state={state}
+                    state={shownState}
                     contested={contested}
                     highlightRegions={highlightRegions}
                     highlightCubes={highlightCubes}
@@ -1023,40 +1242,111 @@ export function Tkid2Game({ onExit }: { onExit: () => void }) {
               </Box>
 
               {/* Side column: courts & chronicle */}
-              <Stack spacing={1} sx={{ flex: "1 1 300px", minWidth: 280 }}>
+              <Stack spacing={1} sx={{ flex: "1 1 300px", minWidth: { xs: 0, sm: 280 }, width: "100%" }}>
                 <UncialHeading>Courts</UncialHeading>
-                {state.players.map((p, i) => (
+                {shownState.players.map((p) => (
                   <PlayerPanel
                     key={p.id}
-                    state={state}
+                    state={shownState}
                     player={p}
                     isTeammate={
-                      state.players.length === 4 &&
+                      shownState.players.length === 4 &&
                       p.id !== HUMAN_ID &&
-                      state.players[(state.players.findIndex((q) => q.id === HUMAN_ID) + 2) % 4].id === p.id
+                      shownState.players[
+                        (shownState.players.findIndex((q) => q.id === HUMAN_ID) + 2) % 4
+                      ].id === p.id
                     }
                   />
                 ))}
-                <UncialHeading>Chronicle</UncialHeading>
-                <ParchmentPanel sx={{ p: 1, maxHeight: 190, overflowY: "auto" }}>
-                  {log.length === 0 && (
+                <Stack direction="row" alignItems="center" spacing={0.25}>
+                  <UncialHeading>Chronicle</UncialHeading>
+                  <Box sx={{ flexGrow: 1 }} />
+                  <Tooltip title="Step back through the previous moves">
+                    <span>
+                      <IconButton
+                        size="small"
+                        onClick={goBack}
+                        disabled={entries.length === 0 || reviewIndex === 0}
+                        aria-label="previous move"
+                        sx={{ color: INK }}
+                      >
+                        <ChevronLeftIcon fontSize="small" />
+                      </IconButton>
+                    </span>
+                  </Tooltip>
+                  <span>
+                    <IconButton
+                      size="small"
+                      onClick={goForward}
+                      disabled={!reviewing}
+                      aria-label="next move"
+                      sx={{ color: INK }}
+                    >
+                      <ChevronRightIcon fontSize="small" />
+                    </IconButton>
+                  </span>
+                  <Button
+                    size="small"
+                    onClick={() => setReviewIndex(null)}
+                    disabled={!reviewing}
+                    sx={{
+                      fontFamily: FONT_BODY,
+                      color: RUBRIC,
+                      textTransform: "none",
+                      minWidth: 0,
+                      px: 0.75,
+                      "&.Mui-disabled": { color: INK_FADED, opacity: 0.5 },
+                    }}
+                  >
+                    Now
+                  </Button>
+                </Stack>
+                <ParchmentPanel sx={{ p: 1, maxHeight: { xs: 170, sm: 220 }, overflowY: "auto" }}>
+                  {entries.length === 0 && (
                     <Typography sx={{ fontFamily: FONT_BODY, fontStyle: "italic", color: INK_FADED, fontSize: "0.82rem" }}>
                       The chronicle of the struggle will be written here…
                     </Typography>
                   )}
-                  {log.map((line, i) => (
-                    <Typography
-                      key={`${i}-${line}`}
-                      sx={{
-                        fontFamily: FONT_BODY,
-                        fontSize: "0.82rem",
-                        color: i === 0 ? INK : INK_FADED,
-                        lineHeight: 1.45,
-                      }}
-                    >
-                      {line}
-                    </Typography>
-                  ))}
+                  {entries
+                    .map((entry, idx) => {
+                      const latest = idx === entries.length - 1;
+                      const selected = reviewing && reviewIndex === idx;
+                      return (
+                        <Box
+                          key={entry.id}
+                          onClick={() => {
+                            setSelection(null);
+                            setBotFeed(null);
+                            setReviewIndex(latest ? null : idx);
+                          }}
+                          sx={{
+                            borderLeft: `3px solid ${selected ? GOLD : "transparent"}`,
+                            borderRadius: "3px",
+                            background: selected ? "rgba(200,162,68,0.16)" : "none",
+                            pl: 0.75,
+                            py: 0.2,
+                            mb: 0.3,
+                            cursor: "pointer",
+                          }}
+                        >
+                          {entry.lines.map((line, li) => (
+                            <Typography
+                              key={`${li}-${line}`}
+                              sx={{
+                                fontFamily: FONT_BODY,
+                                fontSize: "0.82rem",
+                                color: latest || selected ? INK : INK_FADED,
+                                lineHeight: 1.45,
+                                pl: li > 0 ? 1.25 : 0,
+                              }}
+                            >
+                              {line}
+                            </Typography>
+                          ))}
+                        </Box>
+                      );
+                    })
+                    .reverse()}
                 </ParchmentPanel>
               </Stack>
             </Box>
@@ -1095,6 +1385,16 @@ export function Tkid2Game({ onExit }: { onExit: () => void }) {
                     >
                       {notice ?? prompt}
                     </Typography>
+                    {reviewing && (
+                      <Button
+                        size="small"
+                        variant="outlined"
+                        onClick={() => setReviewIndex(null)}
+                        sx={{ fontFamily: FONT_BODY, color: RUBRIC, borderColor: RUBRIC, textTransform: "none" }}
+                      >
+                        Back to now
+                      </Button>
+                    )}
                     {selection &&
                       targets?.variants?.map((v, i) => (
                         <Button

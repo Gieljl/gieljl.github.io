@@ -411,7 +411,14 @@ export type Tkid2Action =
   | { type: "summon"; regionId: RegionId; faction: Faction };
 
 export type Tkid2Event =
-  | { kind: "played"; playerId: PlayerId; cardId: CardId; viaSpy?: boolean }
+  | {
+      kind: "played";
+      playerId: PlayerId;
+      cardId: CardId;
+      viaSpy?: boolean;
+      /** The parameters the card was resolved with (for log descriptions). */
+      params?: CardParams;
+    }
   | { kind: "summoned"; playerId: PlayerId; regionId: RegionId; faction: Faction }
   | { kind: "summonSkipped"; playerId: PlayerId }
   | { kind: "passed"; playerId: PlayerId }
@@ -1509,7 +1516,13 @@ export function applyAction(state: Tkid2State, action: Tkid2Action): ApplyResult
     const top = target?.discard[target.discard.length - 1];
     if (top) {
       resolveCardEffect(next, top, action.params.spyParams ?? {});
-      events.push({ kind: "played", playerId: np.id, cardId: top, viaSpy: true });
+      events.push({
+        kind: "played",
+        playerId: np.id,
+        cardId: top,
+        viaSpy: true,
+        params: action.params.spyParams ?? {},
+      });
     }
   } else {
     resolveCardEffect(next, action.cardId, action.params);
@@ -1524,7 +1537,12 @@ export function applyAction(state: Tkid2State, action: Tkid2Action): ApplyResult
     np.emptyHandSeq = next.actionSeq;
   }
   next.consecutivePasses = 0;
-  events.unshift({ kind: "played", playerId: np.id, cardId: action.cardId });
+  events.unshift({
+    kind: "played",
+    playerId: np.id,
+    cardId: action.cardId,
+    params: action.params,
+  });
 
   // Summon a follower to court — mandatory, skipped only when impossible.
   if (summonOptions(next).length > 0) {
