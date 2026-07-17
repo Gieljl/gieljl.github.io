@@ -2,6 +2,7 @@ import * as React from "react";
 import {
   FACTIONS,
   Faction,
+  REGION_IDS,
   RegionId,
   Tkid2State,
   regionName,
@@ -168,6 +169,160 @@ const CUBE_GAP = 23;
 const CUBES_PER_ROW = 4;
 const MAX_VISIBLE_CUBES = 12;
 
+/** Centre of each faction's cube in the supply box (flight endpoints). */
+const SUPPLY_POS: Record<Faction, Pt> = {
+  scottish: [517.5, 96],
+  welsh: [517.5, 132],
+  english: [517.5, 168],
+};
+
+// ---------------------------------------------------------------------------
+// Move animations
+// ---------------------------------------------------------------------------
+// The board animates the *difference* between the previous and the next state
+// it is asked to draw: followers fly between regions, to and from the supply,
+// and up into a court. Because it is diff-based it needs no knowledge of the
+// action that happened — stepping backwards through the game history animates
+// the same moves in reverse for free.
+
+const FLIGHT_MS = 650;
+/** Above this many simultaneous flights the change reads as a scene change
+ *  (e.g. jumping far through the history), not a move — skip the animation. */
+const MAX_FLIGHTS = 20;
+
+interface Flight {
+  id: number;
+  faction: Faction;
+  from: Pt;
+  to: Pt;
+  /** "move" travels visibly; "out" fades away upward (into a court);
+   *  "in" is the reverse (a court transfer undone in the history view). */
+  mode: "move" | "out" | "in";
+  delay: number;
+}
+
+function computeFlights(prev: Tkid2State, next: Tkid2State): Omit<Flight, "id">[] {
+  const out: Omit<Flight, "id">[] = [];
+  for (const f of FACTIONS) {
+    const sources: Pt[] = [];
+    const sinks: Pt[] = [];
+    for (const id of REGION_IDS) {
+      const d = next.regions[id].cubes[f] - prev.regions[id].cubes[f];
+      const pos = SHAPES[id].cubes;
+      for (let i = 0; i < -d; i++) sources.push(pos);
+      for (let i = 0; i < d; i++) sinks.push(pos);
+    }
+    let supplyDelta = next.supply[f] - prev.supply[f];
+    // Region → region.
+    while (sources.length > 0 && sinks.length > 0) {
+      out.push({ faction: f, from: sources.pop()!, to: sinks.pop()!, mode: "move", delay: 0 });
+    }
+    // Region → supply.
+    while (sources.length > 0 && supplyDelta > 0) {
+      out.push({ faction: f, from: sources.pop()!, to: SUPPLY_POS[f], mode: "move", delay: 0 });
+      supplyDelta--;
+    }
+    // Supply → region.
+    while (sinks.length > 0 && supplyDelta < 0) {
+      out.push({ faction: f, from: SUPPLY_POS[f], to: sinks.pop()!, mode: "move", delay: 0 });
+      supplyDelta++;
+    }
+    // Region → court: the follower rises from the region and fades away.
+    while (sources.length > 0) {
+      const p = sources.pop()!;
+      out.push({ faction: f, from: p, to: [p[0], p[1] - 52], mode: "out", delay: 0 });
+    }
+    // Court → region (stepping backwards over a summon).
+    while (sinks.length > 0) {
+      const p = sinks.pop()!;
+      out.push({ faction: f, from: [p[0], p[1] - 52], to: p, mode: "in", delay: 0 });
+    }
+  }
+  // Stagger and fan out parallel flights slightly so they stay readable.
+  return out.map((fl, i) => ({
+    ...fl,
+    delay: i * 70,
+    from: [fl.from[0] + (i % 3) * 6 - 6, fl.from[1]] as Pt,
+  }));
+}
+
+function FlightCube({ flight, onDone }: { flight: Flight; onDone: (id: number) => void }) {
+  const [go, setGo] = React.useState(false);
+  React.useEffect(() => {
+    // Two frames so the browser paints the start position before the
+    // transition to the target begins.
+    let raf2 = 0;
+    const raf1 = requestAnimationFrame(() => {
+      raf2 = requestAnimationFrame(() => setGo(true));
+    });
+    const t = setTimeout(() => onDone(flight.id), flight.delay + FLIGHT_MS + 150);
+    return () => {
+      cancelAnimationFrame(raf1);
+      cancelAnimationFrame(raf2);
+      clearTimeout(t);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const c = FACTION_COLOR[flight.faction];
+  const [x, y] = go ? flight.to : flight.from;
+  const opacity = flight.mode === "out" ? (go ? 0 : 1) : flight.mode === "in" ? (go ? 1 : 0) : 1;
+  return (
+    <g
+      pointerEvents="none"
+      style={{
+        transform: `translate(${x}px, ${y}px)`,
+        transition: `transform ${FLIGHT_MS}ms cubic-bezier(0.4, 0, 0.25, 1) ${flight.delay}ms, opacity ${FLIGHT_MS}ms ease ${flight.delay}ms`,
+        opacity,
+      }}
+    >
+      <rect
+        x={-CUBE / 2 - 3}
+        y={-CUBE / 2 - 3}
+        width={CUBE + 6}
+        height={CUBE + 6}
+        rx={4}
+        fill="none"
+        stroke="#fffbe8"
+        strokeWidth={2.5}
+        opacity={0.85}
+      />
+      <rect
+        x={-CUBE / 2}
+        y={-CUBE / 2}
+        width={CUBE}
+        height={CUBE}
+        rx={2.5}
+        fill={c.main}
+        stroke={c.dark}
+        strokeWidth={1.8}
+      />
+    </g>
+  );
+}
+
+/** Flights for the state changes the board is displaying. */
+function useFlights(state: Tkid2State): [Flight[], (id: number) => void] {
+  const [flights, setFlights] = React.useState<Flight[]>([]);
+  const seq = React.useRef(1);
+  const prevRef = React.useRef(state);
+
+  React.useEffect(() => {
+    const prev = prevRef.current;
+    prevRef.current = state;
+    if (prev === state) return;
+    if (window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) return;
+    const specs = computeFlights(prev, state);
+    if (specs.length === 0 || specs.length > MAX_FLIGHTS) return;
+    setFlights((cur) => [...cur, ...specs.map((s) => ({ ...s, id: seq.current++ }))]);
+  }, [state]);
+
+  const remove = React.useCallback((id: number) => {
+    setFlights((cur) => cur.filter((f) => f.id !== id));
+  }, []);
+  return [flights, remove];
+}
+
 export interface BoardMapProps {
   state: Tkid2State;
   contested: RegionId | null;
@@ -329,8 +484,10 @@ function ControlDisc({ x, y, faction }: { x: number; y: number; faction: Faction
   const c = FACTION_COLOR[faction];
   return (
     <g transform={`translate(${x}, ${y})`}>
-      <circle r={13} fill={c.main} stroke={c.dark} strokeWidth={2.5} />
-      <circle r={7.5} fill="none" stroke={c.light} strokeWidth={2} opacity={0.9} />
+      <g className="tkid2-disc-in">
+        <circle r={13} fill={c.main} stroke={c.dark} strokeWidth={2.5} />
+        <circle r={7.5} fill="none" stroke={c.light} strokeWidth={2} opacity={0.9} />
+      </g>
     </g>
   );
 }
@@ -338,8 +495,10 @@ function ControlDisc({ x, y, faction }: { x: number; y: number; faction: Faction
 function InstabilityDisc({ x, y }: { x: number; y: number }) {
   return (
     <g transform={`translate(${x}, ${y})`}>
-      <circle r={13} fill={INSTABILITY} stroke="#2b1e12" strokeWidth={2.5} />
-      <circle r={7.5} fill="none" stroke="#6d5233" strokeWidth={2} opacity={0.9} />
+      <g className="tkid2-disc-in">
+        <circle r={13} fill={INSTABILITY} stroke="#2b1e12" strokeWidth={2.5} />
+        <circle r={7.5} fill="none" stroke="#6d5233" strokeWidth={2} opacity={0.9} />
+      </g>
     </g>
   );
 }
@@ -388,6 +547,7 @@ export function BoardMap({
 }: BoardMapProps) {
   const anyRegionHighlight = !!highlightRegions && highlightRegions.size > 0;
   const anyCubeHighlight = !!highlightCubes && highlightCubes.size > 0;
+  const [flights, removeFlight] = useFlights(state);
 
   return (
     <svg
@@ -399,8 +559,13 @@ export function BoardMap({
       <style>{`
         .tkid2-pulse { animation: tkid2pulse 1.1s ease-in-out infinite; }
         .tkid2-region-glow { animation: tkid2glow 1.2s ease-in-out infinite; }
+        .tkid2-disc-in { animation: tkid2discin 480ms cubic-bezier(0.34, 1.4, 0.64, 1); transform-box: fill-box; transform-origin: center; }
         @keyframes tkid2pulse { 0%,100% { opacity: 0.25; } 50% { opacity: 1; } }
         @keyframes tkid2glow { 0%,100% { stroke-opacity: 0.35; } 50% { stroke-opacity: 1; } }
+        @keyframes tkid2discin { from { transform: scale(0); } to { transform: scale(1); } }
+        @media (prefers-reduced-motion: reduce) {
+          .tkid2-disc-in { animation: none; }
+        }
       `}</style>
 
       <defs>
@@ -624,6 +789,13 @@ export function BoardMap({
             </g>
           );
         })}
+      </g>
+
+      {/* Followers in flight (animated diffs between displayed states) */}
+      <g pointerEvents="none">
+        {flights.map((fl) => (
+          <FlightCube key={fl.id} flight={fl} onDone={removeFlight} />
+        ))}
       </g>
     </svg>
   );

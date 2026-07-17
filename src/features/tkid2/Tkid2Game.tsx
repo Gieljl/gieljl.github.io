@@ -120,7 +120,21 @@ function CourtCubes({ court }: { court: FactionCounts }) {
       {FACTIONS.map((f) => (
         <Stack key={f} direction="row" spacing={0.4} alignItems="center">
           <FactionCube faction={f} />
-          <Typography sx={{ fontFamily: FONT_BODY, fontSize: "0.85rem", color: INK }}>
+          <Typography
+            // Remount on count change so the pop animation replays.
+            key={court[f]}
+            sx={{
+              fontFamily: FONT_BODY,
+              fontSize: "0.85rem",
+              color: INK,
+              animation: "tkid2countpop 380ms cubic-bezier(0.34, 1.5, 0.64, 1)",
+              "@keyframes tkid2countpop": {
+                from: { transform: "scale(1.7)", color: RUBRIC },
+                to: { transform: "scale(1)" },
+              },
+              "@media (prefers-reduced-motion: reduce)": { animation: "none" },
+            }}
+          >
             {court[f]}
           </Typography>
         </Stack>
@@ -355,7 +369,18 @@ function PlayerPanel({
       <Box sx={{ flexGrow: 1 }} />
       {topDiscard ? (
         <Tooltip title={`Last played: ${CARD_INFO[topDiscard].name}`}>
-          <Box>
+          <Box
+            // Remount when a new card lands on the pile → slide-in replay.
+            key={`${topDiscard}-${player.discard.length}`}
+            sx={{
+              animation: "tkid2cardin 320ms ease-out",
+              "@keyframes tkid2cardin": {
+                from: { transform: "translateY(-8px) scale(0.9)", opacity: 0 },
+                to: { transform: "translateY(0) scale(1)", opacity: 1 },
+              },
+              "@media (prefers-reduced-motion: reduce)": { animation: "none" },
+            }}
+          >
             <ActionCardView cardId={topDiscard} small />
           </Box>
         </Tooltip>
@@ -1327,6 +1352,12 @@ export function Tkid2Game({ onExit }: { onExit: () => void }) {
                             py: 0.2,
                             mb: 0.3,
                             cursor: "pointer",
+                            animation: "tkid2entryin 300ms ease-out",
+                            "@keyframes tkid2entryin": {
+                              from: { transform: "translateY(-6px)", opacity: 0 },
+                              to: { transform: "translateY(0)", opacity: 1 },
+                            },
+                            "@media (prefers-reduced-motion: reduce)": { animation: "none" },
                           }}
                         >
                           {entry.lines.map((line, li) => (
