@@ -63,6 +63,7 @@ export function RegionCardTrack({
               textAlign: "center",
               cursor: highlighted ? "pointer" : "default",
               opacity: anyHighlight && !highlighted && !picked ? 0.45 : 1,
+              perspective: "500px",
             }}
           >
             {/* Numbered space */}
@@ -78,9 +79,19 @@ export function RegionCardTrack({
               {isContested ? " ⚔" : ""}
             </Typography>
             <Box
+              /* Remount when the card here changes (Negotiate swap) or flips
+                 face down (struggle resolved), replaying the flip animation —
+                 including when stepping through the history view. */
+              key={`${slot.regionId}-${slot.faceUp}`}
               sx={{
                 height: 96,
                 borderRadius: "6px",
+                animation: "tkid2cardflip 420ms ease-out",
+                "@keyframes tkid2cardflip": {
+                  from: { transform: "rotateY(80deg)", opacity: 0.3 },
+                  to: { transform: "rotateY(0deg)", opacity: 1 },
+                },
+                "@media (prefers-reduced-motion: reduce)": { animation: "none" },
                 border: `2.5px solid ${
                   picked ? GOLD : isContested ? RUBRIC : highlighted ? "#fffbe8" : "#5d2019"
                 }`,
@@ -142,6 +153,12 @@ export function RegionCardTrack({
                     background: NEGOTIATION,
                     border: `2px solid #9a8c6d`,
                     boxShadow: "0 1px 2px rgba(0,0,0,0.4)",
+                    animation: "tkid2discpop 360ms cubic-bezier(0.34, 1.5, 0.64, 1)",
+                    "@keyframes tkid2discpop": {
+                      from: { transform: "scale(0)" },
+                      to: { transform: "scale(1)" },
+                    },
+                    "@media (prefers-reduced-motion: reduce)": { animation: "none" },
                   }}
                   title="Negotiation disc"
                 />
