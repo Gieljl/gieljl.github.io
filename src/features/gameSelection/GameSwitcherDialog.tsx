@@ -22,9 +22,11 @@ import { useShiplake } from "../shiplake/ShiplakeContext";
 import { useRegicide } from "../regicide/RegicideContext";
 import { useFlip7 } from "../flip7/Flip7Context";
 import { useTkid2 } from "../tkid2/Tkid2Context";
+import { useScheet } from "../scheet/ScheetContext";
 import { RegicideLogo } from "../regicide/RegicideLogo";
 import { Flip7Logo } from "../flip7/Flip7Logo";
 import { Tkid2Logo } from "../tkid2/Tkid2Logo";
+import { ScheetLogo } from "../scheet/ScheetLogo";
 
 interface Props {
   open: boolean;
@@ -37,6 +39,7 @@ const ICONS: Record<ActiveGame, React.ReactNode> = {
   regicide: <RegicideLogo size={40} />,
   flip7: <Flip7Logo size={40} />,
   tkid2: <Tkid2Logo size={40} />,
+  scheet: <ScheetLogo size={40} />,
 };
 
 export const GameSwitcherDialog: React.FC<Props> = ({ open, onClose }) => {
@@ -45,6 +48,7 @@ export const GameSwitcherDialog: React.FC<Props> = ({ open, onClose }) => {
   const regicide = useRegicide();
   const flip7 = useFlip7();
   const tkid2 = useTkid2();
+  const scheet = useScheet();
 
   const pick = (game: ActiveGame) => {
     setActiveGame(game);
@@ -52,6 +56,7 @@ export const GameSwitcherDialog: React.FC<Props> = ({ open, onClose }) => {
     regicide.setOpen(game === "regicide");
     flip7.setOpen(game === "flip7");
     tkid2.setOpen(game === "tkid2");
+    scheet.setOpen(game === "scheet");
     onClose();
   };
 
