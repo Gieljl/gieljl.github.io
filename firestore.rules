@@ -93,6 +93,89 @@ service cloud.firestore {
       }
     }
 
+    // -------- farts + fartAudio (Rate My Scheet) --------
+    // Anyone may upload (no login) and rate, but only in the exact shapes the
+    // app writes: new farts start with zero votes, a vote adds one to the
+    // count and 1..10 to every category, and nothing is ever deleted.
+    function fartCategories() {
+      return ['geurTolerantie', 'geurNuance', 'toon', 'ritme', 'lengte',
+              'volume', 'timing', 'bereik', 'luchtvochtigheid'];
+    }
+
+    function fartSumsShapeOk(sums) {
+      return sums is map
+        && sums.keys().hasOnly(fartCategories())
+        && sums.keys().hasAll(fartCategories());
+    }
+
+    function fartVoteOk(k) {
+      let delta = request.resource.data.sums[k] - resource.data.sums[k];
+      return delta >= 1 && delta <= 10;
+    }
+
+    match /farts/{fartId} {
+      allow read: if true;
+
+      allow create: if request.resource.data.keys().hasOnly([
+          'title', 'artist', 'durationMs', 'mimeType', 'source', 'peaks',
+          'createdAt', 'ratingCount', 'sums'
+        ])
+        && request.resource.data.keys().hasAll([
+          'title', 'artist', 'durationMs', 'mimeType', 'source', 'peaks',
+          'createdAt', 'ratingCount', 'sums'
+        ])
+        && request.resource.data.title is string
+        && request.resource.data.title.size() >= 1
+        && request.resource.data.title.size() <= 60
+        && request.resource.data.artist is string
+        && request.resource.data.artist.size() <= 30
+        && request.resource.data.durationMs is number
+        && request.resource.data.durationMs > 0
+        && request.resource.data.durationMs <= 21000
+        && request.resource.data.mimeType is string
+        && request.resource.data.mimeType.size() <= 60
+        && request.resource.data.source in ['recording', 'upload']
+        && request.resource.data.peaks is list
+        && request.resource.data.peaks.size() <= 128
+        && request.resource.data.createdAt == request.time
+        && request.resource.data.ratingCount == 0
+        && fartSumsShapeOk(request.resource.data.sums)
+        && request.resource.data.sums.values().hasOnly([0]);
+
+      allow update: if request.resource.data.diff(resource.data).affectedKeys()
+          .hasOnly(['sums', 'ratingCount', 'lastRatedAt'])
+        && request.resource.data.ratingCount == resource.data.ratingCount + 1
+        && request.resource.data.lastRatedAt == request.time
+        && fartSumsShapeOk(request.resource.data.sums)
+        && fartVoteOk('geurTolerantie')
+        && fartVoteOk('geurNuance')
+        && fartVoteOk('toon')
+        && fartVoteOk('ritme')
+        && fartVoteOk('lengte')
+        && fartVoteOk('volume')
+        && fartVoteOk('timing')
+        && fartVoteOk('bereik')
+        && fartVoteOk('luchtvochtigheid');
+
+      allow delete: if false;
+    }
+
+    // Audio (base64) is kept apart so leaderboards don't download sound. It
+    // can only be written in the same batch that creates its fart, and the
+    // string cap keeps it under Firestore's 1 MiB document limit.
+    match /fartAudio/{fartId} {
+      allow read: if true;
+      allow create: if request.resource.data.keys().hasOnly(['data', 'mimeType'])
+        && request.resource.data.data is string
+        && request.resource.data.data.size() > 0
+        && request.resource.data.data.size() <= 900000
+        && request.resource.data.mimeType is string
+        && request.resource.data.mimeType.size() <= 60
+        && !exists(/databases/$(database)/documents/farts/$(fartId))
+        && existsAfter(/databases/$(database)/documents/farts/$(fartId));
+      allow update, delete: if false;
+    }
+
     // -------- everything else: deny --------
     match /{document=**} {
       allow read, write: if false;

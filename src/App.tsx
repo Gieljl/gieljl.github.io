@@ -78,6 +78,8 @@ import { Flip7Provider, useFlip7 } from "./features/flip7/Flip7Context";
 import { Flip7Game } from "./features/flip7/Flip7Game";
 import { Tkid2Provider, useTkid2 } from "./features/tkid2/Tkid2Context";
 import { Tkid2Game } from "./features/tkid2/Tkid2Game";
+import { ScheetProvider, useScheet } from "./features/scheet/ScheetContext";
+import { ScheetGame } from "./features/scheet/ScheetGame";
 import {
   ActiveGame,
   GAMES,
@@ -92,6 +94,7 @@ function App() {
   const regicide = useRegicide();
   const flip7 = useFlip7();
   const tkid2 = useTkid2();
+  const scheet = useScheet();
   const { setActiveGame } = useGameSelection();
   const colorMode = React.useContext(ColorModeContext);
   const gameStatus = useSelector((state: RootState) => state.game.status);
@@ -161,11 +164,18 @@ function App() {
   // matched loosely (with/without trailing slash, and under any base path) and
   // the URL is then cleaned so a refresh keeps working. Relies on the GitHub
   // Pages SPA fallback (public/404.html) to serve index.html for the path.
+  // yasat.nl/scheet?id=… does the same for Rate My Scheet (share links).
   React.useEffect(() => {
     const path = window.location.pathname.replace(/\/+$/, "");
     if (/\/tkid2e$/i.test(path) || path.toLowerCase() === "/tkid2e") {
       setActiveGame("tkid2");
       tkid2.setOpen(true);
+      window.history.replaceState({}, document.title, "/");
+    } else if (/\/scheet$/i.test(path)) {
+      const id = new URLSearchParams(window.location.search).get("id");
+      setActiveGame("scheet");
+      scheet.setFocusId(id && /^[A-Za-z0-9]{1,40}$/.test(id) ? id : null);
+      scheet.setOpen(true);
       window.history.replaceState({}, document.title, "/");
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -306,6 +316,16 @@ function App() {
         <Tkid2Game
           onExit={() => {
             tkid2.setOpen(false);
+            setActiveGame("yasat");
+          }}
+        />
+      )}
+      {scheet.open && (
+        <ScheetGame
+          focusId={scheet.focusId}
+          onExit={() => {
+            scheet.setOpen(false);
+            scheet.setFocusId(null);
             setActiveGame("yasat");
           }}
         />
@@ -524,7 +544,9 @@ export default function ToggleColorMode() {
               <RegicideProvider>
                 <Flip7Provider>
                   <Tkid2Provider>
-                    <AppShell />
+                    <ScheetProvider>
+                      <AppShell />
+                    </ScheetProvider>
                   </Tkid2Provider>
                 </Flip7Provider>
               </RegicideProvider>

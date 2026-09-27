@@ -150,10 +150,18 @@ Beyond the core score tracker, the app bundles several self-contained games reac
 | Regicide | Co-op royal slayer (solo mode) |
 | Flip 7 | Press-your-luck, first to 200 |
 | The King Is Dead | Political intrigue in medieval Britain vs. 1–3 AI opponents |
+| Rate My Scheet | Record, upload and rate farts (Dutch UI), with per-category leaderboards |
 
 **The King Is Dead (TKID2)** — A faithful digital implementation of *The King Is Dead: Second Edition* (Peer Sylvester, Osprey Games): eight regions of Britain resolved through power struggles, single-use action cards, follower summoning, instability/French invasion, and coronation scoring with the printed tiebreakers. Both the basic game and the advanced game (secret cunning action cards) are supported, as is the four-player team variant (you + an AI ally vs. two AI). The board is rendered as an interactive SVG map in the rulebook's illuminated-manuscript style: follower cubes, control/instability/negotiation discs, the supply, France, and the numbered region-card track are all visualised and clickable.
 
 It is built as a pure, deterministic, action-based engine (`features/tkid2/engine/tkid2Engine.ts`) with a seeded setup, so a future online turn-based mode (human vs. human) can reuse the same engine and relay `Tkid2Action` objects — mirroring the existing Play-vs-Friends pattern. The engine enumerates every legal parameter assignment for a card (`enumerateCardParams`), which drives both the guided click-by-click targeting UI (`selection.ts`) and the heuristic AI (`features/tkid2/ai/botPolicy.ts`, `easy` / `normal` / `godlike`).
+
+**Rate My Scheet** (`features/scheet/`) — a classic "rate my" app for farts. Anyone can record one with the microphone or upload an audio file (max. 20 s) without logging in; an artist name is optional. Raters get a random fart and score it 1–10 on nine categories — *tolerantie van geur, nuance in geur, toon, ritme, lengte, volume, timing, bereik* and *luchtvochtigheid* — then see their verdict next to the average. Every category, plus the overall mean, has its own leaderboard, ranked by a Bayesian average so a single lucky 10 doesn't top the list.
+
+- **Storage** — no Firebase Storage needed. Metadata lives in `farts/{id}` (title, artist, duration, waveform peaks, per-category score sums and a vote count); the audio is a base64 string in `fartAudio/{id}`, written in the same batch. Clips are decoded in the browser to measure them and draw the waveform; anything too long, too big or in a format iOS Safari can't play (WebM/Ogg/Opus from Chrome/Firefox recorders) is re-encoded to a small mono WAV (`audioUtils.ts`) so each clip stays under ~600 KB.
+- **Votes** — a vote is one `updateDoc` with atomic `increment()`s. `firestore.rules` only accepts a vote that bumps the count by exactly one and adds 1–10 to every category, only accepts new farts with zero votes, only accepts audio together with a brand-new fart, and never allows deletes.
+- **One vote per device** — without accounts, the device remembers which farts it rated and uploaded (localStorage); your own farts are never offered for rating.
+- **Share links** — `https://yasat.nl/scheet?id=<fartId>` opens the app on that fart (same deep-link mechanism as `/tkid2e`).
 
 **Direct link** — TKID2 has its own entry URL: `https://yasat.nl/tkid2e`. Because the app is a Create React App SPA hosted on GitHub Pages (no server routing), a `public/404.html` fallback (spa-github-pages technique) restores deep-link paths, and `App.tsx` detects the `/tkid2e` path on startup and opens the game.
 

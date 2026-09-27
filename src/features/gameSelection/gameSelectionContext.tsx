@@ -1,6 +1,12 @@
 import * as React from "react";
 
-export type ActiveGame = "yasat" | "shiplake" | "regicide" | "flip7" | "tkid2";
+export type ActiveGame =
+  | "yasat"
+  | "shiplake"
+  | "regicide"
+  | "flip7"
+  | "tkid2"
+  | "scheet";
 
 export interface GameDefinition {
   id: ActiveGame;
@@ -48,6 +54,13 @@ export const GAMES: Record<ActiveGame, GameDefinition> = {
     darkColor: "#e0b44a",
     lightColor: "#8e3a2e",
     tagline: "Crown a ruler of medieval Britain.",
+  },
+  scheet: {
+    id: "scheet",
+    label: "Rate My Scheet",
+    darkColor: "#b5d335",
+    lightColor: "#6b7f1a",
+    tagline: "Neem scheten op, upload en beoordeel ze.",
   },
 };
 
