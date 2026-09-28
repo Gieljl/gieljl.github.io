@@ -6,7 +6,7 @@ interface Props {
   className?: string;
 }
 
-/** A green gas cloud with speed lines — the Rate My Scheet mark. */
+/** A green gas cloud with speed lines — the Reet My Scheet mark. */
 export const ScheetLogo: React.FC<Props> = ({ size = 40, sx, className }) => (
   <svg
     width={size}
@@ -15,7 +15,7 @@ export const ScheetLogo: React.FC<Props> = ({ size = 40, sx, className }) => (
     xmlns="http://www.w3.org/2000/svg"
     style={sx}
     className={className}
-    aria-label="Rate My Scheet"
+    aria-label="Reet My Scheet"
     role="img"
   >
     {/* Speed lines */}

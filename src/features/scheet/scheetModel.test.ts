@@ -42,23 +42,20 @@ function makeFart(id: string, votes: RatingScores[] = [], createdAt = 0): Fart {
 }
 
 describe("categories", () => {
-  it("has the nine requested categories in order", () => {
+  it("rates sound only — no smell or moisture categories", () => {
     expect(CATEGORIES.map((c) => c.label)).toEqual([
-      "Tolerantie van geur",
-      "Nuance in geur",
       "Toon",
       "Ritme",
       "Lengte",
       "Volume",
       "Timing",
       "Bereik",
-      "Luchtvochtigheid",
     ]);
-    expect(new Set(CATEGORY_IDS).size).toBe(9);
+    expect(new Set(CATEGORY_IDS).size).toBe(6);
   });
 
   it("starts every category at zero", () => {
-    expect(Object.values(emptySums())).toEqual(new Array(9).fill(0));
+    expect(Object.values(emptySums())).toEqual(new Array(6).fill(0));
   });
 });
 
@@ -100,7 +97,7 @@ describe("averages", () => {
   });
 
   it("computes the mean of one rating", () => {
-    expect(ratingMean({ ...uniform(5), bereik: 14 })).toBe(6);
+    expect(ratingMean({ ...uniform(5), bereik: 11 })).toBe(6);
   });
 });
 

@@ -60,7 +60,7 @@ export const RankingView: React.FC<Props> = ({ farts, loading, onOpen }) => {
         <Typography variant="body2" sx={{ color: SCHEET.muted }}>
           {category
             ? `Hoogste score bovenaan · 1 = ${category.low}, 10 = ${category.high}`
-            : "Gemiddelde van alle negen categorieën"}
+            : `Gemiddelde van alle ${CATEGORIES.length} categorieën`}
         </Typography>
       </Box>
 

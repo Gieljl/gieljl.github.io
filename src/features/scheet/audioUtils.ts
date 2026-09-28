@@ -1,4 +1,4 @@
-// Audio helpers for "Rate My Scheet".
+// Audio helpers for "Reet My Scheet".
 //
 // Audio is stored as base64 in a Firestore document (no Firebase Storage
 // needed), so every clip must stay well under Firestore's 1 MiB document

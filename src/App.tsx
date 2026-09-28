@@ -164,7 +164,7 @@ function App() {
   // matched loosely (with/without trailing slash, and under any base path) and
   // the URL is then cleaned so a refresh keeps working. Relies on the GitHub
   // Pages SPA fallback (public/404.html) to serve index.html for the path.
-  // yasat.nl/scheet?id=… does the same for Rate My Scheet (share links).
+  // yasat.nl/scheet?id=… does the same for Reet My Scheet (share links).
   React.useEffect(() => {
     const path = window.location.pathname.replace(/\/+$/, "");
     if (/\/tkid2e$/i.test(path) || path.toLowerCase() === "/tkid2e") {

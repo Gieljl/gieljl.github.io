@@ -33,7 +33,7 @@ interface Props {
   submitting: boolean;
 }
 
-/** Nine 1–10 "puff" scales, one per category. */
+/** One 1–10 "puff" scale per category. */
 export const RatingForm: React.FC<Props> = ({ onSubmit, submitting }) => {
   const [scores, setScores] = React.useState<PartialScores>({});
   const done = CATEGORIES.filter((c) => scores[c.id] !== undefined).length;

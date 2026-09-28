@@ -93,13 +93,12 @@ service cloud.firestore {
       }
     }
 
-    // -------- farts + fartAudio (Rate My Scheet) --------
+    // -------- farts + fartAudio (Reet My Scheet) --------
     // Anyone may upload (no login) and rate, but only in the exact shapes the
     // app writes: new farts start with zero votes, a vote adds one to the
     // count and 1..10 to every category, and nothing is ever deleted.
     function fartCategories() {
-      return ['geurTolerantie', 'geurNuance', 'toon', 'ritme', 'lengte',
-              'volume', 'timing', 'bereik', 'luchtvochtigheid'];
+      return ['toon', 'ritme', 'lengte', 'volume', 'timing', 'bereik'];
     }
 
     function fartSumsShapeOk(sums) {
@@ -146,16 +145,17 @@ service cloud.firestore {
           .hasOnly(['sums', 'ratingCount', 'lastRatedAt'])
         && request.resource.data.ratingCount == resource.data.ratingCount + 1
         && request.resource.data.lastRatedAt == request.time
-        && fartSumsShapeOk(request.resource.data.sums)
-        && fartVoteOk('geurTolerantie')
-        && fartVoteOk('geurNuance')
+        // Only the current categories may change; sums of retired categories
+        // on older farts stay frozen.
+        && request.resource.data.sums is map
+        && request.resource.data.sums.diff(resource.data.sums).affectedKeys()
+          .hasOnly(fartCategories())
         && fartVoteOk('toon')
         && fartVoteOk('ritme')
         && fartVoteOk('lengte')
         && fartVoteOk('volume')
         && fartVoteOk('timing')
-        && fartVoteOk('bereik')
-        && fartVoteOk('luchtvochtigheid');
+        && fartVoteOk('bereik');
 
       allow delete: if false;
     }
