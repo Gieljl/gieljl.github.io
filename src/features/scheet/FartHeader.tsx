@@ -8,10 +8,10 @@ import { SCHEET } from "./scheetStyle";
 
 export async function shareFart(fart: Fart) {
   const url = fartShareUrl(fart.id);
-  const text = `Beoordeel "${fart.title}" van ${fart.artist} op Rate My Scheet 💨`;
+  const text = `Beoordeel "${fart.title}" van ${fart.artist} op Reet My Scheet 💨`;
   if (typeof navigator.share === "function") {
     try {
-      await navigator.share({ title: "Rate My Scheet", text, url });
+      await navigator.share({ title: "Reet My Scheet", text, url });
       return;
     } catch (err) {
       if ((err as { name?: string })?.name === "AbortError") return;

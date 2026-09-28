@@ -108,7 +108,7 @@ export function ScheetGame({ onExit, focusId }: Props) {
                 lineHeight: 1.1,
               }}
             >
-              RATE MY SCHEET
+              REET MY SCHEET
             </Typography>
             <IconButton color="inherit" onClick={() => setShowHelp(true)} aria-label="Uitleg">
               <HelpOutlineIcon />
@@ -127,7 +127,7 @@ export function ScheetGame({ onExit, focusId }: Props) {
             textColor="primary"
             indicatorColor="primary"
           >
-            <Tab value="rate" label="👃 Beoordelen" sx={{ fontWeight: 700, textTransform: "none" }} />
+            <Tab value="rate" label="👂 Beoordelen" sx={{ fontWeight: 700, textTransform: "none" }} />
             <Tab value="rank" label="🏆 Ranglijst" sx={{ fontWeight: 700, textTransform: "none" }} />
             <Tab value="upload" label="🎙️ Uploaden" sx={{ fontWeight: 700, textTransform: "none" }} />
           </Tabs>
@@ -179,7 +179,7 @@ function HelpDialog({ open, onClose }: { open: boolean; onClose: () => void }) {
       maxWidth="sm"
       PaperProps={{ sx: { bgcolor: SCHEET.panel, backgroundImage: "none" } }}
     >
-      <DialogTitle>Hoe werkt Rate My Scheet?</DialogTitle>
+      <DialogTitle>Hoe werkt Reet My Scheet?</DialogTitle>
       <DialogContent>
         <Stack spacing={2}>
           <Typography>

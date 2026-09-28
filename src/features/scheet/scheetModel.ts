@@ -1,17 +1,14 @@
-// Pure data model for "Rate My Scheet": the nine rating categories, average
+// Pure data model for "Reet My Scheet": the six rating categories, average
 // and ranking maths, and the "which fart do I rate next" picker. No Firebase
 // or browser APIs here so everything is unit-testable.
 
 export type CategoryId =
-  | "geurTolerantie"
-  | "geurNuance"
   | "toon"
   | "ritme"
   | "lengte"
   | "volume"
   | "timing"
-  | "bereik"
-  | "luchtvochtigheid";
+  | "bereik";
 
 export interface Category {
   id: CategoryId;
@@ -24,15 +21,12 @@ export interface Category {
 }
 
 export const CATEGORIES: Category[] = [
-  { id: "geurTolerantie", label: "Tolerantie van geur", emoji: "👃", low: "Gasmasker nodig", high: "Prima te harden" },
-  { id: "geurNuance", label: "Nuance in geur", emoji: "🍷", low: "Eendimensionaal", high: "Complex boeket" },
   { id: "toon", label: "Toon", emoji: "🎺", low: "Vals", high: "Zuiver" },
   { id: "ritme", label: "Ritme", emoji: "🥁", low: "Chaotisch", high: "Strak in de maat" },
   { id: "lengte", label: "Lengte", emoji: "📏", low: "Te kort", high: "Episch lang" },
   { id: "volume", label: "Volume", emoji: "🔊", low: "Onhoorbaar", high: "Donderslag" },
   { id: "timing", label: "Timing", emoji: "⏱️", low: "Ongepast", high: "Perfect getimed" },
   { id: "bereik", label: "Bereik", emoji: "🎼", low: "Eén noot", high: "Drie octaven" },
-  { id: "luchtvochtigheid", label: "Luchtvochtigheid", emoji: "💧", low: "Kurkdroog", high: "Tropisch vochtig" },
 ];
 
 export const CATEGORY_IDS: CategoryId[] = CATEGORIES.map((c) => c.id);
@@ -98,7 +92,7 @@ export function categoryAverage(fart: Pick<Fart, "sums" | "ratingCount">, id: Ca
   return (fart.sums[id] ?? 0) / fart.ratingCount;
 }
 
-/** Mean of all nine category averages, or null when unrated. */
+/** Mean of all category averages, or null when unrated. */
 export function overallAverage(fart: Pick<Fart, "sums" | "ratingCount">): number | null {
   if (fart.ratingCount <= 0) return null;
   const total = CATEGORY_IDS.reduce((acc, id) => acc + (fart.sums[id] ?? 0), 0);

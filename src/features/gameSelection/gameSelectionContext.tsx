@@ -57,7 +57,7 @@ export const GAMES: Record<ActiveGame, GameDefinition> = {
   },
   scheet: {
     id: "scheet",
-    label: "Rate My Scheet",
+    label: "Reet My Scheet",
     darkColor: "#b5d335",
     lightColor: "#6b7f1a",
     tagline: "Neem scheten op, upload en beoordeel ze.",

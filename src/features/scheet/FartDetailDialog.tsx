@@ -150,7 +150,7 @@ export const FartDetailDialog: React.FC<Props> = ({ fartId, farts, local, onClos
             {own ? (
               <Alert severity="info">Dit is jouw eigen scheet — die kun je niet zelf beoordelen.</Alert>
             ) : rated || mine ? (
-              <Alert severity="success">Je hebt deze scheet beoordeeld. Bedankt voor je neus!</Alert>
+              <Alert severity="success">Je hebt deze scheet beoordeeld. Bedankt voor je oren!</Alert>
             ) : (
               <Box>
                 <Typography variant="h6" sx={{ mb: 1 }}>
