@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
+<title>Yasat</title>
+<meta name="description" content="Yasat tegen AI-spelers met karakter, en een scoreblad voor aan tafel. Gratis, zonder account, in je browser.">
+<meta name="version" content="@VERSION@">
+<meta name="support" content="">
+<meta name="theme-color" content="#170b2b">
+<meta name="color-scheme" content="dark">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Yasat">
+<meta name="format-detection" content="telephone=no">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="apple-touch-icon.png" sizes="180x180">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="stylesheet" href="css/app.css">
+<link rel="stylesheet" href="css/cards.css">
+<link rel="stylesheet" href="css/yasat.css">
+<link rel="modulepreload" href="js/util.js">
+<link rel="modulepreload" href="js/cards.js">
+<link rel="modulepreload" href="js/sound.js">
+<link rel="modulepreload" href="js/rules.js">
+<link rel="modulepreload" href="js/game.js">
+<link rel="modulepreload" href="js/table.js">
+<link rel="modulepreload" href="js/panels.js">
+<link rel="modulepreload" href="js/home.js">
+<link rel="modulepreload" href="js/local.js">
+<script type="module" src="js/main.js"></script>
+</head>
+<body data-screen="home">
+<div id="app">
+  <section id="home" class="screen screen-home" aria-label="Start">
+    <div class="home-inner">
+      <header class="logo">
+        <div class="logo-suits" aria-hidden="true"><span class="ls-c">♣</span><span class="ls-d">♦</span><span class="ls-h">♥</span><span class="ls-s">♠</span></div>
+        <h1>Yasat</h1>
+        <p class="tagline">Wie roept als eerste, en heeft echt het minst?</p>
+      </header>
+      <div id="boot" class="boot" aria-hidden="true"><span></span><span></span><span></span></div>
+      <p id="boot-slow" class="boot-slow" role="status">Duurt het laden lang? Wacht even, of laad de pagina over een paar seconden opnieuw.</p>
+      <noscript><p class="noscript">Zet JavaScript aan om Yasat te spelen.</p></noscript>
+    </div>
+  </section>
+  <section id="lobby" class="screen screen-lobby" aria-label="Tafel klaarzetten"></section>
+  <section id="game" class="screen screen-game" aria-label="Speltafel"></section>
+</div>
+<div id="fly" aria-hidden="true"></div>
+<div id="modals"></div>
+<div id="toasts" aria-live="polite"></div>
+<div id="net-banner" class="net-banner" role="status" hidden><span class="spin" aria-hidden="true"></span>De tafel wordt geladen...</div>
+</body>
+</html>

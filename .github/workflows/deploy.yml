@@ -39,6 +39,20 @@ jobs:
         env:
           CI: true
 
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: jannie/go.mod
+          cache-dependency-path: jannie/go.sum
+
+      - name: Test the Yasat site under /new (jannie/)
+        working-directory: jannie
+        run: |
+          go vet ./...
+          go test -short ./...
+          node --test games/yasat/test/*.test.mjs
+          scripts/build-site "$RUNNER_TEMP/new"
+
   build:
     name: Build
     if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
@@ -66,6 +80,17 @@ jobs:
           CI: false
           REACT_APP_BUILD_VERSION: ${{ github.sha }}
           REACT_APP_BUILD_DATE: ${{ steps.build_date.outputs.BUILD_DATE }}
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: jannie/go.mod
+          cache-dependency-path: jannie/go.sum
+
+      - name: Build the Yasat site under /new (jannie/)
+        run: jannie/scripts/build-site "$PWD/build/new"
+        env:
+          VERSION: ${{ github.sha }}
 
       - name: Setup Pages
         uses: actions/configure-pages@v5

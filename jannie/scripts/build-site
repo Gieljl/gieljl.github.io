@@ -1,0 +1,23 @@
+#!/bin/sh
+# Builds the Yasat site into DIR (default: build/new beside the repository's
+# React app): the shell (platform/web), the game's files (games/yasat/web),
+# the table as WebAssembly (cmd/yasat-wasm) and Go's wasm_exec.js. The two
+# trees must share no path. VERSION (default: the commit) fills @VERSION@.
+set -eu
+cd "$(dirname "$0")/.."
+out=${1:-../build/new}
+version=${VERSION:-$(git rev-parse HEAD 2>/dev/null || echo dev)}
+dup=$( (cd platform/web && find . -type f; cd ../../games/yasat/web && find . -type f) | sort | uniq -d)
+if [ -n "$dup" ]; then
+	echo "platform/web and games/yasat/web share: $dup" >&2
+	exit 1
+fi
+rm -rf "$out"
+mkdir -p "$out"
+cp -R platform/web/. "$out/"
+cp -R games/yasat/web/. "$out/"
+sed -i.bak "s/@VERSION@/$version/" "$out/index.html" && rm "$out/index.html.bak"
+root=$(go env GOROOT)
+cp "$root/lib/wasm/wasm_exec.js" "$out/wasm_exec.js" 2>/dev/null || cp "$root/misc/wasm/wasm_exec.js" "$out/wasm_exec.js"
+GOOS=js GOARCH=wasm go build -trimpath -ldflags "-s -w -X main.version=$version" -o "$out/table.wasm" ./cmd/yasat-wasm
+echo "built $out"
