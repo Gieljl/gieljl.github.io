@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <defs>
+    <radialGradient id="felt" cx="50%" cy="40%" r="70%">
+      <stop offset="0" stop-color="#7b4fb8"/>
+      <stop offset="1" stop-color="#2b1650"/>
+    </radialGradient>
+  </defs>
+  <rect x="2" y="2" width="60" height="60" rx="14" fill="url(#felt)" stroke="#e2ad2f" stroke-width="3"/>
+  <g transform="rotate(-9 32 33)">
+    <rect x="18.5" y="11" width="27" height="40" rx="4" fill="#fffaf0" stroke="#2b1650" stroke-opacity=".35"/>
+    <text x="32" y="38" text-anchor="middle" font-family="system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif" font-weight="900" font-size="22" fill="#2b1650">Y</text>
+  </g>
+</svg>

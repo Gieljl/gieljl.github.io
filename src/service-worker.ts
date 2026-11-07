@@ -41,6 +41,11 @@ registerRoute(
       return false;
     }
 
+    // /new/ is the Jannie-based Yasat site (jannie/), a page of its own.
+    if (url.pathname === '/new' || url.pathname.startsWith('/new/')) {
+      return false;
+    }
+
     // If this looks like a URL for a resource, because it contains
     // a file extension, skip.
     if (url.pathname.match(fileExtensionRegexp)) {
