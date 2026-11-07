@@ -11,16 +11,9 @@ import {
   Typography,
   useTheme,
 } from "@mui/material";
-import EmojiEventsIcon from "@mui/icons-material/EmojiEvents";
 import SmartToyIcon from "@mui/icons-material/SmartToy";
-import SportsEsportsIcon from "@mui/icons-material/SportsEsports";
-import StyleIcon from "@mui/icons-material/Style";
-import LeaderboardIcon from "@mui/icons-material/Leaderboard";
-import CastConnectedIcon from "@mui/icons-material/CastConnected";
-import GroupIcon from "@mui/icons-material/Group";
 import HelpOutlineIcon from "@mui/icons-material/HelpOutline";
 import CloseIcon from "@mui/icons-material/Close";
-import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import ScoreboardIcon from "@mui/icons-material/Scoreboard";
 import SwapHorizIcon from "@mui/icons-material/SwapHoriz";
 import { TransitionProps } from "@mui/material/transitions";
@@ -29,8 +22,6 @@ import { setGameType, startNewGame } from "./gameSlice";
 import logo from "../../yasa7.png";
 import logolight from "../../yasa7_light.png";
 import "../../App.css";
-import { Leaderboard } from "./Leaderboard";
-import { JoinGameDialog } from "../session/JoinGameDialog";
 import RulesPopUp from "./RulesText";
 import { GameSwitcherDialog } from "../gameSelection/GameSwitcherDialog";
 import { GAMES, useGameSelection } from "../gameSelection/gameSelectionContext";
@@ -45,8 +36,6 @@ const Transition = React.forwardRef(function Transition(
 export const HomePage: React.FC = () => {
   const theme = useTheme();
   const dispatch = useAppDispatch();
-  const [leaderboardOpen, setLeaderboardOpen] = React.useState(false);
-  const [joinOpen, setJoinOpen] = React.useState(false);
   const [rulesOpen, setRulesOpen] = React.useState(false);
   const [switcherOpen, setSwitcherOpen] = React.useState(false);
   const { activeGame } = useGameSelection();
@@ -55,11 +44,8 @@ export const HomePage: React.FC = () => {
     theme.palette.mode === "light"
       ? activeGameDef.lightColor
       : activeGameDef.darkColor;
-  const [homeView, setHomeView] = React.useState<
-    "main" | "score-tracker" | "play-online"
-  >("main");
 
-  const choose = (mode: "unranked" | "ranked" | "play" | "play-friends") => {
+  const choose = (mode: "unranked" | "play") => {
     dispatch(setGameType(mode));
     dispatch(startNewGame());
   };
@@ -80,181 +66,63 @@ export const HomePage: React.FC = () => {
       </Box>
 
       <Typography variant="h5" sx={{ color: "primary.main" }}>
-        {homeView === "main"
-          ? "Choose a game mode"
-          : homeView === "score-tracker"
-          ? "Score tracker"
-          : "Play online"}
+        Choose a game mode
       </Typography>
 
-      {homeView !== "main" && (
-        <IconButton
-          aria-label="Back to home"
-          color="primary"
-          onClick={() => setHomeView("main")}
-          sx={{ position: "absolute", top: 8, left: 8 }}
+      <Stack direction="column" spacing={3} alignItems="center">
+        <Button
+          variant="contained"
+          size="large"
+          startIcon={<ScoreboardIcon />}
+          onClick={() => choose("unranked")}
+          sx={{ width: 260, height: 60, fontSize: 18 }}
         >
-          <ArrowBackIcon />
-        </IconButton>
-      )}
+          Score Tracker
+        </Button>
+        <Typography variant="caption" color="text.secondary" sx={{ mt: -2, mb: -2, maxWidth: 280, textAlign: "center" }}>
+          For in-person games. Tap scores as you play.
+        </Typography>
 
-      {homeView === "main" ? (
-        <Stack direction="column" spacing={3} alignItems="center">
-          <Button
-            variant="contained"
-            size="large"
-            startIcon={<ScoreboardIcon />}
-            onClick={() => setHomeView("score-tracker")}
-            sx={{ width: 260, height: 60, fontSize: 18 }}
-          >
-            Score Tracker
-          </Button>
-          <Typography variant="caption" color="text.secondary" sx={{ mt: -2, mb: -2 }}>
-            For in-person games. Tap scores as you play.
-          </Typography>
+        <Button
+          variant="outlined"
+          size="large"
+          startIcon={<SmartToyIcon />}
+          onClick={() => choose("play")}
+          sx={{ width: 260, height: 60, fontSize: 18 }}
+        >
+          Play vs. AI
+        </Button>
+        <Typography variant="caption" color="text.secondary" sx={{ mt: -2, mb: -2, maxWidth: 280, textAlign: "center" }}>
+          Live card game against bots.
+        </Typography>
 
-          <Button
-            variant="outlined"
-            size="large"
-            startIcon={<StyleIcon />}
-            onClick={() => setHomeView("play-online")}
-            sx={{ width: 260, height: 60, fontSize: 18 }}
-          >
-            Play Online
-          </Button>
-          <Typography variant="caption" color="text.secondary" sx={{ mt: -2, mb: -2 }}>
-            Live card game vs. AI or friends.
-          </Typography>
+        <Button
+          variant="text"
+          size="large"
+          startIcon={<HelpOutlineIcon />}
+          onClick={() => setRulesOpen(true)}
+          sx={{ width: 260, height: 60, fontSize: 18 }}
+        >
+          Rules
+        </Button>
+      </Stack>
 
-          <Button
-            variant="text"
-            size="large"
-            startIcon={<CastConnectedIcon />}
-            onClick={() => setJoinOpen(true)}
-            sx={{ width: 260, height: 60, fontSize: 18, mt: 1 }}
-          >
-            Join game
-          </Button>
-          <Typography variant="caption" color="text.secondary" sx={{ mt: -2, mb: -2, maxWidth: 280, textAlign: "center" }}>
-            Join a game in progress with an extra screen.
-          </Typography>
-
-          <Button
-            variant="text"
-            size="large"
-            startIcon={<LeaderboardIcon />}
-            onClick={() => setLeaderboardOpen(true)}
-            sx={{ width: 260, height: 60, fontSize: 18 }}
-          >
-            Leaderboards
-          </Button>
-
-          <Button
-            variant="text"
-            size="large"
-            startIcon={<HelpOutlineIcon />}
-            onClick={() => setRulesOpen(true)}
-            sx={{ width: 260, height: 60, fontSize: 18 }}
-          >
-            Rules
-          </Button>
-        </Stack>
-      ) : homeView === "score-tracker" ? (
-        <Stack direction="column" spacing={3} alignItems="center">
-          <Typography
-            variant="caption"
-            color="text.secondary"
-            sx={{ maxWidth: 280, textAlign: "center" }}
-          >
-            Manual scorekeeper for in-person games.
-          </Typography>
-
-          <Button
-            variant="contained"
-            size="large"
-            startIcon={<EmojiEventsIcon />}
-            onClick={() => choose("ranked")}
-            sx={{ width: 260, height: 60, fontSize: 18 }}
-          >
-            Ranked
-          </Button>
-          <Typography variant="caption" color="text.secondary" sx={{ mt: -2, mb: -2, maxWidth: 280, textAlign: "center" }}>
-            Log in. Stats saved to leaderboards.
-          </Typography>
-
-          <Button
-            variant="outlined"
-            size="large"
-            startIcon={<SportsEsportsIcon />}
-            onClick={() => choose("unranked")}
-            sx={{ width: 260, height: 60, fontSize: 18 }}
-          >
-            Unranked
-          </Button>
-          <Typography variant="caption" color="text.secondary" sx={{ mt: -2, mb: -2, maxWidth: 280, textAlign: "center" }}>
-            Quick local game. No login, nothing saved.
-          </Typography>
-        </Stack>
-      ) : homeView === "play-online" ? (
-        <Stack direction="column" spacing={3} alignItems="center">
-          <Typography
-            variant="caption"
-            color="text.secondary"
-            sx={{ maxWidth: 280, textAlign: "center" }}
-          >
-            Login required for all online play modes.
-          </Typography>
-
-          <Button
-            variant="contained"
-            size="large"
-            startIcon={<SmartToyIcon />}
-            onClick={() => choose("play")}
-            sx={{ width: 260, height: 60, fontSize: 18 }}
-          >
-            Play vs. AI
-          </Button>
-          <Typography variant="caption" color="text.secondary" sx={{ mt: -2, mb: -2, maxWidth: 280, textAlign: "center" }}>
-            Play against bots. Stats saved to leaderboards.
-          </Typography>
-
-          <Button
-            variant="outlined"
-            size="large"
-            startIcon={<GroupIcon />}
-            onClick={() => choose("play-friends")}
-            sx={{ width: 260, height: 60, fontSize: 18 }}
-          >
-            Play vs. Friends
-          </Button>
-          <Typography variant="caption" color="text.secondary" sx={{ mt: -2, mb: -2, maxWidth: 280, textAlign: "center" }}>
-            Invite logged-in friends to a real-time game.
-          </Typography>
-        </Stack>
-      ) : (
-        <Stack direction="column" spacing={3} alignItems="center" />
-      )}
-
-      {homeView === "main" && (
-        <Box sx={{ display: "flex", justifyContent: "center", width: "100%", pt: 2 }}>
-          <Button
-            aria-label="Switch game"
-            variant="outlined"
-            size="medium"
-            startIcon={<SwapHorizIcon />}
-            onClick={() => setSwitcherOpen(true)}
-            sx={{
-              borderColor: accent,
-              color: accent,
-              "&:hover": { borderColor: accent, opacity: 0.85 },
-            }}
-          >
-            Switch game ({activeGameDef.label})
-          </Button>
-        </Box>
-      )}
-
-      <JoinGameDialog open={joinOpen} onClose={() => setJoinOpen(false)} />
+      <Box sx={{ display: "flex", justifyContent: "center", width: "100%", pt: 2 }}>
+        <Button
+          aria-label="Switch game"
+          variant="outlined"
+          size="medium"
+          startIcon={<SwapHorizIcon />}
+          onClick={() => setSwitcherOpen(true)}
+          sx={{
+            borderColor: accent,
+            color: accent,
+            "&:hover": { borderColor: accent, opacity: 0.85 },
+          }}
+        >
+          Switch game ({activeGameDef.label})
+        </Button>
+      </Box>
 
       <GameSwitcherDialog
         open={switcherOpen}
@@ -286,42 +154,6 @@ export const HomePage: React.FC = () => {
         </AppBar>
         <Box sx={{ flexGrow: 1, overflowY: "auto", p: 3 }}>
           <RulesPopUp />
-        </Box>
-      </Dialog>
-
-      <Dialog
-        fullScreen
-        open={leaderboardOpen}
-        onClose={() => setLeaderboardOpen(false)}
-        TransitionComponent={Transition}
-      >
-        <AppBar
-          sx={{ background: "#424242", color: "primary.main", position: "relative" }}
-        >
-          <Toolbar>
-            <IconButton
-              edge="start"
-              color="primary"
-              onClick={() => setLeaderboardOpen(false)}
-              aria-label="close"
-            >
-              <CloseIcon />
-            </IconButton>
-            <Typography sx={{ ml: 2, flex: 1 }} variant="h6" component="div">
-              Leaderboards
-            </Typography>
-          </Toolbar>
-        </AppBar>
-        <Box
-          sx={{
-            flexGrow: 1,
-            overflowY: "auto",
-            display: "flex",
-            justifyContent: "center",
-            py: 3,
-          }}
-        >
-          <Leaderboard />
         </Box>
       </Dialog>
     </Stack>

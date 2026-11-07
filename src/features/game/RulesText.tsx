@@ -121,8 +121,7 @@ const RulesPopUp: React.FC = () => {
       <br />
       Beyond the basic card game, Yasat features a Meta Game where players
       collect <i>stats</i> based on in-game events. Each stat has a weighted
-      value, and the player with the highest weighted score is in the lead. In
-      ranked games, these stats are tracked and saved online.
+      value, and the player with the highest weighted score is in the lead.
       <br />
       <br />
       <strong>Yasat</strong> (+1)

@@ -1,7 +1,6 @@
 import { player } from '../players/playersSlice';
 import { ScoreState } from './scoreSlice';
 import { statWeight } from '../stats/statsSlice';
-import { GameStatsEntry } from '../identity/playerService';
 
 export interface PlayerGameResult {
   player: player;
@@ -58,10 +57,10 @@ const longestStreakOwnerId = (rounds: ScoreState[]): number | null => {
 };
 
 /**
- * Compute per-player results and weighted scores for a finished ranked game.
+ * Compute per-player results and weighted scores for a score-tracker game.
  * Returns the list sorted by weightedScore desc, with `won` set on the leader.
  */
-export function computeRankedGameResults(
+export function computeGameResults(
   players: player[],
   rounds: ScoreState[],
   weights: statWeight[]
@@ -97,18 +96,4 @@ export function computeRankedGameResults(
   results.sort((a, b) => b.weightedScore - a.weightedScore);
   if (results.length > 0) results[0].won = true;
   return results;
-}
-
-export function resultsToStatsEntries(
-  results: PlayerGameResult[]
-): GameStatsEntry[] {
-  return results
-    .filter((r) => r.player.username)
-    .map((r) => ({
-      username: r.player.username!,
-      statCounts: r.statCounts,
-      longestStreak: r.longestStreak,
-      weightedScore: r.weightedScore,
-      won: r.won,
-    }));
 }
