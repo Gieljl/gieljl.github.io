@@ -3,10 +3,7 @@ import scoresReducer from '../features/game/scoreSlice';
 import playersReducer from '../features/players/playersSlice';
 import statsReducer from '../features/stats/statsSlice';
 import gameReducer from '../features/game/gameSlice';
-import identityReducer from '../features/identity/identitySlice';
-import sessionReducer from '../features/session/sessionSlice';
 import playReducer from '../features/play/playSlice';
-import playFriendsReducer from '../features/playFriends/playFriendsSlice';
 import undoable, { ActionCreators } from 'redux-undo';
 import {
   persistReducer,
@@ -22,106 +19,20 @@ import {
 } from 'redux-persist';
 import storage from 'redux-persist/lib/storage';
 
-/**
- * Action type dispatched by viewers to replace the full game state in one shot.
- * Handled by the root reducer wrapper below.
- */
-export const HYDRATE_FROM_SESSION = 'session/hydrateFromSession';
-
-/**
- * Action type dispatched by guests in a Play vs Friends session to replace
- * play-slice state from the host's Firestore session document.
- */
-export const HYDRATE_PLAY_FROM_FRIENDS_SESSION =
-  'playFriends/hydratePlayFromSession';
-
-const combinedReducers = combineReducers({
+const reducers = combineReducers({
   scores: undoable(scoresReducer),
   players: playersReducer,
   game: gameReducer,
   stats: statsReducer,
-  identity: identityReducer,
-  session: sessionReducer,
   play: playReducer,
-  playFriends: playFriendsReducer,
 });
-
-/**
- * Root reducer wrapper that intercepts HYDRATE_FROM_SESSION to atomically
- * replace players, scores (including undo history), stats, and game state
- * from the host's Firestore session document.
- */
-const reducers: typeof combinedReducers = (state, action) => {
-  if (action.type === HYDRATE_FROM_SESSION) {
-    const payload = action.payload as {
-      players: any;
-      scores: { present: any; past: any[] };
-      stats: any;
-      game: any;
-    };
-    return {
-      ...combinedReducers(state, action),
-      players: payload.players,
-      scores: {
-        past: payload.scores.past,
-        present: payload.scores.present,
-        future: [],
-        _latestUnfilteredState: payload.scores.present,
-        group: null,
-        index: payload.scores.past.length,
-        limit: 1,
-      },
-      stats: payload.stats,
-      game: payload.game,
-    };
-  }
-  if (action.type === HYDRATE_PLAY_FROM_FRIENDS_SESSION) {
-    const payload = action.payload as {
-      round: any;
-      seating: string[];
-      playerNames: Record<string, string>;
-      usernameByPlayerId: Record<string, string>;
-      humanId: string | null;
-      humanUsername: string | null;
-      cumulativeTotals: Record<string, number>;
-      roundHistory: any[];
-      log: any[];
-      lastEvents: any[];
-      gameOver: boolean;
-      length: 'bo10' | 'firstTo10';
-      dealerId: string | null;
-    };
-    const next = combinedReducers(state, action);
-    return {
-      ...next,
-      play: {
-        ...next.play,
-        round: payload.round,
-        seating: payload.seating,
-        playerNames: payload.playerNames,
-        usernameByPlayerId: payload.usernameByPlayerId,
-        humanId: payload.humanId,
-        humanUsername: payload.humanUsername,
-        dealerId: payload.dealerId,
-        length: payload.length,
-        mode: 'friends',
-        cumulativeTotals: payload.cumulativeTotals,
-        roundHistory: payload.roundHistory,
-        log: payload.log,
-        lastEvents: payload.lastEvents,
-        gameOver: payload.gameOver,
-      },
-    };
-  }
-  return combinedReducers(state, action);
-};
 
 /**
  * Bump `PERSIST_VERSION` whenever the persisted state shape changes in a way
  * that older clients' storage cannot satisfy. The matching migration should
  * repair the state (or return `undefined` to force a fresh initial state).
  */
-const PERSIST_VERSION = 5;
+const PERSIST_VERSION = 6;
 
 type PersistedRootState = PersistedState &
   Record<string, any>;
@@ -203,6 +114,24 @@ const migrations: Record<number, (state: any) => any> = {
       },
     } as PersistedRootState;
   },
+  // v6: removed all online features (login, shared games, leaderboards,
+  // ranked and play-vs-friends). Drop the stale identity/session slices and
+  // map the removed game types back to the local score tracker.
+  6: (state: PersistedRootState | undefined): PersistedRootState | undefined => {
+    if (!state) return state;
+    const { identity, session, playFriends, ...rest } = state as any;
+    const g = (rest.game as any) ?? {};
+    const allowedTypes = ['unranked', 'play'];
+    return {
+      ...rest,
+      game: {
+        ...g,
+        status: 'home',
+        view: g.type === 'ranked' ? 'new' : g.view,
+        type: allowedTypes.includes(g.type) ? g.type : 'unranked',
+      },
+    } as PersistedRootState;
+  },
 };
 
 const persistConfig = {
@@ -212,7 +141,7 @@ const persistConfig = {
   storage,
   version: PERSIST_VERSION,
   migrate: createMigrate(migrations, { debug: false }),
-  blacklist: ['session', 'play', 'playFriends'], // sessions, play, and friends sessions are transient — don't persist
+  blacklist: ['play'], // play games are transient — don't persist
 };
 const persistedReducer = persistReducer(persistConfig, reducers);
 

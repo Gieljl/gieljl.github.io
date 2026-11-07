@@ -5,8 +5,6 @@ export type player = {
   id: number;
   name: string;
   color: string;
-  /** Optional DB username — set when the player is backed by a registered profile. */
-  username?: string;
 }
 
 const initialState = [] as player[] 
@@ -22,12 +20,11 @@ export const playerSlice = createSlice({
       reducer: (state, action: PayloadAction<player>) => {
         state.push(action.payload);
       },
-      prepare: (name: string, color: string, username?: string) => ({
+      prepare: (name: string, color: string) => ({
         payload: {
           id: nextPlayerId ++,
           name,
           color,
-          username,
         } as player,
       })
     },

@@ -1,12 +1,6 @@
 import * as React from "react";
 
-export type ActiveGame =
-  | "yasat"
-  | "shiplake"
-  | "regicide"
-  | "flip7"
-  | "tkid2"
-  | "scheet";
+export type ActiveGame = "yasat" | "regicide" | "flip7";
 
 export interface GameDefinition {
   id: ActiveGame;
@@ -27,13 +21,6 @@ export const GAMES: Record<ActiveGame, GameDefinition> = {
     lightColor: "#4BCDB9",
     tagline: "The original card-game score tracker.",
   },
-  shiplake: {
-    id: "shiplake",
-    label: "Shiplake",
-    darkColor: "#f3c87d",
-    lightColor: "#CD8C4B",
-    tagline: "Dice. Categories. Modifiers. Glory.",
-  },
   regicide: {
     id: "regicide",
     label: "Regicide",
@@ -47,20 +34,6 @@ export const GAMES: Record<ActiveGame, GameDefinition> = {
     darkColor: "#5fc4c1",
     lightColor: "#1B3A8A",
     tagline: "Press your luck — first to 200.",
-  },
-  tkid2: {
-    id: "tkid2",
-    label: "The King Is Dead",
-    darkColor: "#e0b44a",
-    lightColor: "#8e3a2e",
-    tagline: "Crown a ruler of medieval Britain.",
-  },
-  scheet: {
-    id: "scheet",
-    label: "Reet My Scheet",
-    darkColor: "#b5d335",
-    lightColor: "#6b7f1a",
-    tagline: "Neem scheten op, upload en beoordeel ze.",
   },
 };
 

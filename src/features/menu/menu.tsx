@@ -29,7 +29,7 @@ import {
 import MenuIcon from "@mui/icons-material/Menu";
 import AddCircleIcon from "@mui/icons-material/AddCircle";
 import InfoIcon from "@mui/icons-material/Info";
-import { useAppDispatch, useAppSelector } from "../../app/hooks";
+import { useAppDispatch } from "../../app/hooks";
 import { goHome } from "../game/gameSlice";
 import { resetPlayers } from "../players/playersSlice";
 import { resetScores } from "../game/scoreSlice";
@@ -43,27 +43,11 @@ import { setGameView } from "../game/gameSlice";
 import { TransitionProps, closeSnackbar, enqueueSnackbar } from "notistack";
 import { resetStats } from "../stats/statsSlice";
 import HelpOutlineIcon from "@mui/icons-material/HelpOutline";
-import PersonIcon from "@mui/icons-material/Person";
-import LogoutIcon from "@mui/icons-material/Logout";
 import logo from "../../yasa7.png";
 import logolight from "../../yasa7_light.png";
 import CloseIcon from "@mui/icons-material/Close";
 import RulesPopUp from "../game/RulesText";
-import { IdentityDialog } from "../identity/IdentityDialog";
-import { selectCurrentPlayer, logout, setPlayerColor } from "../identity/identitySlice";
-import { updatePlayerColor } from "../identity/playerService";
-import Circle from "@uiw/react-color-circle";
-import Wheel from "@uiw/react-color-wheel";
-import { hsvaToHex, hexToHsva } from "@uiw/color-convert";
-import PaletteIcon from "@mui/icons-material/Palette";
 import ExitToAppIcon from "@mui/icons-material/ExitToApp";
-import SportsScoreIcon from "@mui/icons-material/SportsScore";
-import CastConnectedIcon from "@mui/icons-material/CastConnected";
-import { useEndRankedGame } from "../game/useEndRankedGame";
-import { selectSessionRole, clearSession } from "../session/sessionSlice";
-import { JoinGameDialog } from "../session/JoinGameDialog";
-import { deleteSession as deleteSessionDoc } from "../session/sessionService";
-import { selectSessionCode, selectIsSharing, setSharing } from "../session/sessionSlice";
 import SwapHorizIcon from "@mui/icons-material/SwapHoriz";
 import {
   GAMES,
@@ -86,36 +70,7 @@ export default function Menu({
   });
   const theme = useTheme();
   const dispatch = useAppDispatch();
-  const currentPlayer = useAppSelector(selectCurrentPlayer);
   const gameStatus = useSelector((state: RootState) => state.game.status);
-  const gameType = useSelector((state: RootState) => state.game.type);
-  const endRankedGame = useEndRankedGame();
-  const sessionRole = useAppSelector(selectSessionRole);
-  const sessionCode = useAppSelector(selectSessionCode);
-  const isSharing = useAppSelector(selectIsSharing);
-  const isViewer = sessionRole === "viewer";
-  const [openIdentity, setOpenIdentity] = React.useState(false);
-  const [openJoinGame, setOpenJoinGame] = React.useState(false);
-  const [showColorPicker, setShowColorPicker] = React.useState(false);
-  const [colorHsva, setColorHsva] = React.useState(() =>
-    hexToHsva(currentPlayer?.color || '#7df3e1')
-  );
-
-  React.useEffect(() => {
-    setColorHsva(hexToHsva(currentPlayer?.color || '#7df3e1'));
-  }, [currentPlayer?.color]);
-
-  const PLAYER_COLORS = [
-    '#7df3e1', '#f47373', '#697689', '#37d67a', '#2ccce4',
-    '#555555', '#dce775', '#ff8a65', '#ba68c8', '#4dd0e1',
-  ];
-
-  const handleColorChange = (hex: string) => {
-    dispatch(setPlayerColor(hex));
-    if (currentPlayer) {
-      updatePlayerColor(currentPlayer.username, hex).catch(() => {});
-    }
-  };
 
   const toggleDrawer =
     (anchor: Anchor, open: boolean) =>
@@ -137,12 +92,6 @@ export default function Menu({
 
   /** Clear all local game state and return to the home screen. */
   const clearAllLocalState = () => {
-    // If host was sharing, delete the Firestore session
-    if (isSharing && sessionCode) {
-      deleteSessionDoc(sessionCode).catch(() => {});
-      dispatch(setSharing(false));
-    }
-    dispatch(clearSession());
     dispatch(goHome());
     dispatch(resetPlayers());
     dispatch(resetScores());
@@ -217,52 +166,6 @@ export default function Menu({
       onKeyDown={toggleDrawer(anchor, false)}
     >
       <List>
-        {!currentPlayer ? (
-          <ListItemButton key="login" onClick={() => setOpenIdentity(true)}>
-            <ListItemIcon>
-              <PersonIcon />
-            </ListItemIcon>
-            <ListItemText primary="Login / Register (BETA)" />
-          </ListItemButton>
-        ) : (
-          <>
-            <ListItemButton key="logout" onClick={() => dispatch(logout())}>
-              <ListItemIcon>
-                <LogoutIcon />
-              </ListItemIcon>
-              <ListItemText primary={`Logout (${currentPlayer.displayName})`} />
-            </ListItemButton>
-            <ListItemButton key="color" onClick={(e) => { e.stopPropagation(); setShowColorPicker(!showColorPicker); }}>
-              <ListItemIcon>
-                <PaletteIcon sx={{ color: currentPlayer.color || '#7df3e1' }} />
-              </ListItemIcon>
-              <ListItemText primary="Change Color" />
-            </ListItemButton>
-            {showColorPicker && (
-              <Box sx={{ px: 2, py: 1 }} onClick={(e) => e.stopPropagation()}>
-                <Circle
-                  colors={PLAYER_COLORS}
-                  color={currentPlayer.color || '#7df3e1'}
-                  onChange={(c) => {
-                    setColorHsva(hexToHsva(c.hex));
-                    handleColorChange(c.hex);
-                  }}
-                />
-                <Stack direction="row" justifyContent="center" mt={1}>
-                  <Wheel
-                    color={colorHsva}
-                    onChange={(c) => {
-                      setColorHsva(c.hsva);
-                      handleColorChange(hsvaToHex(c.hsva));
-                    }}
-                    width={140}
-                    height={140}
-                  />
-                </Stack>
-              </Box>
-            )}
-          </>
-        )}
         <ListItemButton key="NewGame">
           <ListItemIcon>
             <AddCircleIcon />
@@ -277,27 +180,11 @@ export default function Menu({
             <ListItemText primary="Leave Game" />
           </ListItemButton>
         )}
-        {gameStatus === "started" && gameType === "ranked" && !isViewer && (
-          <ListItemButton key="endRanked" onClick={endRankedGame}>
-            <ListItemIcon>
-              <SportsScoreIcon />
-            </ListItemIcon>
-            <ListItemText primary="End Ranked Game" />
-          </ListItemButton>
-        )}
-        {!isViewer && (
-          <ListItemButton key="settings" onClick={handleClickOpenSettings}>
-            <ListItemIcon>
-              <SettingsIcon />
-            </ListItemIcon>
-            <ListItemText primary="Settings" onClick={handleClickOpenSettings} />
-          </ListItemButton>
-        )}
-        <ListItemButton key="joinOnline" onClick={() => setOpenJoinGame(true)}>
+        <ListItemButton key="settings" onClick={handleClickOpenSettings}>
           <ListItemIcon>
-            <CastConnectedIcon />
+            <SettingsIcon />
           </ListItemIcon>
-          <ListItemText primary="Join Online Game" />
+          <ListItemText primary="Settings" onClick={handleClickOpenSettings} />
         </ListItemButton>
         <ListItemButton key="Theme">
           <ListItemIcon onClick={toggleColorMode}>
@@ -507,8 +394,6 @@ export default function Menu({
           <AboutDialogContent />
           <SettingsDialogContent />
           <RulesDialogContent />
-          <IdentityDialog open={openIdentity} onClose={() => setOpenIdentity(false)} />
-          <JoinGameDialog open={openJoinGame} onClose={() => setOpenJoinGame(false)} />
           <GameSwitcherDialog
             open={openSwitcher}
             onClose={() => setOpenSwitcher(false)}

@@ -13,7 +13,6 @@ import { selectStatsWeight } from '../stats/statsSlice';
 import {
   selectPlayCurrentPlayerId,
   selectPlayHumanId,
-  selectPlayMode,
   selectPlayRound,
   selectPlayCurrentRoundEvents,
   selectAwaitingAceChoices,
@@ -57,7 +56,6 @@ export function useBotDriver(): void {
   const round = useAppSelector(selectPlayRound);
   const humanId = useAppSelector(selectPlayHumanId);
   const currentId = useAppSelector(selectPlayCurrentPlayerId);
-  const mode = useAppSelector(selectPlayMode);
   const difficulty = useAppSelector((s) => s.play.difficulty);
   const totals = useAppSelector((s) => s.play.cumulativeTotals);
   const history = useAppSelector((s) => s.play.roundHistory);
@@ -80,10 +78,6 @@ export function useBotDriver(): void {
     tokenRef.current += 1;
 
     if (!round || round.phase !== 'in-progress') {
-      dispatch(setThinking(null));
-      return;
-    }
-    if (mode !== 'ai') {
       dispatch(setThinking(null));
       return;
     }
@@ -121,7 +115,7 @@ export function useBotDriver(): void {
         pendingTimer.current = null;
       }
     };
-  }, [round, currentId, humanId, mode, difficulty, totals, history, statWeights, currentRoundEvents, dispatch]);
+  }, [round, currentId, humanId, difficulty, totals, history, statWeights, currentRoundEvents, dispatch]);
 
   // --- Bot ace-value submission after round end ---
   useEffect(() => {
@@ -129,7 +123,7 @@ export function useBotDriver(): void {
       clearTimeout(aceTimerRef.current);
       aceTimerRef.current = null;
     }
-    if (!awaitingAceChoices || mode !== 'ai' || !round) return;
+    if (!awaitingAceChoices || !round) return;
 
     // Determine caller info for the strategy function.
     const callerId = round.callerId;
@@ -169,5 +163,5 @@ export function useBotDriver(): void {
         aceTimerRef.current = null;
       }
     };
-  }, [awaitingAceChoices, playersWithAces, mode, round, humanId, totals, difficulty, dispatch]);
+  }, [awaitingAceChoices, playersWithAces, round, humanId, totals, difficulty, dispatch]);
 }

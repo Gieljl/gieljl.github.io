@@ -7,8 +7,8 @@ export interface GameState {
   status: 'home' | 'new' | 'started';
   /** Scoring view: 'classic' (points & stats), 'new' (weighted stats), or 'play' (live card game). */
   view: 'classic' | 'new' | 'play';
-  /** Game type: 'ranked' (online stats), 'unranked' (local), 'play' (vs AI), or 'play-friends' (online multiplayer humans). */
-  type: 'unranked' | 'ranked' | 'play' | 'play-friends';
+  /** Game type: 'unranked' (local score tracker) or 'play' (vs AI). */
+  type: 'unranked' | 'play';
   /** Game length: bo10 (10 hands), firstTo10 (weighted score), or classic (manual). */
   length: GameLength;
 }
@@ -37,11 +37,9 @@ export const gameSlice = createSlice({
     setGameView: (state, action: PayloadAction<'classic' | 'new' | 'play'>) => {
       state.view = action.payload;
     },
-    setGameType: (state, action: PayloadAction<'unranked' | 'ranked' | 'play' | 'play-friends'>) => {
+    setGameType: (state, action: PayloadAction<'unranked' | 'play'>) => {
       state.type = action.payload;
-      if (action.payload === 'ranked') {
-        state.view = 'new';
-      } else if (action.payload === 'play' || action.payload === 'play-friends') {
+      if (action.payload === 'play') {
         state.view = 'play';
       }
     },

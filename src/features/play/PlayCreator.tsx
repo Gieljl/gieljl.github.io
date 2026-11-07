@@ -12,18 +12,11 @@ import {
 import AddIcon from '@mui/icons-material/Add';
 import RemoveIcon from '@mui/icons-material/Remove';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
-import PersonIcon from '@mui/icons-material/Person';
-import LogoutIcon from '@mui/icons-material/Logout';
-import { useAppDispatch, useAppSelector } from '../../app/hooks';
+import { useAppDispatch } from '../../app/hooks';
 import { goHome, startGame, setGameLength } from '../game/gameSlice';
 import { GAME_LENGTH_OPTIONS, GAME_LENGTH_DESCRIPTION, type GameLength } from '../game/gameLength';
 import { initGame } from './playSlice';
 import type { Difficulty } from './ai/botPolicy';
-import { IdentityDialog } from '../identity/IdentityDialog';
-import {
-  logout,
-  selectCurrentPlayer,
-} from '../identity/identitySlice';
 import logo from '../../yasa7.png';
 import logolight from '../../yasa7_light.png';
 import '../../App.css';
@@ -64,12 +57,9 @@ function shuffled<T>(arr: readonly T[]): T[] {
 export const PlayCreator: React.FC = () => {
   const dispatch = useAppDispatch();
   const theme = useTheme();
-  const currentPlayer = useAppSelector(selectCurrentPlayer);
-  const isLoggedIn = !!currentPlayer;
   const [numBots, setNumBots] = React.useState(2);
   const [difficulty, setDifficulty] = React.useState<Difficulty>('normal');
   const [length, setLength] = React.useState<GameLength>('bo10');
-  const [openIdentity, setOpenIdentity] = React.useState(false);
 
   const difficultyHint: Record<Difficulty, string> = {
     easy: 'Easy: bots play simpler and declare Yasat earlier.',
@@ -84,7 +74,7 @@ export const PlayCreator: React.FC = () => {
       isBot: true,
     }));
     const players = [
-      { name: currentPlayer?.displayName || 'You', isBot: false },
+      { name: 'You', isBot: false },
       ...bots,
     ];
     dispatch(
@@ -93,7 +83,6 @@ export const PlayCreator: React.FC = () => {
         humanIndex: 0,
         difficulty,
         length,
-        humanUsername: currentPlayer?.username ?? null,
       }),
     );
     dispatch(setGameLength(length));
@@ -126,35 +115,6 @@ export const PlayCreator: React.FC = () => {
       <Typography variant="h6" color="primary">
         Play vs. AI
       </Typography>
-
-      {isLoggedIn ? (
-        <Stack direction="row" spacing={1} alignItems="center">
-          <Typography variant="caption" color="text.secondary">
-            Saving stats as <strong>{currentPlayer.displayName}</strong>
-          </Typography>
-          <IconButton
-            size="small"
-            aria-label="Log out"
-            onClick={() => dispatch(logout())}
-          >
-            <LogoutIcon fontSize="small" />
-          </IconButton>
-        </Stack>
-      ) : (
-        <Stack direction="column" spacing={1} alignItems="center">
-          <Typography variant="body2" color="warning.main" sx={{ textAlign: 'center' }}>
-            You must be logged in to play.
-          </Typography>
-          <Button
-            size="small"
-            variant="contained"
-            startIcon={<PersonIcon />}
-            onClick={() => setOpenIdentity(true)}
-          >
-            Log in / register
-          </Button>
-        </Stack>
-      )}
 
       <Stack direction="row" spacing={2} alignItems="center">
         <Typography>Opponents:</Typography>
@@ -214,18 +174,11 @@ export const PlayCreator: React.FC = () => {
       </Typography>
 
       <Box sx={{ display: 'flex', gap: 2, mt: 2 }}>
-        <Button variant="contained" size="large" onClick={start} disabled={!isLoggedIn}>
+        <Button variant="contained" size="large" onClick={start}>
           Start Game
         </Button>
       </Box>
-
-      <Typography variant="caption" color="text.secondary" sx={{ maxWidth: 360, textAlign: 'center' }}>
-        {isLoggedIn
-          ? 'Best of 10 / First to 10 stats are saved to your Play leaderboards. Classic games are not tracked.'
-          : 'Log in to save Best of 10 / First to 10 stats to your Play leaderboards. Classic games are not tracked.'}
-      </Typography>
     </Stack>
-      <IdentityDialog open={openIdentity} onClose={() => setOpenIdentity(false)} />
     </>
   );
 };
