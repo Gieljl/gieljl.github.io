@@ -14,24 +14,31 @@ import { PostHogProvider} from 'posthog-js/react'
 const container = document.getElementById("root")!;
 const root = createRoot(container);
 
+// The PostHog project key is injected at build time (REACT_APP_POSTHOG_KEY,
+// a GitHub Actions secret) instead of being committed to the repository.
+// Without it, analytics are simply disabled.
+const posthogKey = process.env.REACT_APP_POSTHOG_KEY;
 const options = {
-  api_host: "https://us.i.posthog.com",
-  key: "phc_yetKdaYEEkf8nAs1OW6RrCsDMIXIdUfEHVOLA18kzys",
-}
+  api_host: process.env.REACT_APP_POSTHOG_HOST || "https://us.i.posthog.com",
+};
 
+const app = (
+  <PersistGate loading={<Loading />} persistor={persistor}>
+    <App />
+  </PersistGate>
+);
 
 root.render(
    <React.StrictMode>
     
      <Provider store={store}>
-     <PostHogProvider 
-      apiKey={options.key || ""}
-      options={options}
-    >
-      <PersistGate loading={<Loading/>} persistor={persistor}>
-        <App />
-      </PersistGate>
-    </PostHogProvider>
+      {posthogKey ? (
+        <PostHogProvider apiKey={posthogKey} options={options}>
+          {app}
+        </PostHogProvider>
+      ) : (
+        app
+      )}
     </Provider>
   </React.StrictMode>
 );
