@@ -34,7 +34,7 @@ export function register(config?: Config) {
       return;
     }
 
-    window.addEventListener('load', () => {
+    const start = () => {
       const swUrl = `${process.env.PUBLIC_URL}/service-worker.js`;
 
       if (isLocalhost) {
@@ -53,7 +53,16 @@ export function register(config?: Config) {
         // Is not localhost. Just register service worker
         registerValidSW(swUrl, config);
       }
-    });
+    };
+
+    // register() runs from a React effect, which can be after the page's
+    // load event (the app is loaded as a module script), so don't wait for
+    // an event that has already fired.
+    if (document.readyState === 'complete') {
+      start();
+    } else {
+      window.addEventListener('load', start);
+    }
   }
 }
 

@@ -1,18 +1,19 @@
 import React from 'react';
+import type { Mock } from 'vitest';
 import { render, waitFor } from '@testing-library/react';
 import { useAppDispatch, useAppSelector } from '../../app/hooks';
 
-jest.mock('../../app/hooks', () => ({
-  useAppDispatch: jest.fn(),
-  useAppSelector: jest.fn(),
+vi.mock('../../app/hooks', () => ({
+  useAppDispatch: vi.fn(),
+  useAppSelector: vi.fn(),
 }));
 
-jest.mock('./weightedScore', () => ({
-  computePlayWeightedScores: jest.fn(),
+vi.mock('./weightedScore', () => ({
+  computePlayWeightedScores: vi.fn(),
 }));
 
-jest.mock('notistack', () => ({
-  enqueueSnackbar: jest.fn(),
+vi.mock('notistack', () => ({
+  enqueueSnackbar: vi.fn(),
 }));
 
 import { usePlayGameEnd } from './usePlayGameEnd';
@@ -20,7 +21,7 @@ import { computePlayWeightedScores } from './weightedScore';
 import { markGameOver } from './playSlice';
 import { enqueueSnackbar } from 'notistack';
 
-const dispatchMock = jest.fn();
+const dispatchMock = vi.fn();
 
 function HookHarness() {
   usePlayGameEnd();
@@ -39,16 +40,16 @@ function mockState(roundsPlayed: number) {
     },
     stats: { weights: [] },
   };
-  (useAppSelector as jest.Mock).mockImplementation(
+  (useAppSelector as Mock).mockImplementation(
     (selector: (s: unknown) => unknown) => selector(state),
   );
 }
 
 describe('usePlayGameEnd', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
-    (useAppDispatch as jest.Mock).mockReturnValue(dispatchMock);
-    (computePlayWeightedScores as jest.Mock).mockReturnValue({ a: 12, b: 5 });
+    vi.clearAllMocks();
+    (useAppDispatch as Mock).mockReturnValue(dispatchMock);
+    (computePlayWeightedScores as Mock).mockReturnValue({ a: 12, b: 5 });
   });
 
   it('marks the game over and announces the winner once the length is met', async () => {
